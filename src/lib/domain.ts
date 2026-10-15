@@ -142,6 +142,28 @@ export function formatAmount(value: number | null | undefined, currency?: string
   return currency ? `${currency} ${formatted}` : formatted;
 }
 
+export function formatMileage(value: number | null | undefined) {
+  return value == null || !Number.isFinite(value) ? null : `${new Intl.NumberFormat("en-US").format(value)} km`;
+}
+
+export function coverImage(images: VehicleImage[]) {
+  return images.find((image) => image.is_cover && image.url) ?? images.find((image) => image.url) ?? null;
+}
+
+export function sortedImages(images: VehicleImage[]) {
+  return [...images].filter((image) => image.url).sort((a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
+}
+
+export function vehicleSpecifications(vehicle: Vehicle): [string, string][] {
+  const rows: [string, string | null][] = [
+    ["Year", vehicle.year?.toString() ?? null], ["Condition", vehicle.condition === "new" ? "New" : "Used"], ["Mileage", formatMileage(vehicle.mileage)],
+    ["Engine", vehicle.engine_capacity], ["Fuel", vehicle.fuel_type], ["Transmission", vehicle.transmission], ["Drive type", vehicle.drive_type],
+    ["Body type", vehicle.body_type], ["Exterior", vehicle.exterior_color], ["Interior", vehicle.interior_color],
+    ["Seats", vehicle.seats?.toString() ?? null], ["Doors", vehicle.doors?.toString() ?? null], ["Stock no.", vehicle.stock_number ?? null],
+  ];
+  return rows.filter((row): row is [string, string] => Boolean(row[1]));
+}
+
 export function slugify(input: string) {
   return input.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 96);

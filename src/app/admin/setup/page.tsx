@@ -61,7 +61,7 @@ export default function StaffSetupPage() {
       <label className="admin-field">Password<input name="password" type="password" autoComplete="new-password" minLength={12} required /></label>
       <label className="admin-field">Confirm password<input name="confirm" type="password" autoComplete="new-password" minLength={12} required /></label>
       {error ? <p className="admin-error" role="alert">{error}</p> : null}
-      <button className="button button-dark" disabled={pending}>{pending ? "Saving…" : "Save password"}</button>
+      <button className="button button-primary" disabled={pending}>{pending ? "Saving…" : "Save password"}</button>
     </form> : <p className="admin-error" role="alert">This invitation link is invalid or has expired. <Link href="/admin/login">Go to staff sign in</Link>.</p>}
   </section></div>;
 }

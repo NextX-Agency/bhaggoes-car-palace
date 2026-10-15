@@ -1,28 +1,32 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Gauge, Fuel, Settings2 } from "lucide-react";
+import { ArrowRight, Camera } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
-import { availabilityLabels, formatAmount } from "@/lib/domain";
+import { coverImage, formatAmount, formatMileage } from "@/lib/domain";
+import { AvailabilityBadge } from "@/components/availability-badge";
 import { VehicleActions } from "@/components/vehicle-actions";
 
-export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
-  const image = vehicle.images.find((item) => item.is_cover)?.url ?? vehicle.images[0]?.url;
-  return <article className="vehicle-card">
-    <div className="vehicle-card-media">
-      <Link href={`/cars/${vehicle.slug}`} aria-label={`View ${vehicle.title}`}>
-        {image ? <Image src={image} alt={vehicle.images[0]?.alt_text ?? vehicle.title} fill sizes="(max-width: 700px) 90vw, (max-width: 1120px) 45vw, 28vw" className="vehicle-photo" /> : <div className="vehicle-image-empty"><span className="car-mark" aria-hidden="true">B</span><span>No photo available</span></div>}
-      </Link>
-      <div className="card-top-tags">{vehicle.featured ? <span className="tag tag-featured">Featured</span> : null}<span className={`tag tag-${vehicle.availability}`}>{availabilityLabels[vehicle.availability]}</span></div>
-      <VehicleActions vehicleId={vehicle.id} compact />
+export function VehicleCard({ vehicle, priority = false }: { vehicle: Vehicle; priority?: boolean }) {
+  const image = coverImage(vehicle.images);
+  const name = `${vehicle.model}${vehicle.variant ? ` ${vehicle.variant}` : ""}`;
+  const specs = [formatMileage(vehicle.mileage), vehicle.transmission, vehicle.fuel_type].filter(Boolean);
+  const hasPrice = vehicle.price != null;
+  return <article className="vcard">
+    <div className="vcard-media">
+      {image?.url
+        ? <Image src={image.url} alt={image.alt_text ?? vehicle.title} fill sizes="(max-width: 600px) 100vw, (max-width: 1080px) 50vw, 400px" loading={priority ? "eager" : "lazy"} />
+        : <div className="vcard-noimage"><Camera size={26} aria-hidden="true" /><span>Photos coming soon</span></div>}
+      {vehicle.availability !== "available" ? <div className="vcard-status"><AvailabilityBadge availability={vehicle.availability} /></div> : null}
+      <VehicleActions vehicleId={vehicle.id} name={vehicle.title} compact />
     </div>
-    <div className="vehicle-card-body">
-      <div className="vehicle-card-titleline"><div><p className="eyebrow">{vehicle.year ?? ""}{vehicle.year ? " · " : ""}{vehicle.make}</p><h3><Link href={`/cars/${vehicle.slug}`}>{vehicle.model}{vehicle.variant ? ` ${vehicle.variant}` : ""}</Link></h3></div><strong className="vehicle-price">{formatAmount(vehicle.price, vehicle.currency)}</strong></div>
-      <div className="vehicle-card-specs">
-        {vehicle.mileage != null ? <span><Gauge size={14} />{new Intl.NumberFormat().format(vehicle.mileage)} km</span> : null}
-        {vehicle.transmission ? <span><Settings2 size={14} />{vehicle.transmission}</span> : null}
-        {vehicle.fuel_type ? <span><Fuel size={14} />{vehicle.fuel_type}</span> : null}
+    <div className="vcard-body">
+      <p className="vcard-meta">{[vehicle.year, vehicle.make].filter(Boolean).join(" · ")}</p>
+      <h3 className="vcard-title"><Link href={`/cars/${vehicle.slug}`}>{name}</Link></h3>
+      {specs.length ? <ul className="vcard-specs">{specs.map((spec) => <li key={spec}>{spec}</li>)}</ul> : null}
+      <div className="vcard-foot">
+        <strong className={`vcard-price${hasPrice ? "" : " is-request"}`}>{formatAmount(vehicle.price, vehicle.currency)}</strong>
+        <span className="vcard-more" aria-hidden="true">Details <ArrowRight size={14} /></span>
       </div>
-      <Link className="card-link" href={`/cars/${vehicle.slug}`}>View details <ArrowUpRight size={16} /></Link>
     </div>
   </article>;
 }

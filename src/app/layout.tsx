@@ -1,12 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Archivo, Inter } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getSettings } from "@/lib/data";
 import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
-import "./admin-extra.css";
+import "./admin.css";
 
 export const dynamic = "force-dynamic";
+
+const display = Archivo({ subsets: ["latin"], variable: "--font-display", display: "swap", axes: ["wdth"] });
+const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+
+export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
@@ -21,10 +27,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const settings = await getSettings();
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
+        <a className="skip-link" href="#main">Skip to content</a>
         <SiteHeader settings={settings} />
-        <main>{children}</main>
+        <main id="main">{children}</main>
         <SiteFooter settings={settings} />
       </body>
     </html>

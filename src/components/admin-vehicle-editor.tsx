@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, saveVehicleAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
@@ -116,31 +116,79 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
   }
   const privateInfo = vehicle as (Vehicle & { vin?: string | null; admin_notes?: string | null }) | null | undefined;
   const defaults = { title: vehicle?.title ?? "", make: vehicle?.make ?? "", model: vehicle?.model ?? "", variant: vehicle?.variant ?? "", year: vehicle?.year ?? "", price: vehicle?.price ?? "", currency: vehicle?.currency ?? "", mileage: vehicle?.mileage ?? "", engine_capacity: vehicle?.engine_capacity ?? "", fuel_type: vehicle?.fuel_type ?? "", transmission: vehicle?.transmission ?? "", drive_type: vehicle?.drive_type ?? "", body_type: vehicle?.body_type ?? "", exterior_color: vehicle?.exterior_color ?? "", interior_color: vehicle?.interior_color ?? "", seats: vehicle?.seats ?? "", doors: vehicle?.doors ?? "", description: vehicle?.description ?? "", stock_number: vehicle?.stock_number ?? "", vin: privateInfo?.vin ?? "", admin_notes: privateInfo?.admin_notes ?? "" };
-  return <form className="admin-form" onSubmit={handleSubmit}>
+  const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+  const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
+  return <form className="admin-form vehicle-editor" onSubmit={handleSubmit}>
     <input type="hidden" name="id" value={savedId} />
-    <section className="admin-form-section"><h2>Basic information</h2><div className="admin-form-grid">
-      <label className="admin-field span-2">Vehicle title<input name="title" defaultValue={defaults.title} required maxLength={180} placeholder="e.g. Toyota RAV4 Limited" /></label>
-      <label className="admin-field">Make<input name="make" defaultValue={defaults.make} required /></label><label className="admin-field">Model<input name="model" defaultValue={defaults.model} required /></label><label className="admin-field">Variant / trim<input name="variant" defaultValue={defaults.variant} /></label>
-      <label className="admin-field">Year<input name="year" type="number" min="1886" max="2200" defaultValue={defaults.year} /></label><label className="admin-field">Price<input name="price" type="number" min="0" step="0.01" defaultValue={defaults.price} /></label><label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="SRD, USD…" /></label>
-      <label className="admin-field">Condition<select name="condition" defaultValue={vehicle?.condition ?? "used"}><option value="new">New</option><option value="used">Used</option></select></label><label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label><label className="admin-field">Stock / reference number<input name="stock_number" defaultValue={defaults.stock_number} /></label>
-      <label className="admin-field span-all">Description<textarea name="description" defaultValue={defaults.description} maxLength={10000} rows={5} /></label>
-    </div></section>
-    <section className="admin-form-section"><h2>Specifications</h2><div className="admin-form-grid"><label className="admin-field">Mileage<input name="mileage" type="number" min="0" step="1" defaultValue={defaults.mileage} /></label><label className="admin-field">Engine capacity<input name="engine_capacity" defaultValue={defaults.engine_capacity} placeholder="e.g. 2.5L" /></label><label className="admin-field">Fuel type<input name="fuel_type" defaultValue={defaults.fuel_type} placeholder="Gasoline, hybrid…" /></label><label className="admin-field">Transmission<input name="transmission" defaultValue={defaults.transmission} placeholder="Automatic, manual…" /></label><label className="admin-field">Drive type<input name="drive_type" defaultValue={defaults.drive_type} placeholder="FWD, AWD…" /></label><label className="admin-field">Body type<input name="body_type" defaultValue={defaults.body_type} placeholder="SUV, sedan…" /></label><label className="admin-field">Exterior color<input name="exterior_color" defaultValue={defaults.exterior_color} /></label><label className="admin-field">Interior color<input name="interior_color" defaultValue={defaults.interior_color} /></label><label className="admin-field">Seats<input name="seats" type="number" min="1" max="100" defaultValue={defaults.seats} /></label><label className="admin-field">Doors<input name="doors" type="number" min="1" max="20" defaultValue={defaults.doors} /></label></div></section>
-    <section className="admin-form-section"><h2>Features and equipment</h2><div className="admin-checkbox-row">{commonFeatures.map((feature) => <label className="admin-checkbox" key={feature}><input type="checkbox" checked={featureText.split(/[\n,]/).map((item) => item.trim()).includes(feature)} onChange={(event) => toggledFeature(feature, event.target.checked)} />{feature}</label>)}</div><label className="admin-field" style={{ marginTop: 16 }}>Add or edit features <span className="help-text">Separate features with a new line or comma.</span><textarea name="features" value={featureText} onChange={(event) => setFeatureText(event.target.value)} rows={4} placeholder="Enter another feature" /></label></section>
-    <section className="admin-form-section"><h2>Private details</h2><div className="admin-form-grid"><label className="admin-field">VIN <span className="help-text">Only visible to administrators.</span><input name="vin" defaultValue={defaults.vin} /></label><label className="admin-field span-2">Admin notes <span className="help-text">These notes are never shown publicly.</span><textarea name="admin_notes" defaultValue={defaults.admin_notes} rows={3} /></label></div></section>
-    <section className="admin-form-section"><h2>Photos</h2><p className="section-subtitle">Add up to 15 JPEG, PNG, WebP, or AVIF images. Each photo may be up to 15 MB. Large images are optimized in your browser before upload.</p>
-      <div className="admin-photo-grid" role="list" aria-label="Vehicle photos">{photos.map((photo, index) => <div className={`admin-photo${photo.is_cover || index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}`} key={photo.id} role="listitem" draggable onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData("text/plain")); void reorderPhoto(from, index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Photo ${index + 1}${index === 0 ? ", cover image" : ""}`}>
-        {photo.url ? <Image src={photo.url} alt={photo.alt_text ?? "Vehicle photo"} fill sizes="180px" unoptimized /> : <span className="photo-no-preview">Image saved</span>}
-        <button type="button" onClick={() => void removePhoto(photo)} aria-label={`Remove photo ${index + 1}`}><Trash2 size={13} /></button>
-        <div className="photo-actions"><button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Move photo ${index + 1} earlier`} disabled={index === 0}><ArrowUp size={12} /></button><button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Move photo ${index + 1} later`} disabled={index === photos.length - 1}><ArrowDown size={12} /></button>{index === 0 ? <span>Cover</span> : null}</div>
-      </div>)}</div>
-      <div className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!savedId) { setMessage("Save this vehicle first to enable photo uploads."); return; } if (files.some((file) => !file.type.startsWith("image/"))) { setMessage("Drop image files only."); return; } if (files.length) void uploadFiles(savedId, files); }}>
-        <ImagePlus size={20} /><strong>Add vehicle photos</strong><label className="photo-file-picker">Choose image files<input type="file" name="photos" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={photos.length >= 15 || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (savedId && files.length) { input.value = ""; void uploadFiles(savedId, files); } else if (files.length) setMessage(`${files.length} photo${files.length === 1 ? "" : "s"} selected. Save the vehicle to upload.`); }} /></label>
-        <p>{savedId ? `${photos.length} of 15 photos · Drop files here to upload` : "Select photos, then save the vehicle to upload them."}</p>
+    <div className="editor-main">
+      <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basic details</h2><div className="admin-form-grid">
+        <label className="admin-field span-all">Listing title<input name="title" defaultValue={defaults.title} required maxLength={180} placeholder="e.g. 2021 Toyota RAV4 Limited" /></label>
+        <label className="admin-field">Make<input name="make" defaultValue={defaults.make} required placeholder="Toyota" /></label>
+        <label className="admin-field">Model<input name="model" defaultValue={defaults.model} required placeholder="RAV4" /></label>
+        <label className="admin-field">Variant / trim<input name="variant" defaultValue={defaults.variant} placeholder="Limited" /></label>
+        <label className="admin-field">Year<input name="year" type="number" inputMode="numeric" min="1886" max="2200" defaultValue={defaults.year} /></label>
+        <label className="admin-field">Condition<select name="condition" defaultValue={vehicle?.condition ?? "used"}><option value="new">New</option><option value="used">Used</option></select></label>
+        <label className="admin-field">Mileage (km)<input name="mileage" type="number" inputMode="numeric" min="0" step="1" defaultValue={defaults.mileage} /></label>
+        <label className="admin-field span-all">Description<textarea name="description" defaultValue={defaults.description} maxLength={10000} rows={6} /></label>
+      </div></section>
+
+      <section className="admin-form-section" aria-labelledby="specs-heading"><h2 id="specs-heading">Specifications</h2><div className="admin-form-grid">
+        <label className="admin-field">Engine<input name="engine_capacity" defaultValue={defaults.engine_capacity} placeholder="2.5L" /></label>
+        <label className="admin-field">Fuel type<input name="fuel_type" defaultValue={defaults.fuel_type} placeholder="Gasoline" list="fuel-options" /></label>
+        <label className="admin-field">Transmission<input name="transmission" defaultValue={defaults.transmission} placeholder="Automatic" list="transmission-options" /></label>
+        <label className="admin-field">Drive type<input name="drive_type" defaultValue={defaults.drive_type} placeholder="AWD" /></label>
+        <label className="admin-field">Body type<input name="body_type" defaultValue={defaults.body_type} placeholder="SUV" list="body-options" /></label>
+        <label className="admin-field">Exterior color<input name="exterior_color" defaultValue={defaults.exterior_color} /></label>
+        <label className="admin-field">Interior color<input name="interior_color" defaultValue={defaults.interior_color} /></label>
+        <label className="admin-field">Seats<input name="seats" type="number" inputMode="numeric" min="1" max="100" defaultValue={defaults.seats} /></label>
+        <label className="admin-field">Doors<input name="doors" type="number" inputMode="numeric" min="1" max="20" defaultValue={defaults.doors} /></label>
       </div>
-      {uploadProgress ? <p className="admin-feedback" role="status" aria-live="polite"><LoaderCircle size={14} className="spin" /> Preparing and uploading photo {uploadProgress.current} of {uploadProgress.total}: {uploadProgress.name}</p> : null}
-    </section>
-    <section className="admin-form-section"><h2>Publishing</h2><div className="admin-checkbox-row"><label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} />Feature this vehicle on the homepage</label><label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} />Publish on the public website</label></div></section>
-    <div className="admin-form-footer"><div>{state.error ? <p className="admin-feedback admin-error" role="alert">{state.error}</p> : message ? <p className="admin-feedback" role="status"><Check size={14} /> {message}</p> : <p className="admin-feedback">Changes are saved to your dealership website.</p>}</div><div className="admin-row-actions"><Link href="/admin/inventory">Cancel</Link>{savedId ? <button className="danger-button" type="button" disabled={pending || uploading} onClick={() => { if (!window.confirm("Permanently delete this vehicle and its photo records?")) return; const data = new FormData(); data.set("id", savedId); setDeleting(true); startTransition(async () => { const result = await deleteVehicleAction(data); setDeleting(false); if (result.error) { setState(result); setMessage(""); return; } if (result.warning) window.alert(result.warning); router.push("/admin/inventory"); }); }}>{deleting ? "Deleting…" : "Delete"}</button> : null}<button className="button button-dark" type="submit" disabled={pending || uploading}>{pending && !deleting ? "Saving…" : "Save vehicle"}</button></div></div>
+      <datalist id="fuel-options"><option value="Gasoline" /><option value="Diesel" /><option value="Hybrid" /><option value="Electric" /></datalist>
+      <datalist id="transmission-options"><option value="Automatic" /><option value="Manual" /><option value="CVT" /></datalist>
+      <datalist id="body-options"><option value="SUV" /><option value="Sedan" /><option value="Hatchback" /><option value="Pickup" /><option value="Van" /><option value="Coupe" /></datalist></section>
+
+      <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><h2 id="photos-heading">Photos</h2><span className="muted">{photos.length} / 15</span></div>
+        {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Vehicle photos">{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}`} key={photo.id} role="listitem" draggable onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData("text/plain")); void reorderPhoto(from, index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Photo ${index + 1}${index === 0 ? ", cover photo" : ""}`}>
+          {photo.url ? <Image src={photo.url} alt={photo.alt_text ?? "Vehicle photo"} fill sizes="200px" unoptimized /> : <span className="photo-no-preview">Image saved</span>}
+          {index === 0 ? <span className="cover-label">Cover</span> : null}
+          <button className="photo-remove" type="button" onClick={() => { if (window.confirm("Remove this photo?")) void removePhoto(photo); }} aria-label={`Remove photo ${index + 1}`}><Trash2 size={14} /></button>
+          <div className="photo-actions">
+            <button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Move photo ${index + 1} earlier`} disabled={index === 0}><ArrowLeft size={14} /></button>
+            {index > 0 ? <button type="button" className="photo-cover-button" onClick={() => void reorderPhoto(index, 0)} aria-label={`Use photo ${index + 1} as cover`}>Set cover</button> : null}
+            <button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Move photo ${index + 1} later`} disabled={index === photos.length - 1}><ArrowRight size={14} /></button>
+          </div>
+        </div>)}</div> : null}
+        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!savedId) { setMessage("Save this vehicle first to enable photo uploads."); return; } if (files.some((file) => !file.type.startsWith("image/"))) { setMessage("Drop image files only."); return; } if (files.length) void uploadFiles(savedId, files); }}>
+          <ImagePlus size={24} aria-hidden="true" />
+          <label className="photo-file-picker">Choose photos<input type="file" name="photos" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={photos.length >= 15 || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (savedId && files.length) { input.value = ""; void uploadFiles(savedId, files); } else if (files.length) setMessage(`${files.length} photo${files.length === 1 ? "" : "s"} selected. They upload when you save.`); }} /></label>
+          <p>{savedId ? "or drag photos here · JPEG, PNG, WebP or AVIF up to 15 MB" : "Photos upload when you save the car."}</p>
+        </div>
+        {uploadProgress ? <div className="upload-progress" role="status" aria-live="polite"><div className="upload-progress-bar"><span style={{ width: `${Math.max(progress, 6)}%` }} /></div><p><LoaderCircle size={14} className="spin" aria-hidden="true" /> Uploading {uploadProgress.current} of {uploadProgress.total}: {uploadProgress.name}</p></div> : null}
+      </section>
+
+      <section className="admin-form-section" aria-labelledby="features-heading"><h2 id="features-heading">Features</h2>
+        <div className="feature-chips">{commonFeatures.map((feature) => <label className={`feature-chip${selectedFeatures.includes(feature) ? " is-on" : ""}`} key={feature}><input type="checkbox" checked={selectedFeatures.includes(feature)} onChange={(event) => toggledFeature(feature, event.target.checked)} />{feature}</label>)}</div>
+        <label className="admin-field" style={{ marginTop: 18 }}>All features <span className="help-text">One per line</span><textarea name="features" value={featureText} onChange={(event) => setFeatureText(event.target.value)} rows={4} /></label>
+      </section>
+    </div>
+
+    <div className="editor-side">
+      <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
+        <div className="price-field"><label className="admin-field">Price<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label></div>
+        <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
+        <label className="admin-field">Stock number<input name="stock_number" defaultValue={defaults.stock_number} /></label>
+        <div className="admin-switches">
+          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} /><span><strong>Published</strong><small>Visible on the website</small></span></label>
+          <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Featured</strong><small>Shown on the homepage</small></span></label>
+        </div>
+      </div></section>
+      <section className="admin-form-section" aria-labelledby="private-heading"><h2 id="private-heading">Private</h2><div className="admin-form-grid single">
+        <label className="admin-field">VIN<input name="vin" defaultValue={defaults.vin} autoComplete="off" /></label>
+        <label className="admin-field">Staff notes<textarea name="admin_notes" defaultValue={defaults.admin_notes} rows={4} /></label>
+        <p className="help-text">Only staff can see these fields.</p>
+      </div></section>
+    </div>
+
+    <div className="admin-form-footer"><div>{state.error ? <p className="admin-feedback admin-error" role="alert">{state.error}</p> : message ? <p className="admin-feedback" role="status"><Check size={14} /> {message}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={pending || uploading} onClick={() => { if (!window.confirm("Permanently delete this vehicle and its photo records?")) return; const data = new FormData(); data.set("id", savedId); setDeleting(true); startTransition(async () => { const result = await deleteVehicleAction(data); setDeleting(false); if (result.error) { setState(result); setMessage(""); return; } if (result.warning) window.alert(result.warning); router.push("/admin/inventory"); }); }}>{deleting ? "Deleting…" : "Delete"}</button> : null}<Link className="button button-ghost" href="/admin/inventory">Cancel</Link><button className="button button-primary" type="submit" disabled={pending || uploading}>{pending && !deleting ? "Saving…" : savedId ? "Save changes" : "Save car"}</button></div></div>
   </form>;
 }

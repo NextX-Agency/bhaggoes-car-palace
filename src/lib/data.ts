@@ -109,6 +109,14 @@ export async function getRecentVehicles(limit = 4) {
   return error || !data ? [] : attachVehicleMedia(data, client);
 }
 
+export async function getAvailableCount() {
+  const client = await clientOrNull();
+  if (!client) return 0;
+  const { count, error } = await client.from("vehicles").select("id", { count: "exact", head: true })
+    .eq("published", true).eq("availability", "available").is("archived_at", null);
+  return error ? 0 : count ?? 0;
+}
+
 export async function getVehicleBySlug(slug: string) {
   const client = await clientOrNull();
   if (!client) return null;
@@ -130,13 +138,15 @@ export async function getVehiclesByIds(ids: string[]) {
 
 export async function getVehicleFilterOptions() {
   const client = await clientOrNull();
-  if (!client) return { makes: [], fuels: [], transmissions: [], bodyTypes: [] };
+  if (!client) return { makes: [] as string[], fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], makeCounts: {} as Record<string, number> };
   const { data } = await client.from("vehicles")
     .select("make, fuel_type, transmission, body_type")
     .eq("published", true).is("archived_at", null).limit(1000);
   const distinct = (key: "make" | "fuel_type" | "transmission" | "body_type") =>
     Array.from(new Set((data ?? []).map((row) => row[key]).filter((value): value is string => Boolean(value)))).sort();
-  return { makes: distinct("make"), fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type") };
+  const makeCounts: Record<string, number> = {};
+  for (const row of data ?? []) if (row.make) makeCounts[row.make] = (makeCounts[row.make] ?? 0) + 1;
+  return { makes: distinct("make"), fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type"), makeCounts };
 }
 
 export async function getPublishedPage(slug: string) {

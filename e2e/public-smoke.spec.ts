@@ -3,30 +3,25 @@ import { expect, test } from "@playwright/test";
 test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Browse Our Cars");
-  await expect(page.getByRole("link", { name: /browse inventory/i }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "No vehicles listed yet" })).toBeVisible();
-  await page.getByRole("link", { name: /browse inventory/i }).first().click();
+  await expect(page.getByRole("heading", { name: "No cars are listed right now" })).toBeVisible();
+  await page.getByRole("link", { name: "View inventory" }).click();
   await expect(page).toHaveURL(/\/cars$/);
-  await expect(page.getByRole("heading", { name: "Available Cars" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cars for sale" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Inventory" }).first()).toHaveAttribute("aria-current", "page");
 });
 
 test("homepage vehicle search sends all selected filters to inventory", async ({ page }) => {
   await page.goto("/");
-  const search = page.locator(".hero-search-advanced");
+  const search = page.getByRole("search", { name: "Search cars" });
   await search.getByLabel("Model").fill("Corolla");
   await search.getByLabel("Year").fill("2022");
-  await search.getByLabel("Condition").selectOption("used");
-  await search.getByLabel("Price from").fill("10000");
-  await search.getByLabel("Price to").fill("25000");
-  await search.getByLabel("Availability").selectOption("available");
-  await search.getByRole("button", { name: /search inventory/i }).click();
+  await search.getByLabel("Max price").fill("25000");
+  await search.getByRole("button", { name: /search cars/i }).click();
   await expect(page).toHaveURL(/\/cars\?.*model=Corolla/);
   await expect(page).toHaveURL(/year=2022/);
-  await expect(page).toHaveURL(/condition=used/);
-  await expect(page).toHaveURL(/minPrice=10000/);
   await expect(page).toHaveURL(/maxPrice=25000/);
-  await expect(page).toHaveURL(/availability=available/);
-  await expect(page.getByRole("heading", { name: "Available Cars" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cars for sale" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Remove filter Corolla" })).toBeVisible();
 });
 
 test("inventory filters persist in the URL and show a useful empty state", async ({ page }) => {
@@ -34,10 +29,14 @@ test("inventory filters persist in the URL and show a useful empty state", async
   await page.getByLabel("Search").fill("Toyota");
   await page.getByRole("button", { name: /apply filters/i }).click();
   await expect(page).toHaveURL(/search=Toyota/);
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("Sort by").selectOption("price-asc");
-  await page.getByRole("button", { name: /apply filters/i }).click();
   await expect(page).toHaveURL(/sort=price-asc/);
-  await expect(page.getByRole("heading", { name: "No cars match those filters" })).toBeVisible();
+  await expect(page).toHaveURL(/search=Toyota/);
+  await expect(page.getByRole("heading", { name: "No cars match your filters" })).toBeVisible();
+  await page.getByRole("link", { name: /Remove filter/ }).click();
+  await expect(page).not.toHaveURL(/search=Toyota/);
+  await expect(page).toHaveURL(/sort=price-asc/);
 });
 
 test("mobile inventory filters open in an accessible drawer and apply to the URL", async ({ page }) => {
@@ -46,7 +45,7 @@ test("mobile inventory filters open in an accessible drawer and apply to the URL
   const filterButton = page.getByRole("button", { name: /filters/i });
   await expect(filterButton).toBeVisible();
   await filterButton.click();
-  const drawer = page.getByRole("dialog", { name: "Refine your search" });
+  const drawer = page.getByRole("dialog", { name: "Filter cars" });
   await expect(drawer).toBeVisible();
   await drawer.getByLabel("Search").fill("Toyota");
   await drawer.getByRole("button", { name: /apply filters/i }).click();
@@ -93,7 +92,7 @@ test("admin sends an unconfigured project to setup guidance", async ({ page }) =
 test("mobile navigation opens and inventory fits the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.locator(".hero-search-advanced")).toBeVisible();
+  await expect(page.getByRole("search", { name: "Search cars" })).toBeVisible();
   const homeWidths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
   expect(homeWidths.page).toBeLessThanOrEqual(homeWidths.viewport);
   await page.getByRole("button", { name: "Open menu" }).click();

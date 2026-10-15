@@ -1,59 +1,87 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { VehicleGrid } from "@/components/vehicle-grid";
+import { ArrowLeft, ArrowRight, SearchX, X } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { MobileFilterDrawer } from "@/components/mobile-filter-drawer";
+import { SortSelect } from "@/components/sort-select";
+import { VehicleFilterForm, sortLabels } from "@/components/vehicle-filter-form";
+import { VehicleGrid } from "@/components/vehicle-grid";
 import { getVehicles, getVehicleFilterOptions } from "@/lib/data";
 import type { Availability, VehicleCondition, VehicleFilters } from "@/lib/domain";
+import { availabilityLabels, formatMileage } from "@/lib/domain";
 
-export const metadata: Metadata = { title: "Browse Cars", description: "Search current Bhaggoes Car Palace vehicle listings by make, price, year, condition, and more.", alternates: { canonical: "/cars" } };
+export const metadata: Metadata = { title: "Cars for Sale", description: "Search current Bhaggoes Car Palace vehicle listings by make, price, year, condition, and more.", alternates: { canonical: "/cars" } };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-type FilterOptions = Awaited<ReturnType<typeof getVehicleFilterOptions>>;
 const one = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 const numberValue = (value: string | string[] | undefined) => { const parsed = Number(one(value)); return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined; };
+const filterKeys = ["search", "make", "model", "year", "minPrice", "maxPrice", "minMileage", "maxMileage", "fuel", "transmission", "bodyType", "condition", "availability"] as const;
+const number = (value: number) => new Intl.NumberFormat("en-US").format(value);
 
 export default async function CarsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
+  const sort = one(params.sort);
   const filters: VehicleFilters = {
-    search: one(params.search), make: one(params.make), model: one(params.model), year: numberValue(params.year),
+    search: one(params.search) || undefined, make: one(params.make) || undefined, model: one(params.model) || undefined, year: numberValue(params.year),
     minPrice: numberValue(params.minPrice), maxPrice: numberValue(params.maxPrice), minMileage: numberValue(params.minMileage), maxMileage: numberValue(params.maxMileage),
-    fuel: one(params.fuel), transmission: one(params.transmission), bodyType: one(params.bodyType),
-    condition: one(params.condition) as VehicleCondition | undefined, availability: one(params.availability) as Availability | undefined,
-    sort: (one(params.sort) as VehicleFilters["sort"]) ?? "newest", page: numberValue(params.page) ?? 1,
+    fuel: one(params.fuel) || undefined, transmission: one(params.transmission) || undefined, bodyType: one(params.bodyType) || undefined,
+    condition: (one(params.condition) || undefined) as VehicleCondition | undefined, availability: (one(params.availability) || undefined) as Availability | undefined,
+    sort: sort && sort in sortLabels ? sort as VehicleFilters["sort"] : "newest", page: numberValue(params.page) ?? 1,
   };
   const [{ vehicles, total, page, pageSize }, options] = await Promise.all([getVehicles(filters), getVehicleFilterOptions()]);
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) if (key !== "page" && value && !Array.isArray(value)) query.set(key, value);
+
+  const active = filterKeys.flatMap((key) => filters[key] ? [[key, String(filters[key])] as [string, string]] : []);
+  const query = (entries: [string, string][]) => { const search = new URLSearchParams(entries); return search.size ? `/cars?${search}` : "/cars"; };
+  const sortEntry: [string, string][] = filters.sort && filters.sort !== "newest" ? [["sort", filters.sort]] : [];
+  const pageHref = (target: number) => query([...active, ...sortEntry, ...(target > 1 ? [["page", String(target)] as [string, string]] : [])]);
   const pageCount = Math.ceil(total / pageSize);
-  const activeFilterCount = Object.entries(filters).filter(([key, value]) => !["sort", "page", "pageSize"].includes(key) && Boolean(value)).length;
+  const chipLabel = (key: string, value: string) => {
+    switch (key) {
+      case "search": return `“${value}”`;
+      case "minPrice": return `From ${number(Number(value))}`;
+      case "maxPrice": return `Up to ${number(Number(value))}`;
+      case "minMileage": return `From ${formatMileage(Number(value))}`;
+      case "maxMileage": return `Up to ${formatMileage(Number(value))}`;
+      case "availability": return availabilityLabels[value as Availability] ?? value;
+      case "condition": return value === "new" ? "New" : "Used";
+      default: return value;
+    }
+  };
+
   return <div className="container page-wrap inventory-page">
-    <div className="page-intro page-intro-row"><h1>Available Cars</h1><Link href="/compare" className="text-link">Compare cars ↗</Link></div>
+    <div className="inventory-head">
+      <div>
+        <h1>Cars for sale</h1>
+        <p><strong>{total}</strong> {total === 1 ? "car" : "cars"}{active.length ? " match your filters" : " listed"}</p>
+      </div>
+      <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link>
+    </div>
     <div className="inventory-layout">
-      <aside className="filter-panel"><div className="filter-heading"><h2><SlidersHorizontal size={18} /> Refine your search</h2><Link href="/cars" aria-label="Clear filters"><X size={16} /> Clear</Link></div>
+      <aside className="filter-panel" aria-label="Filters">
+        <div className="filter-heading"><h2>Filters</h2>{active.length ? <Link href="/cars">Clear all</Link> : null}</div>
         <VehicleFilterForm filters={filters} options={options} />
       </aside>
-      <div className="inventory-results"><div className="results-bar"><div className="results-count"><div className="mobile-filter-trigger"><MobileFilterDrawer activeCount={activeFilterCount}><VehicleFilterForm filters={filters} options={options} /></MobileFilterDrawer></div><p><strong>{total}</strong> {total === 1 ? "car" : "cars"} found</p></div><form className="sort-compact" action="/cars">{Object.entries(params).map(([key, value]) => key !== "page" && key !== "sort" ? (Array.isArray(value) ? value.map((entry, index) => <input key={`${key}-${index}`} type="hidden" name={key} value={entry} />) : value ? <input key={key} type="hidden" name={key} value={value} /> : null) : null)}<label htmlFor="sort-compact">Sort</label><select id="sort-compact" name="sort" defaultValue={filters.sort}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="price-asc">Price: low first</option><option value="price-desc">Price: high first</option><option value="year-desc">Year: newest</option><option value="mileage-asc">Mileage: lowest</option></select><button aria-label="Sort inventory">↗</button></form></div>
-        <VehicleGrid vehicles={vehicles} emptyTitle={activeFilterCount ? "No cars match those filters" : "No vehicles listed yet"} emptyText={activeFilterCount ? "Try a broader search or reset the filters." : "Contact us to ask about current availability."} emptyHref={activeFilterCount ? "/cars" : "/contact"} emptyAction={activeFilterCount ? "Clear filters" : "Contact us"} />
-        {pageCount > 1 ? <nav className="pagination" aria-label="Inventory pages"><span>Page {page} of {pageCount}</span><div>{page > 1 ? <Link href={`/cars?${query.toString()}&page=${page - 1}`}>← Previous</Link> : null}{page < pageCount ? <Link href={`/cars?${query.toString()}&page=${page + 1}`}>Next →</Link> : null}</div></nav> : null}
+      <div className="inventory-results">
+        <div className="results-bar">
+          <div className="results-count">
+            <div className="mobile-filter-trigger"><MobileFilterDrawer activeCount={active.length} formId="mobile-filters"><VehicleFilterForm filters={filters} options={options} id="mobile-filters" /></MobileFilterDrawer></div>
+            <p>Showing {vehicles.length ? `${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + vehicles.length}` : 0} of <strong>{total}</strong></p>
+          </div>
+          <SortSelect value={filters.sort ?? "newest"} hidden={active} labels={sortLabels} />
+        </div>
+        {active.length ? <div className="active-filters" aria-label="Active filters">
+          {active.map(([key, value]) => <Link className="chip" key={key} href={query([...active.filter(([other]) => other !== key), ...sortEntry])} aria-label={`Remove filter ${chipLabel(key, value)}`}>{chipLabel(key, value)}<X size={14} aria-hidden="true" /></Link>)}
+          <Link className="chip chip-clear" href={query(sortEntry)}>Clear all</Link>
+        </div> : null}
+        {vehicles.length
+          ? <VehicleGrid vehicles={vehicles} priorityCount={3} />
+          : active.length
+            ? <EmptyState title="No cars match your filters" href={query(sortEntry)} action="Clear filters" icon={<SearchX size={22} />} />
+            : <EmptyState title="No cars are listed right now" text="New listings appear here as soon as they are published." href="/contact" action="Ask about availability" />}
+        {pageCount > 1 ? <nav className="pagination" aria-label="Inventory pages">
+          <span>Page {page} of {pageCount}</span>
+          <div>{page > 1 ? <Link href={pageHref(page - 1)} rel="prev"><ArrowLeft size={16} /> Previous</Link> : null}{page < pageCount ? <Link href={pageHref(page + 1)} rel="next">Next <ArrowRight size={16} /></Link> : null}</div>
+        </nav> : null}
       </div>
     </div>
   </div>;
-}
-
-function VehicleFilterForm({ filters, options }: { filters: VehicleFilters; options: FilterOptions }) {
-  return <form className="filter-form" action="/cars">
-    <label>Search<input name="search" defaultValue={filters.search} placeholder="Make, model, or keyword" /></label>
-    <label>Make<select name="make" defaultValue={filters.make ?? ""}><option value="">All makes</option>{options.makes.map((make) => <option key={make}>{make}</option>)}</select></label>
-    <label>Model<input name="model" defaultValue={filters.model} placeholder="Any model" /></label>
-    <label>Year<input name="year" type="number" min="1886" max="2200" defaultValue={filters.year} placeholder="Any year" /></label>
-    <div className="filter-two"><label>Price from<input name="minPrice" type="number" min="0" defaultValue={filters.minPrice} placeholder="No min" /></label><label>Price to<input name="maxPrice" type="number" min="0" defaultValue={filters.maxPrice} placeholder="No max" /></label></div>
-    <div className="filter-two"><label>Mileage from<input name="minMileage" type="number" min="0" defaultValue={filters.minMileage} placeholder="No min" /></label><label>Mileage to<input name="maxMileage" type="number" min="0" defaultValue={filters.maxMileage} placeholder="No max" /></label></div>
-    <label>Fuel<select name="fuel" defaultValue={filters.fuel ?? ""}><option value="">Any fuel</option>{options.fuels.map((fuel) => <option key={fuel}>{fuel}</option>)}</select></label>
-    <label>Transmission<select name="transmission" defaultValue={filters.transmission ?? ""}><option value="">Any transmission</option>{options.transmissions.map((item) => <option key={item}>{item}</option>)}</select></label>
-    <label>Body type<select name="bodyType" defaultValue={filters.bodyType ?? ""}><option value="">Any body type</option>{options.bodyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-    <label>Condition<select name="condition" defaultValue={filters.condition ?? ""}><option value="">New or used</option><option value="new">New</option><option value="used">Used</option></select></label>
-    <label>Availability<select name="availability" defaultValue={filters.availability ?? ""}><option value="">Any status</option><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="rental">Rental</option><option value="sold">Sold</option></select></label>
-    <label>Sort by<select name="sort" defaultValue={filters.sort}><option value="newest">Newest arrivals</option><option value="oldest">Oldest arrivals</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="year-desc">Year: newest first</option><option value="mileage-asc">Mileage: low to high</option></select></label>
-    <button className="button button-dark filter-submit" type="submit"><Search size={16} /> Apply filters</button>
-  </form>;
 }
