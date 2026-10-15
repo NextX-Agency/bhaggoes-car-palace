@@ -120,14 +120,45 @@ export async function duplicateVehicleAction(form: FormData) {
 }
 
 export async function updateVehicleAction(form: FormData) {
-  const id = text(form, "id"); const status = text(form, "availability"); const published = text(form, "published"); const featured = text(form, "featured");
+  const id = text(form, "id"); if (!z.string().uuid().safeParse(id).success) return;
+  const status = text(form, "availability"); const published = text(form, "published"); const featured = text(form, "featured"); const archived = text(form, "archived");
   const payload: Record<string, unknown> = {};
   if (["available", "on_the_way", "reserved", "sold", "rental"].includes(status)) payload.availability = status;
   if (published) payload.published = published === "true";
   if (featured) payload.featured = featured === "true";
+  if (archived === "true") payload.archived_at = new Date().toISOString();
+  if (archived === "false") payload.archived_at = null;
   if (!Object.keys(payload).length) return;
-  const supabase = await verifyAdmin(); await supabase.from("vehicles").update(payload).eq("id", id);
+  const supabase = await verifyAdmin();
+  const { error } = await supabase.from("vehicles").update(payload).eq("id", id);
+  if (error) throw new Error("The vehicle update could not be saved.");
   revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+}
+
+export async function bulkUpdateVehiclesAction(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const idsResult = z.array(z.string().uuid()).min(1).max(100).safeParse((() => { try { return JSON.parse(text(form, "ids")); } catch { return null; } })());
+  if (!idsResult.success) return { error: "Select at least one vehicle and try again." };
+  const operation = text(form, "operation");
+  const status = text(form, "availability");
+  const payload: Record<string, unknown> = {};
+  if (operation === "publish") payload.published = true;
+  else if (operation === "unpublish") payload.published = false;
+  else if (operation === "feature") payload.featured = true;
+  else if (operation === "unfeature") payload.featured = false;
+  else if (operation === "archive") { payload.archived_at = new Date().toISOString(); payload.published = false; }
+  else if (operation === "restore") payload.archived_at = null;
+  else if (operation === "status" && ["available", "on_the_way", "reserved", "sold", "rental"].includes(status)) payload.availability = status;
+  else return { error: "Choose a valid action for the selected vehicles." };
+
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.from("vehicles").update(payload).in("id", idsResult.data);
+    if (error) return { error: "The selected vehicles could not be updated." };
+    revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    return { ok: true };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "The selected vehicles could not be updated." };
+  }
 }
 
 export async function saveSettingsAction(_previous: ActionState, form: FormData): Promise<ActionState> {
@@ -136,8 +167,8 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
     const businessHours = text(form, "business_hours").split("\n").map((line) => line.split(":" )).filter((parts) => parts.length >= 2).reduce<Record<string, string>>((result, parts) => { const day = parts[0].trim(); const hours = parts.slice(1).join(":").trim(); if (day && hours) result[day] = hours; return result; }, {});
     const socialLinks: Record<string, string> = {};
     for (const platform of ["instagram", "facebook", "youtube", "tiktok"]) { const value = text(form, platform); if (value) socialLinks[platform] = value; }
-    const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
-    const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(300).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), show_sold: z.boolean(), business_hours: z.record(z.string(), z.string()), social_links: z.record(z.string(), z.string()), logo_path: z.string().max(300).nullable() }).safeParse(settings);
+    const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), seo_title: text(form, "seo_title"), seo_description: text(form, "seo_description"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
+    const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(300).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), show_sold: z.boolean(), business_hours: z.record(z.string(), z.string()), social_links: z.record(z.string(), z.string()), logo_path: z.string().max(300).nullable() }).safeParse(settings);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Review the website details." };
     const { error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1);
     if (error) return { error: "Website settings could not be saved." };

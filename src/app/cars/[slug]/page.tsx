@@ -6,6 +6,7 @@ import { ContactForm } from "@/components/contact-form";
 import { FinanceCalculator } from "@/components/finance-calculator";
 import { VehicleActions } from "@/components/vehicle-actions";
 import { VehicleGallery } from "@/components/vehicle-gallery";
+import { VehicleShareButton } from "@/components/vehicle-share-button";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getSettings, getVehicleBySlug, getVehicles } from "@/lib/data";
 import { availabilityLabels, buildWhatsAppLink, formatAmount } from "@/lib/domain";
@@ -41,6 +42,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
     </div><aside className="detail-aside"><div className="detail-title"><span className={`tag tag-${vehicle.availability}`}>{availabilityLabels[vehicle.availability]}</span><p className="eyebrow">{vehicle.year ?? "Year available on request"} · {vehicle.make}</p><h1>{vehicle.model}{vehicle.variant ? ` ${vehicle.variant}` : ""}</h1><strong>{formatAmount(vehicle.price, vehicle.currency ?? settings.currency)}</strong></div>
       <div className="detail-quick-specs">{vehicle.mileage != null ? <span><Gauge size={17} />{new Intl.NumberFormat().format(vehicle.mileage)} km</span> : null}{vehicle.transmission ? <span><Settings2 size={17} />{vehicle.transmission}</span> : null}{vehicle.fuel_type ? <span><Fuel size={17} />{vehicle.fuel_type}</span> : null}</div>
       <VehicleActions vehicleId={vehicle.id} />
+      <VehicleShareButton title={title} businessName={settings.business_name} />
       {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer">Ask about this car on WhatsApp <ArrowUpRight size={16} /></a> : null}
       <div className="spec-list"><h2>Vehicle specifications</h2>{specifications.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
       <div className="detail-inquiry"><p className="eyebrow">Interested?</p><h2>Ask us about this car.</h2><ContactForm vehicleId={vehicle.id} vehicleName={title} /></div>

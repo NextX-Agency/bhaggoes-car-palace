@@ -55,6 +55,8 @@ create table public.site_settings (
   social_links jsonb not null default '{}'::jsonb,
   homepage_title text not null default 'Find a car that feels right.',
   homepage_subtitle text not null default 'Great cars. Straightforward prices.',
+  seo_title text not null default 'Bhaggoes Car Palace | Quality Cars, Honest Prices',
+  seo_description text not null default 'Browse the Bhaggoes Car Palace vehicle inventory and contact the dealership about a car.',
   about_text text,
   financing_enabled boolean not null default false,
   financing_notes text,
@@ -296,12 +298,22 @@ create policy vehicle_images_public_read on public.vehicle_images for select to 
 create policy vehicle_images_admin_manage on public.vehicle_images for all to authenticated
   using ((select private.is_admin())) with check ((select private.is_admin()));
 
-create policy features_public_read on public.features for select to anon, authenticated using (true);
+create policy features_public_read on public.features for select to anon, authenticated
+  using (exists (
+    select 1 from public.vehicle_features vf
+    join public.vehicles v on v.id = vf.vehicle_id
+    where vf.feature_id = features.id and v.published and v.archived_at is null and
+      (v.availability <> 'sold' or coalesce((select s.show_sold from public.site_settings s where s.id = 1), false))
+  ));
 create policy features_admin_manage on public.features for all to authenticated
   using ((select private.is_admin())) with check ((select private.is_admin()));
 
 create policy vehicle_features_public_read on public.vehicle_features for select to anon, authenticated
-  using (exists (select 1 from public.vehicles v where v.id = vehicle_id and v.published and v.archived_at is null));
+  using (exists (
+    select 1 from public.vehicles v
+    where v.id = vehicle_id and v.published and v.archived_at is null and
+      (v.availability <> 'sold' or coalesce((select s.show_sold from public.site_settings s where s.id = 1), false))
+  ));
 create policy vehicle_features_admin_manage on public.vehicle_features for all to authenticated
   using ((select private.is_admin())) with check ((select private.is_admin()));
 

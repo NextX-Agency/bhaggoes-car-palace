@@ -27,6 +27,7 @@ export interface Vehicle {
   stock_number?: string | null;
   featured: boolean;
   published: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
   images: VehicleImage[];
@@ -53,6 +54,8 @@ export interface SiteSettings {
   social_links: Record<string, string> | null;
   homepage_title: string;
   homepage_subtitle: string;
+  seo_title: string;
+  seo_description: string;
   about_text: string | null;
   financing_enabled: boolean;
   financing_notes: string | null;
@@ -93,6 +96,8 @@ export const defaultSettings: SiteSettings = {
   social_links: null,
   homepage_title: "Find a car that feels right.",
   homepage_subtitle: "Great cars. Straightforward prices.",
+  seo_title: "Bhaggoes Car Palace | Quality Cars, Honest Prices",
+  seo_description: "Browse the Bhaggoes Car Palace vehicle inventory and contact the dealership about a car.",
   about_text: null,
   financing_enabled: false,
   financing_notes: null,

@@ -12,6 +12,7 @@ const links = [
 
 export function SiteHeader({ settings }: { settings: SiteSettings }) {
   const [open, setOpen] = useState(false);
+  const visibleLinks = links.filter(([label]) => label !== "Financing" || settings.financing_enabled);
   return (
     <header className="site-header">
       <div className="topline"><div className="container topline-inner"><span>{settings.slogan}</span><span className="topline-note">A better way to find your next car</span></div></div>
@@ -20,7 +21,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
           <Image src={settings.logo_url || "/images/bhaggoes-logo-source.png"} alt={settings.business_name} width={260} height={104} priority unoptimized />
         </Link>
         <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}
+          {visibleLinks.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}
         </nav>
         <div className="nav-actions">
           <Link className="icon-link" href="/favorites" aria-label="Saved cars"><Heart size={19} /><span className="nav-action-label">Saved</span></Link>
@@ -31,7 +32,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
         </div>
       </div>
       {open ? <nav className="mobile-nav" aria-label="Mobile navigation">
-        {links.map(([label, href]) => <Link href={href} key={href} onClick={() => setOpen(false)}>{label}<span aria-hidden="true">↗</span></Link>)}
+        {visibleLinks.map(([label, href]) => <Link href={href} key={href} onClick={() => setOpen(false)}>{label}<span aria-hidden="true">↗</span></Link>)}
         <Link href="/compare" onClick={() => setOpen(false)}>Compare cars<span aria-hidden="true">↗</span></Link>
       </nav> : null}
     </header>

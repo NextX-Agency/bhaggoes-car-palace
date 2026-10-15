@@ -100,6 +100,15 @@ export async function getFeaturedVehicles(limit = 4) {
   return error || !data ? [] : attachVehicleMedia(data, client);
 }
 
+export async function getRecentVehicles(limit = 4) {
+  const client = await clientOrNull();
+  if (!client) return [] as Vehicle[];
+  const { data, error } = await client.from("vehicles").select("*")
+    .eq("published", true).is("archived_at", null)
+    .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
+  return error || !data ? [] : attachVehicleMedia(data, client);
+}
+
 export async function getVehicleBySlug(slug: string) {
   const client = await clientOrNull();
   if (!client) return null;
@@ -168,9 +177,9 @@ export async function getAdminStats() {
 export async function getAdminVehicles() {
   const client = await clientOrNull();
   if (!client) return [];
-  const { data, error } = await client.from("vehicles").select("id, slug, title, make, model, year, price, currency, availability, featured, published, archived_at, updated_at")
+  const { data, error } = await client.from("vehicles").select("*")
     .order("updated_at", { ascending: false });
-  return error || !data ? [] : data;
+  return error || !data ? [] : attachVehicleMedia(data, client);
 }
 
 export async function getAdminVehicle(id: string) {
