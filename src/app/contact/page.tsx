@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+import { Mail, MapPin, Phone } from "lucide-react";
+import { ContactForm } from "@/components/contact-form";
+import { getSettings } from "@/lib/data";
+
+export const metadata: Metadata = { title: "Contact", description: "Contact Bhaggoes Car Palace about its vehicles or send the dealership a question.", alternates: { canonical: "/contact" } };
+export default async function ContactPage() {
+  const settings = await getSettings();
+  const map = settings.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}` : null;
+  return <div className="container page-wrap"><div className="page-intro"><p className="eyebrow">We&apos;re ready to help</p><h1>Let&apos;s talk cars.</h1><p>Ask about a listing, request more details, or send a general question to the team.</p></div><div className="support-grid"><section className="support-card"><p className="eyebrow">Send a message</p><h2>How can we help?</h2><ContactForm /></section><aside><div className="support-card"><p className="eyebrow">Reach the dealership</p><h2>Contact details</h2><div className="contact-details">{settings.phone ? <a href={`tel:${settings.phone}`}><Phone size={16} />{settings.phone}</a> : <p><Phone size={16} />Phone details will be added soon</p>}{settings.email ? <a href={`mailto:${settings.email}`}><Mail size={16} />{settings.email}</a> : <p><Mail size={16} />Email details will be added soon</p>}{settings.address ? <a href={map ?? undefined} target="_blank" rel="noreferrer"><MapPin size={16} />{settings.address}</a> : <p><MapPin size={16} />Location details will be added soon</p>}</div>{settings.whatsapp ? <a className="button button-dark" href={`https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">Message on WhatsApp ↗</a> : null}</div>{settings.business_hours && Object.keys(settings.business_hours).length ? <div className="support-card" style={{ marginTop: 15 }}><p className="eyebrow">Visit or call</p><h2>Business hours</h2>{Object.entries(settings.business_hours).map(([day, hours]) => <p key={day} className="contact-details"><span>{day}: {hours}</span></p>)}</div> : null}</aside></div></div>;
+}
