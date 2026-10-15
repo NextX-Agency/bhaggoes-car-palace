@@ -10,6 +10,25 @@ test("homepage and inventory show a complete empty state", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Find your next car." })).toBeVisible();
 });
 
+test("homepage vehicle search sends all selected filters to inventory", async ({ page }) => {
+  await page.goto("/");
+  const search = page.locator(".hero-search-advanced");
+  await search.getByLabel("Model").fill("Corolla");
+  await search.getByLabel("Year").fill("2022");
+  await search.getByLabel("Condition").selectOption("used");
+  await search.getByLabel("Price from").fill("10000");
+  await search.getByLabel("Price to").fill("25000");
+  await search.getByLabel("Availability").selectOption("available");
+  await search.getByRole("button", { name: /search inventory/i }).click();
+  await expect(page).toHaveURL(/\/cars\?.*model=Corolla/);
+  await expect(page).toHaveURL(/year=2022/);
+  await expect(page).toHaveURL(/condition=used/);
+  await expect(page).toHaveURL(/minPrice=10000/);
+  await expect(page).toHaveURL(/maxPrice=25000/);
+  await expect(page).toHaveURL(/availability=available/);
+  await expect(page.getByRole("heading", { name: "Find your next car." })).toBeVisible();
+});
+
 test("inventory filters persist in the URL and show a useful empty state", async ({ page }) => {
   await page.goto("/cars");
   await page.getByLabel("Search").fill("Toyota");

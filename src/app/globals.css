@@ -59,3 +59,13 @@ dialog.image-lightbox{position:fixed;inset:0;z-index:100;width:100vw;height:100d
 .inventory-loading-intro{display:grid;gap:10px;margin-bottom:30px}.inventory-loading-intro .skeleton:first-child{width:130px;height:10px}.inventory-loading-intro .skeleton:nth-child(2){width:min(440px,88%);height:42px}.inventory-loading-intro .skeleton:last-child{width:min(520px,94%);height:14px}.inventory-loading-filters{display:grid;gap:12px}.inventory-loading-filters .skeleton{height:36px}.inventory-skeleton-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:16px}.inventory-skeleton-card{overflow:hidden;border:1px solid var(--line);border-radius:8px;background:#fff}.inventory-skeleton-image{display:block;aspect-ratio:1.62;border-radius:0}.inventory-skeleton-card>div{display:grid;gap:9px;padding:16px}.inventory-skeleton-card>div .skeleton:first-child{width:72%;height:19px}.inventory-skeleton-card>div .skeleton:nth-child(2){width:54%;height:12px}.inventory-skeleton-card>div .skeleton:last-child{width:100%;height:48px}
 @media(max-width:760px){.inventory-skeleton-grid{grid-template-columns:1fr}.inventory-skeleton-card:not(:first-child){display:none}.inventory-loading-filters{display:none}}
 .footer-socials{display:flex;flex-wrap:wrap;gap:12px}
+.hero-search-advanced{display:block;width:min(770px,68%);height:auto;padding:13px;border-radius:7px}
+.hero-search-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.hero-search-advanced label{display:grid;min-width:0;gap:5px;color:#405361;font-size:10px;font-weight:700}
+.hero-search-advanced input,.hero-search-advanced select{width:100%;min-width:0;min-height:38px;padding:8px 9px;border:1px solid #dce2e4;border-radius:5px;background:#fff;color:var(--ink);font-size:11px;font-weight:400;outline:0}
+.hero-search-advanced input::placeholder{color:#7a8790;opacity:1}
+.hero-search-advanced input:focus,.hero-search-advanced select:focus{border-color:#6ca6c8;box-shadow:0 0 0 3px rgba(22,120,189,.12)}
+.hero-search-advanced button{width:100%;height:38px;min-height:38px;justify-content:center;align-self:end;padding:0 10px;white-space:nowrap}
+@media(max-width:1000px){.search-band-inner{align-items:stretch;flex-direction:column;gap:19px}.hero-search-advanced{width:100%}}
+@media(max-width:760px){.hero-search-advanced{height:auto;padding:12px}.hero-search-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.hero-search-advanced button{grid-column:1/-1;height:43px}}
+@media(max-width:350px){.hero-search-fields{grid-template-columns:1fr}}

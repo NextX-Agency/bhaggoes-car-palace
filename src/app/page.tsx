@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Check, Search, ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
+import { ArrowUpRight, Check, ShieldCheck, SlidersHorizontal, WalletCards } from "lucide-react";
 import type { Metadata } from "next";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
@@ -17,7 +17,18 @@ export default async function HomePage() {
       <div className="hero-index"><span>01</span><i /><span>BHAGGOES CAR PALACE</span></div>
     </section>
 
-    <section className="search-band"><div className="container search-band-inner"><div><p className="eyebrow">Find your next car</p><h2>What are you looking for?</h2></div><form action="/cars" className="hero-search"><label htmlFor="home-search" className="sr-only">Search by make or model</label><Search size={19} aria-hidden="true" /><input id="home-search" name="search" placeholder="Try a make or model" /><button type="submit">Search inventory <ArrowUpRight size={15} /></button></form></div></section>
+    <section className="search-band"><div className="container search-band-inner"><div><p className="eyebrow">Find your next car</p><h2>What are you looking for?</h2></div><form action="/cars" className="hero-search hero-search-advanced">
+      <div className="hero-search-fields">
+        <label>Make<select name="make" defaultValue=""><option value="">All makes</option>{filterOptions.makes.map((make) => <option key={make}>{make}</option>)}</select></label>
+        <label>Model<input name="model" placeholder="Any model" /></label>
+        <label>Year<input name="year" type="number" min="1886" max="2200" placeholder="Any year" /></label>
+        <label>Condition<select name="condition" defaultValue=""><option value="">New or used</option><option value="new">New</option><option value="used">Used</option></select></label>
+        <label>Price from<input name="minPrice" type="number" min="0" placeholder="No minimum" /></label>
+        <label>Price to<input name="maxPrice" type="number" min="0" placeholder="No maximum" /></label>
+        <label>Availability<select name="availability" defaultValue=""><option value="">Any status</option><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="rental">Rental</option><option value="sold">Sold</option></select></label>
+        <button type="submit">Search inventory <ArrowUpRight size={15} /></button>
+      </div>
+    </form></div></section>
 
     {featured.length ? <section className="section section-inventory"><div className="container"><div className="section-heading"><div><p className="eyebrow">Featured by our team</p><h2>Cars to consider</h2><p className="section-subtitle">A few listings the team has chosen to highlight.</p></div><Link className="text-link" href="/cars">View all cars <ArrowUpRight size={16} /></Link></div><VehicleGrid vehicles={featured} /></div></section> : null}
 
