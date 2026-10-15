@@ -27,6 +27,6 @@ export function VehicleActions({ vehicleId, compact = false, name }: { vehicleId
   return <div className={`vehicle-actions${compact ? " compact" : ""}`}>
     <button type="button" className={`action-round${favorites.includes(vehicleId) ? " is-active" : ""}`} onClick={toggleFavorite} aria-label={favorites.includes(vehicleId) ? `Remove${suffix} from saved cars` : `Save${suffix}`} aria-pressed={favorites.includes(vehicleId)}><Heart size={compact ? 17 : 16} fill={favorites.includes(vehicleId) ? "currentColor" : "none"} />{compact ? null : <span>{favorites.includes(vehicleId) ? "Saved" : "Save"}</span>}</button>
     <button type="button" className={`action-round compare${compare.includes(vehicleId) ? " is-active" : ""}`} onClick={toggleCompare} aria-label={compare.includes(vehicleId) ? `Remove${suffix} from comparison` : `Compare${suffix}`} aria-pressed={compare.includes(vehicleId)}><ArrowLeftRight size={compact ? 16 : 15} />{compact ? null : <span>{compare.includes(vehicleId) ? "Comparing" : "Compare"}</span>}</button>
-    <span role="status" className="sr-only">{notice}</span>
+    <span role="status" className={notice ? "action-toast" : "sr-only"}>{notice}</span>
   </div>;
 }

@@ -1,14 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CarFront, ExternalLink, Files, Inbox, LayoutDashboard, LogOut, Settings2 } from "lucide-react";
+import { ExternalLink, LogOut } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
-
-const items = [["Overview", "/admin", LayoutDashboard], ["Inventory", "/admin/inventory", CarFront], ["Inquiries", "/admin/inquiries", Inbox], ["Website settings", "/admin/settings", Settings2], ["Pages & FAQs", "/admin/content", Files]] as const;
+import { AdminMobileNav } from "@/components/admin-mobile-nav";
+import { adminNavItems as items } from "@/lib/admin-nav";
 
 export function AdminFrame({ active, email, title, actions, children }: { active: string; email: string; title?: string; actions?: ReactNode; children: ReactNode }) {
   const heading = title ?? items.find((item) => item[1] === active)?.[0] ?? "Administration";
   return <div className="admin-page">
+    <AdminMobileNav active={active} email={email} />
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <Link href="/admin" className="admin-sidebar-brand" aria-label="Dashboard home"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="140px" loading="eager" /></Link>

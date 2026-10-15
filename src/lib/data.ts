@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { defaultSettings, type SiteSettings, type Vehicle, type VehicleFilters } from "@/lib/domain";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -9,7 +10,8 @@ async function clientOrNull() {
   try { return await createClient(); } catch { return null; }
 }
 
-export async function getSettings(): Promise<SiteSettings> {
+// Read by the root layout, its metadata and most pages; cache() keeps it to one query per request.
+export const getSettings = cache(async (): Promise<SiteSettings> => {
   const client = await clientOrNull();
   if (!client) return defaultSettings;
   const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
@@ -19,7 +21,7 @@ export async function getSettings(): Promise<SiteSettings> {
     ? settings.logo_path.startsWith("http") ? settings.logo_path : client.storage.from("site-assets").getPublicUrl(settings.logo_path).data.publicUrl
     : null;
   return settings;
-}
+});
 
 async function attachVehicleMedia(rows: Record<string, unknown>[], client: Awaited<ReturnType<typeof createClient>>) {
   if (!rows.length) return [] as Vehicle[];

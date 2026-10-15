@@ -105,3 +105,13 @@ test("mobile navigation opens and inventory fits the viewport", async ({ page })
   const adminWidths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
   expect(adminWidths.page).toBeLessThanOrEqual(adminWidths.viewport);
 });
+
+test("unknown pages and removed cars lead back to the inventory", async ({ page }) => {
+  for (const route of ["/this-page-does-not-exist", "/cars/a-car-that-was-sold"]) {
+    await page.goto(route);
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open menu" }).or(page.getByRole("navigation", { name: "Main navigation" }))).toBeVisible();
+    await page.getByRole("link", { name: "Browse available cars" }).click();
+    await expect(page).toHaveURL(/\/cars$/);
+  }
+});

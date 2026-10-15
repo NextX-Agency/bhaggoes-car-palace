@@ -71,7 +71,11 @@
    Base
    ========================================================================== */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--header-h) + 16px); }
+html { -webkit-text-size-adjust: 100%; }
+/* Keep anchor and focus targets clear of the sticky header. This is a margin on the targets rather than
+   scroll-padding on <html>: with scroll-padding, focusing a control inside the sticky header itself
+   (the menu button, a nav link) made Chrome scroll the whole page back to the top. */
+:where([id]) { scroll-margin-top: calc(var(--header-h) + 16px); }
 body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: var(--fs-body); line-height: 1.55; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 h1, h2, h3, h4 { margin: 0; font-family: var(--font-head); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
 main { flex: 1 0 auto; }
@@ -125,7 +129,16 @@ img { max-width: 100%; }
 .icon-button:hover { background: var(--surface); color: var(--ink); }
 .icon-button .count { position: absolute; top: 6px; right: 5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 700; line-height: 17px; text-align: center; }
 .menu-toggle { display: none; }
-.mobile-nav { display: none; }
+
+/* Mobile menu: a full-screen sheet portaled to <body>. It must not live inside .site-header,
+   whose backdrop-filter turns the header into the containing block for fixed descendants. */
+.mobile-menu-overlay { position: fixed; inset: 0; z-index: 60; background: #fff; }
+.mobile-menu { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; height: 100dvh; background: #fff; outline: none; animation: fade-in 0.16s var(--ease); }
+.mobile-menu-bar { flex: 0 0 auto; border-bottom: 1px solid var(--line); }
+.mobile-nav { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding-top: 8px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+.mobile-nav a { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 1.0625rem; font-weight: 500; }
+.mobile-nav a[aria-current="page"] { color: var(--brand); font-weight: 600; }
+.mobile-nav-actions { display: grid; gap: 10px; margin-top: 24px; }
 
 @media (max-width: 960px) {
   :root { --header-h: 64px; }
@@ -133,11 +146,8 @@ img { max-width: 100%; }
   .nav-actions { margin-left: auto; gap: 2px; }
   .menu-toggle { display: inline-grid; }
   .brand img { width: 136px; }
-  .mobile-nav { position: fixed; inset: var(--header-h) 0 0 0; z-index: 49; display: flex; flex-direction: column; padding: 8px var(--gutter) 24px; overflow-y: auto; background: #fff; animation: fade-in 0.16s var(--ease); }
-  .mobile-nav a { display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 1.0625rem; font-weight: 500; }
-  .mobile-nav a[aria-current="page"] { color: var(--brand); font-weight: 600; }
-  .mobile-nav-actions { display: grid; gap: 10px; margin-top: 24px; }
 }
+@media (min-width: 961px) { .mobile-menu, .mobile-menu-overlay { display: none; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ==========================================================================
@@ -261,6 +271,8 @@ textarea { resize: vertical; }
 
 /* Save / compare */
 .vehicle-actions { display: flex; align-items: center; gap: 8px; }
+.action-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 45; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: var(--r-sm); background: var(--navy); color: #fff; font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; box-shadow: var(--shadow-md); transform: translateX(-50%); pointer-events: none; animation: fade-in 0.16s var(--ease); }
+body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
 .action-round { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: #fff; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background-color 0.15s; }
 .action-round:hover { border-color: var(--ink); color: var(--ink); }
 .action-round.is-active { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
@@ -275,6 +287,8 @@ textarea { resize: vertical; }
 .empty-state h2, .empty-state h3 { font-size: 1.125rem; }
 .empty-state p { max-width: 44ch; color: var(--muted); font-size: var(--fs-sm); }
 .empty-state .button { margin-top: 10px; }
+.empty-state .error-title { font-size: 1.25rem; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* ==========================================================================
    Page shells
@@ -375,8 +389,8 @@ textarea { resize: vertical; }
 .detail-summary { display: grid; gap: 16px; padding: 24px; border: 1px solid var(--line); border-radius: var(--r-lg); background: #fff; }
 .detail-summary h1 { font-size: clamp(1.625rem, 1vw + 1.2rem, 2rem); line-height: 1.12; }
 .detail-summary .eyebrow { margin: 0 0 6px; }
-.detail-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.detail-price { font-family: var(--font-head); font-size: clamp(1.75rem, 1vw + 1.3rem, 2.125rem); font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.detail-head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.detail-price { font-family: var(--font-head); font-size: clamp(1.75rem, 1vw + 1.3rem, 2.125rem); font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .detail-price.is-request { font-size: 1.375rem; }
 .key-specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--line); }
 .key-specs div { display: grid; gap: 2px; padding: 12px 14px; background: #fff; }
@@ -413,7 +427,8 @@ textarea { resize: vertical; }
   .detail-summary { padding: 0; border: 0; }
   .detail-content > .detail-block:first-child { margin-top: 8px; }
   .inquiry-block { grid-template-columns: 1fr; gap: 16px; }
-  .detail-page { padding-bottom: 120px; }
+  /* The fixed contact bar sits over the end of the page, so the footer (not the listing) reserves room for it. */
+  body:has(.mobile-cta) .site-footer { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .mobile-cta { position: fixed; inset: auto 0 0 0; z-index: 40; display: flex; align-items: center; gap: 12px; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgb(255 255 255 / 0.97); backdrop-filter: blur(8px); box-shadow: 0 -8px 24px -16px rgb(13 23 38 / 0.25); }
   .mobile-cta-price { display: grid; min-width: 0; margin-right: auto; }
   .mobile-cta-price span { overflow: hidden; color: var(--muted); font-size: var(--fs-2xs); text-overflow: ellipsis; white-space: nowrap; }

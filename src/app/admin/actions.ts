@@ -110,7 +110,7 @@ export async function deleteVehicleAction(form: FormData): Promise<ActionState &
 }
 
 export async function duplicateVehicleAction(form: FormData) {
-  const id = text(form, "id");
+  const id = text(form, "id"); if (!z.string().uuid().safeParse(id).success) return;
   const supabase = await verifyAdmin();
   const { data: vehicle } = await supabase.from("vehicles").select("*").eq("id", id).single();
   if (!vehicle) return;
@@ -196,13 +196,17 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
 export async function updateInquiryAction(form: FormData) {
   const id = text(form, "id"); const status = text(form, "status");
   if (!z.string().uuid().safeParse(id).success || !["new", "contacted", "closed"].includes(status)) return;
-  const supabase = await verifyAdmin(); await supabase.from("inquiries").update({ status }).eq("id", id);
+  const supabase = await verifyAdmin();
+  const { error } = await supabase.from("inquiries").update({ status }).eq("id", id);
+  if (error) throw new Error("The inquiry status could not be saved.");
   revalidatePath("/admin/inquiries"); revalidatePath("/admin");
 }
 
 export async function deleteInquiryAction(form: FormData) {
   const id = text(form, "id"); if (!z.string().uuid().safeParse(id).success) return;
-  const supabase = await verifyAdmin(); await supabase.from("inquiries").delete().eq("id", id);
+  const supabase = await verifyAdmin();
+  const { error } = await supabase.from("inquiries").delete().eq("id", id);
+  if (error) throw new Error("The inquiry could not be deleted.");
   revalidatePath("/admin/inquiries"); revalidatePath("/admin");
 }
 
