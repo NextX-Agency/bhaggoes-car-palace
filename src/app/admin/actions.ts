@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { slugify } from "@/lib/domain";
+import { safeExternalUrl, slugify } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 
 type ActionState = { error?: string; ok?: boolean };
@@ -88,14 +88,25 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
   } catch (error) { return { error: error instanceof Error ? error.message : "Unable to save this vehicle." }; }
 }
 
-export async function deleteVehicleAction(form: FormData) {
+export async function deleteVehicleAction(form: FormData): Promise<ActionState & { warning?: string }> {
   const id = text(form, "id");
-  if (!z.string().uuid().safeParse(id).success) return;
-  const supabase = await verifyAdmin();
-  const { data: images } = await supabase.from("vehicle_images").select("storage_path").eq("vehicle_id", id);
-  if (images?.length) await supabase.storage.from("vehicle-images").remove(images.map((image) => image.storage_path));
-  await supabase.from("vehicles").delete().eq("id", id);
-  revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+  if (!z.string().uuid().safeParse(id).success) return { error: "This vehicle could not be identified." };
+  try {
+    const supabase = await verifyAdmin();
+    const { data: images, error: imageReadError } = await supabase.from("vehicle_images").select("storage_path").eq("vehicle_id", id);
+    if (imageReadError) return { error: "The vehicle photos could not be checked. Nothing was deleted." };
+    const { error: deleteError } = await supabase.from("vehicles").delete().eq("id", id).select("id").single();
+    if (deleteError) return { error: "The vehicle could not be deleted." };
+    let warning: string | undefined;
+    if (images.length) {
+      const { error: storageError } = await supabase.storage.from("vehicle-images").remove(images.map((image) => image.storage_path));
+      if (storageError) warning = "The vehicle was deleted, but its stored photo files could not be removed. Check Supabase Storage to clean up the remaining files.";
+    }
+    revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+    return warning ? { ok: true, warning } : { ok: true };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "The vehicle could not be deleted." };
+  }
 }
 
 export async function duplicateVehicleAction(form: FormData) {
@@ -166,7 +177,13 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
     const supabase = await verifyAdmin();
     const businessHours = text(form, "business_hours").split("\n").map((line) => line.split(":" )).filter((parts) => parts.length >= 2).reduce<Record<string, string>>((result, parts) => { const day = parts[0].trim(); const hours = parts.slice(1).join(":").trim(); if (day && hours) result[day] = hours; return result; }, {});
     const socialLinks: Record<string, string> = {};
-    for (const platform of ["instagram", "facebook", "youtube", "tiktok"]) { const value = text(form, platform); if (value) socialLinks[platform] = value; }
+    for (const platform of ["instagram", "facebook", "youtube", "tiktok"]) {
+      const value = text(form, platform);
+      if (!value) continue;
+      const safeUrl = safeExternalUrl(value);
+      if (!safeUrl) return { error: `Enter a valid HTTP or HTTPS URL for ${platform}.` };
+      socialLinks[platform] = safeUrl;
+    }
     const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), seo_title: text(form, "seo_title"), seo_description: text(form, "seo_description"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
     const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(300).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), show_sold: z.boolean(), business_hours: z.record(z.string(), z.string()), social_links: z.record(z.string(), z.string()), logo_path: z.string().max(300).nullable() }).safeParse(settings);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Review the website details." };

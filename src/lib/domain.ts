@@ -151,3 +151,13 @@ export function buildWhatsAppLink(number: string | null | undefined, message: st
   const phone = number?.replace(/\D/g, "");
   return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : null;
 }
+
+export function safeExternalUrl(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}

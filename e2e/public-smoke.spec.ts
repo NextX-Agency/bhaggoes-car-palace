@@ -4,7 +4,7 @@ test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Find a car that feels right.");
   await expect(page.getByRole("link", { name: /explore our cars/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Our next arrivals are on the way" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No vehicles listed yet" })).toBeVisible();
   await page.getByRole("link", { name: /explore our cars/i }).click();
   await expect(page).toHaveURL(/\/cars$/);
   await expect(page.getByRole("heading", { name: "Find your next car." })).toBeVisible();
@@ -41,6 +41,8 @@ test("admin sends an unconfigured project to setup guidance", async ({ page }) =
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login\?setup=1/);
   await expect(page.getByText(/Supabase is not connected yet/i)).toBeVisible();
+  await page.goto("/admin/inventory/00000000-0000-4000-8000-000000000000/preview");
+  await expect(page).toHaveURL(/\/admin\/login\?setup=1/);
 });
 
 test("mobile navigation opens and inventory fits the viewport", async ({ page }) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWhatsAppLink, calculateFinance, formatAmount, slugify } from "./domain";
+import { buildWhatsAppLink, calculateFinance, formatAmount, safeExternalUrl, slugify } from "./domain";
 
 describe("dealership helpers", () => {
   it("calculates a zero-interest loan without adding interest", () => {
@@ -25,6 +25,12 @@ describe("dealership helpers", () => {
   it("creates WhatsApp links only when a number is configured", () => {
     expect(buildWhatsAppLink("+597 123-4567", "Interested in the RAV4")).toBe("https://wa.me/5971234567?text=Interested%20in%20the%20RAV4");
     expect(buildWhatsAppLink(null, "Hello")).toBeNull();
+  });
+
+  it("allows only HTTP social URLs", () => {
+    expect(safeExternalUrl("https://instagram.com/bhaggoes")).toBe("https://instagram.com/bhaggoes");
+    expect(safeExternalUrl("javascript:alert(1)")).toBeNull();
+    expect(safeExternalUrl("mailto:hello@example.com")).toBeNull();
   });
 
   it("formats missing prices without inventing a value", () => {

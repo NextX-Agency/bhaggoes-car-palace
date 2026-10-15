@@ -10,7 +10,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   return <article className="vehicle-card">
     <div className="vehicle-card-media">
       <Link href={`/cars/${vehicle.slug}`} aria-label={`View ${vehicle.title}`}>
-        {image ? <Image src={image} alt={vehicle.images[0]?.alt_text ?? vehicle.title} fill sizes="(max-width: 700px) 90vw, (max-width: 1120px) 45vw, 28vw" className="vehicle-photo" /> : <div className="vehicle-image-empty"><span className="car-mark" aria-hidden="true">B</span><span>Photo coming soon</span></div>}
+        {image ? <Image src={image} alt={vehicle.images[0]?.alt_text ?? vehicle.title} fill sizes="(max-width: 700px) 90vw, (max-width: 1120px) 45vw, 28vw" className="vehicle-photo" /> : <div className="vehicle-image-empty"><span className="car-mark" aria-hidden="true">B</span><span>No photo available</span></div>}
       </Link>
       <div className="card-top-tags">{vehicle.featured ? <span className="tag tag-featured">Featured</span> : null}<span className={`tag tag-${vehicle.availability}`}>{availabilityLabels[vehicle.availability]}</span></div>
       <VehicleActions vehicleId={vehicle.id} compact />
