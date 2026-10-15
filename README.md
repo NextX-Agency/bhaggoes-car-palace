@@ -13,7 +13,7 @@ The production site also uses `NEXT_PUBLIC_SITE_URL` for canonical, sitemap, and
 
 ## First administrator
 
-Create the first staff account from Supabase Authentication using the dealership owner's email. Then open the Supabase SQL editor and grant that account the administrator role:
+Set the Supabase Auth Site URL to the deployed `/admin/setup` page. In Supabase Authentication → Users, send an invitation to the dealership owner's email. Then open the Supabase SQL editor and grant that account the administrator role:
 
 ```sql
 update public.profiles
@@ -23,7 +23,7 @@ where id = (
 );
 ```
 
-Replace the example email with the invited account's email. The auth trigger creates a `staff` profile automatically. Only an organization owner using the SQL editor should promote the first administrator; users cannot promote themselves from the website. Never put a service-role key in browser-visible environment variables.
+Replace the example email with the invited account's email. The auth trigger creates a `staff` profile automatically. The invited user follows the email link and sets a password at `/admin/setup`, then signs in at `/admin/login`. Only an organization owner using the SQL editor should promote the first administrator; users cannot promote themselves from the website. Never put a service-role key in browser-visible environment variables.
 
 ## Admin dashboard
 
@@ -37,7 +37,7 @@ The dashboard and public catalog rely on the database. No demonstration inventor
 
 ## Database and access model
 
-The migration at `supabase/migrations/20261015160738_dealership_platform.sql` creates inventory, private vehicle fields, media metadata, settings, FAQs, policy pages, profiles, and inquiries. Row Level Security is enabled on every application table. Anonymous visitors can read published public content and submit inquiries through a validated, rate-limited database function. Only administrator profiles can manage dealership content. VINs and staff notes live in a separate restricted table.
+The migration at `supabase/migrations/20261015182531_dealership_platform.sql` creates inventory, private vehicle fields, media metadata, settings, FAQs, policy pages, profiles, and inquiries. Row Level Security is enabled on every application table. Anonymous visitors can read published public content and submit inquiries through a validated, rate-limited database function. Only administrator profiles can manage dealership content. VINs and staff notes live in a separate restricted table.
 
 ## Commands
 
