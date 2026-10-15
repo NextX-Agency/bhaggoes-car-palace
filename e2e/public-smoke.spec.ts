@@ -4,7 +4,7 @@ test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Browse Our Cars");
   await expect(page.getByRole("heading", { name: "No cars are listed right now" })).toBeVisible();
-  await page.getByRole("link", { name: "View inventory" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Inventory" }).click();
   await expect(page).toHaveURL(/\/cars$/);
   await expect(page.getByRole("heading", { name: "Cars for sale" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Inventory" }).first()).toHaveAttribute("aria-current", "page");
@@ -65,7 +65,7 @@ test("supporting public pages render on direct visits", async ({ page }) => {
 test("contact form requires a return address and reports unavailable delivery", async ({ page }) => {
   await page.goto("/contact");
   await page.getByLabel("Your name").fill("Test Customer");
-  await page.getByLabel("How can we help?").fill("Is this car available?");
+  await page.getByLabel("Message", { exact: true }).fill("Is this car available?");
   await page.getByRole("button", { name: /send inquiry/i }).click();
   await expect(page.getByRole("status")).toHaveText("Enter an email address or phone number.");
   await page.getByLabel(/Email/).fill("test@example.com");
@@ -77,7 +77,7 @@ test("financing stays unpublished until the dealership enables it", async ({ pag
   await page.goto("/");
   await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Financing" })).toHaveCount(0);
   await page.goto("/financing");
-  await expect(page.getByText(/has not published financing details/i)).toBeVisible();
+  await expect(page.getByText(/financing details are not published/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Estimate your monthly payment" })).toHaveCount(0);
 });
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, SearchX, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { MobileFilterDrawer } from "@/components/mobile-filter-drawer";
 import { SortSelect } from "@/components/sort-select";
@@ -57,15 +57,12 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
     </div>
     <div className="inventory-layout">
       <aside className="filter-panel" aria-label="Filters">
-        <div className="filter-heading"><h2>Filters</h2>{active.length ? <Link href="/cars">Clear all</Link> : null}</div>
+        <h2 className="filter-heading">Filters</h2>
         <VehicleFilterForm filters={filters} options={options} />
       </aside>
       <div className="inventory-results">
         <div className="results-bar">
-          <div className="results-count">
-            <div className="mobile-filter-trigger"><MobileFilterDrawer activeCount={active.length} formId="mobile-filters"><VehicleFilterForm filters={filters} options={options} id="mobile-filters" /></MobileFilterDrawer></div>
-            <p>Showing {vehicles.length ? `${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + vehicles.length}` : 0} of <strong>{total}</strong></p>
-          </div>
+          <div className="mobile-filter-trigger"><MobileFilterDrawer activeCount={active.length} formId="mobile-filters"><VehicleFilterForm filters={filters} options={options} id="mobile-filters" /></MobileFilterDrawer></div>
           <SortSelect value={filters.sort ?? "newest"} hidden={active} labels={sortLabels} />
         </div>
         {active.length ? <div className="active-filters" aria-label="Active filters">
@@ -75,8 +72,8 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
         {vehicles.length
           ? <VehicleGrid vehicles={vehicles} priorityCount={3} />
           : active.length
-            ? <EmptyState title="No cars match your filters" href={query(sortEntry)} action="Clear filters" icon={<SearchX size={22} />} />
-            : <EmptyState title="No cars are listed right now" text="New listings appear here as soon as they are published." href="/contact" action="Ask about availability" />}
+            ? <EmptyState title="No cars match your filters" href={query(sortEntry)} action="Clear filters" />
+            : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
         {pageCount > 1 ? <nav className="pagination" aria-label="Inventory pages">
           <span>Page {page} of {pageCount}</span>
           <div>{page > 1 ? <Link href={pageHref(page - 1)} rel="prev"><ArrowLeft size={16} /> Previous</Link> : null}{page < pageCount ? <Link href={pageHref(page + 1)} rel="next">Next <ArrowRight size={16} /></Link> : null}</div>

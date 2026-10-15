@@ -67,7 +67,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
         {settings.financing_enabled && hasPrice && !preview ? <section className="detail-block"><FinanceCalculator price={vehicle.price ?? 0} currency={vehicle.currency ?? settings.currency ?? ""} /></section> : null}
         {!preview ? <section className="detail-block inquiry-block" id="inquiry" aria-labelledby="inquiry-heading">
           <h2 id="inquiry-heading">Ask about this car</h2>
-          <ContactForm vehicleId={vehicle.id} vehicleName={name} />
+          <ContactForm vehicleId={vehicle.id} />
         </section> : null}
       </div>
     </div>

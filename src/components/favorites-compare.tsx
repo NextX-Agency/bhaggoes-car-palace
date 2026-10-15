@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { ArrowLeftRight, ArrowRight, Heart, X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
 import { availabilityLabels, coverImage, formatAmount, formatMileage } from "@/lib/domain";
 import { EmptyState } from "@/components/empty-state";
@@ -38,7 +38,7 @@ export function SavedCars({ mode }: { mode: Mode }) {
   const { vehicles, ready, ids } = useSavedCars(mode);
   const favoriteMode = mode === "favorites";
   if (!ready) return <div className="vehicle-grid" aria-busy="true">{Array.from({ length: 3 }, (_, index) => <div className="skeleton-card" key={index}><span className="skeleton" /><span className="skeleton skeleton-line w-40" /><span className="skeleton skeleton-line w-70" /></div>)}</div>;
-  if (!vehicles.length) return <EmptyState title={favoriteMode ? "No saved cars yet" : "Nothing to compare yet"} text={favoriteMode ? "Tap the heart on any car to save it on this device." : "Add up to three cars with the compare button on each listing."} href="/cars" action="Browse cars" icon={favoriteMode ? <Heart size={22} /> : <ArrowLeftRight size={22} />} />;
+  if (!vehicles.length) return <EmptyState title={favoriteMode ? "No saved cars yet" : "Nothing to compare yet"} text={favoriteMode ? "Tap the heart on any car to save it on this device." : "Add up to three cars with the compare button on each listing."} href="/cars" action="Browse cars" />;
   if (favoriteMode) return <VehicleGrid vehicles={vehicles} />;
   const rows: [string, (vehicle: Vehicle) => string][] = [
     ["Price", (v) => formatAmount(v.price, v.currency)], ["Year", (v) => v.year?.toString() ?? "—"], ["Mileage", (v) => formatMileage(v.mileage) ?? "—"],

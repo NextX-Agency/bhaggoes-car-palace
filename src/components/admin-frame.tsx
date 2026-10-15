@@ -6,7 +6,7 @@ import { signOutAction } from "@/app/admin/actions";
 
 const items = [["Overview", "/admin", LayoutDashboard], ["Inventory", "/admin/inventory", CarFront], ["Inquiries", "/admin/inquiries", Inbox], ["Website settings", "/admin/settings", Settings2], ["Pages & FAQs", "/admin/content", Files]] as const;
 
-export function AdminFrame({ active, email, title, description, actions, children }: { active: string; email: string; title?: string; description?: string; actions?: ReactNode; children: ReactNode }) {
+export function AdminFrame({ active, email, title, actions, children }: { active: string; email: string; title?: string; actions?: ReactNode; children: ReactNode }) {
   const heading = title ?? items.find((item) => item[1] === active)?.[0] ?? "Administration";
   return <div className="admin-page">
     <div className="admin-layout">
@@ -26,7 +26,7 @@ export function AdminFrame({ active, email, title, description, actions, childre
       </aside>
       <section className="admin-content">
         <header className="admin-topline">
-          <div><h1>{heading}</h1>{description ? <p>{description}</p> : null}</div>
+          <h1>{heading}</h1>
           {actions ? <div className="admin-topline-actions">{actions}</div> : null}
         </header>
         {children}

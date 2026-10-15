@@ -28,7 +28,7 @@ export default async function HomePage() {
         <h1 id="hero-title">{settings.homepage_title}</h1>
         {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
         {settings.homepage_subtitle ? <p className="hero-copy">{settings.homepage_subtitle}</p> : null}
-        {availableCount ? <p className="hero-stock"><span><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available now</span></p> : null}
+        {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available</p> : null}
       </div>
     </section>
 
@@ -42,7 +42,7 @@ export default async function HomePage() {
         </div>
         {vehicles.length
           ? <VehicleGrid vehicles={vehicles} />
-          : <EmptyState title="No cars are listed right now" text="New listings appear here as soon as they are published." href="/contact" action="Ask about availability" />}
+          : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
       </div>
     </section>
 

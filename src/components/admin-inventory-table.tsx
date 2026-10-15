@@ -79,7 +79,7 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
       <span>{selectedIds.length} selected</span>
       <label><span className="sr-only">Bulk action</span><select className="admin-input" name="operation" value={bulkOperation} onChange={(event) => setBulkOperation(event.target.value)} required><option value="">Choose an action</option><option value="publish">Publish</option><option value="unpublish">Unpublish</option><option value="feature">Feature</option><option value="unfeature">Remove featured</option><option value="status">Change availability</option><option value="archive">Archive and unpublish</option><option value="restore">Restore from archive</option></select></label>
       {bulkOperation === "status" ? <label><span className="sr-only">New availability</span><select className="admin-input" name="availability" defaultValue="available">{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
-      <button type="submit" className="button button-dark button-sm" disabled={pendingBulk || !bulkOperation}>{pendingBulk ? "Saving…" : "Apply"}</button>
+      <button type="submit" className="button button-primary button-sm" disabled={pendingBulk || !bulkOperation}>{pendingBulk ? "Saving…" : "Apply"}</button>
       <button type="button" className="button button-ghost button-sm" onClick={() => setRowSelection({})}>Cancel</button>
     </form> : null}
     {bulkState.error ? <p className="admin-feedback admin-error" role="alert">{bulkState.error}</p> : bulkState.ok ? <p className="admin-feedback" role="status">Selected vehicles updated.</p> : null}

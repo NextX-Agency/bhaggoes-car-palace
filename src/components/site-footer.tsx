@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
 import type { SiteSettings } from "@/lib/domain";
 import { buildWhatsAppLink, safeExternalUrl } from "@/lib/domain";
 
@@ -11,7 +10,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
     return url ? [{ label, url }] : [];
   });
   const whatsapp = buildWhatsAppLink(settings.whatsapp, `Hello ${settings.business_name}, I have a question.`);
-  const hasContact = Boolean(settings.phone || settings.email || settings.address || whatsapp);
+  const hasContact = Boolean(settings.phone || settings.email || settings.address || whatsapp || socialLinks.length);
 
   return <footer className="site-footer">
     <div className="container footer-main">
@@ -27,19 +26,18 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       </nav>
       <nav className="footer-col" aria-label="Dealership">
         <p className="footer-label">Dealership</p>
-        <Link href="/about">About</Link>
+        {settings.about_text ? <Link href="/about">About</Link> : null}
         <Link href="/faq">FAQ</Link>
         <Link href="/contact">Contact</Link>
       </nav>
-      <div className="footer-col">
+      {hasContact ? <div className="footer-col">
         <p className="footer-label">Contact</p>
-        {settings.phone ? <a href={`tel:${settings.phone}`}><Phone size={15} aria-hidden="true" />{settings.phone}</a> : null}
+        {settings.phone ? <a href={`tel:${settings.phone}`}>{settings.phone}</a> : null}
         {whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a> : null}
-        {settings.email ? <a href={`mailto:${settings.email}`}><Mail size={15} aria-hidden="true" />{settings.email}</a> : null}
-        {settings.address ? <p><MapPin size={15} aria-hidden="true" />{settings.address}</p> : null}
-        {!hasContact ? <Link href="/contact">Send a message</Link> : null}
+        {settings.email ? <a href={`mailto:${settings.email}`}>{settings.email}</a> : null}
+        {settings.address ? <p>{settings.address}</p> : null}
         {socialLinks.map(({ label, url }) => <a href={url} key={label} target="_blank" rel="noopener noreferrer">{label}</a>)}
-      </div>
+      </div> : null}
     </div>
     <div className="container footer-bottom">
       <span>© {new Date().getFullYear()} {settings.business_name}</span>

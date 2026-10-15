@@ -45,7 +45,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
     thumb?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }, [active]);
 
-  if (!count) return <div className="gallery-empty"><Camera size={30} aria-hidden="true" /><p>Photos coming soon</p></div>;
+  if (!count) return <div className="gallery-empty"><Camera size={30} aria-hidden="true" /><p>No photos yet</p></div>;
   const selected = usable[Math.min(active, count - 1)];
   const onKeys = (event: KeyboardEvent) => {
     if (count < 2) return;

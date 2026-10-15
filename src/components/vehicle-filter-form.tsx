@@ -28,6 +28,6 @@ export function VehicleFilterForm({ filters, options, id }: { filters: VehicleFi
     <label>Condition<select name="condition" defaultValue={filters.condition ?? ""}><option value="">New or used</option><option value="new">New</option><option value="used">Used</option></select></label>
     <label>Availability<select name="availability" defaultValue={filters.availability ?? ""}><option value="">Any status</option>{Object.entries(availabilityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     {filters.sort && filters.sort !== "newest" ? <input type="hidden" name="sort" value={filters.sort} /> : null}
-    <button className="button button-dark filter-submit" type="submit"><Search size={16} aria-hidden="true" /> Apply filters</button>
+    <button className="button button-primary filter-submit" type="submit"><Search size={16} aria-hidden="true" /> Apply filters</button>
   </form>;
 }

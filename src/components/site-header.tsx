@@ -18,7 +18,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
   const open = openPath === pathname;
   const favoritesSnapshot = useSyncExternalStore(subscribeToBrowserStore, () => readBrowserSnapshot(FAVORITES_KEY), emptyBrowserSnapshot);
   const savedCount = parseStoredIds(favoritesSnapshot, 100).length;
-  const visibleLinks = links.filter(([label]) => label !== "Financing" || settings.financing_enabled);
+  const visibleLinks = links.filter(([label]) => (label !== "Financing" || settings.financing_enabled) && (label !== "About" || settings.about_text));
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
@@ -44,7 +44,6 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
           <Link className="icon-button" href="/favorites" aria-label={savedCount ? `Saved cars (${savedCount})` : "Saved cars"}>
             <Heart size={20} />{savedCount ? <span className="count" aria-hidden="true">{savedCount}</span> : null}
           </Link>
-          <Link href="/cars" className="button button-primary nav-cta">View inventory</Link>
           <button className="icon-button menu-toggle" type="button" onClick={() => setOpenPath(open ? null : pathname)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-nav">
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
