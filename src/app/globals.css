@@ -102,13 +102,14 @@ body:has(.admin-layout) .site-header,body:has(.admin-layout) .site-footer,body:h
 .about-content .support-copy{margin:0;white-space:pre-line}
 .about-slogan{margin:0;color:var(--blue);font-size:14px;font-weight:800;letter-spacing:.08em}
 .search-band h2{font-family:Arial,Helvetica,sans-serif;font-weight:700}
-.admin-login img{object-fit:cover;object-position:center}
+.admin-login img{width:220px;height:76px;object-fit:contain}
 .admin-login h1{font-family:Arial,Helvetica,sans-serif;font-weight:700}
 .empty-state{min-height:210px}
 .empty-state h2,.empty-state h3{font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}
 .empty-state p{font-size:13px}
 @media(max-width:760px){.hero{min-height:430px}.hero-content{padding-top:100px;padding-bottom:100px}.hero h1{font-size:clamp(40px,10vw,55px)}.section{padding-block:48px}.closing-cta{padding-block:38px}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-stat{padding:12px}.admin-stat strong{font-size:24px}}
 @media(max-width:760px){.nav-cta{display:none}}
+@media(max-width:760px){.nav-actions .icon-link,.menu-toggle{min-width:44px;min-height:44px;justify-content:center}.nav-actions{gap:4px}}
 @media(max-width:420px){.admin-stats{grid-template-columns:1fr 1fr}.vehicle-card-specs{font-size:12px}.sort-compact select{font-size:12px}}
 .footer-brand img{display:block;width:180px;height:60px;border-radius:4px;background:#fff;filter:none;opacity:1}
 .footer-brand .footer-logo-default{object-fit:cover;object-position:center 50%;padding:0}
