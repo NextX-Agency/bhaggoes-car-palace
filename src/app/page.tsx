@@ -4,11 +4,13 @@ import { ArrowUpRight, Check, ShieldCheck, SlidersHorizontal, WalletCards } from
 import type { Metadata } from "next";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
+import { buildWhatsAppLink } from "@/lib/domain";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function HomePage() {
   const [settings, featured, recent, filterOptions] = await Promise.all([getSettings(), getFeaturedVehicles(3), getRecentVehicles(4), getVehicleFilterOptions()]);
+  const whatsappHref = buildWhatsAppLink(settings.whatsapp, `Hello, I'm interested in learning more about the current inventory at ${settings.business_name}.`);
   return <>
     <section className="hero">
       <Image className="hero-photo" src="/images/hero-suv.webp" alt="A modern SUV on a quiet road" fill priority sizes="100vw" />
@@ -42,6 +44,6 @@ export default async function HomePage() {
     <section className="promise-section"><div className="container promise-grid"><div className="promise-heading"><p className="eyebrow">The Bhaggoes approach</p><h2>Buying a car should feel straightforward.</h2><Link className="text-link" href="/about">Get to know us <ArrowUpRight size={16} /></Link></div><div className="promise-card"><span className="promise-icon"><Check size={20} /></span><p className="eyebrow">01 · Start with the right car</p><h3>Clear details</h3><p>See each car&apos;s specifications, price, and availability in one place.</p></div><div className="promise-card"><span className="promise-icon"><SlidersHorizontal size={20} /></span><p className="eyebrow">02 · Compare your options</p><h3>Make it your choice</h3><p>Save a favorite or compare up to three listings as you browse.</p></div><div className="promise-card"><span className="promise-icon"><ShieldCheck size={20} /></span><p className="eyebrow">03 · Ask the team</p><h3>Get a clear answer</h3><p>Send a question about a specific car and the team can follow up.</p></div><div className="promise-card promise-card-last"><span className="promise-icon"><WalletCards size={20} /></span><p className="eyebrow">04 · Plan your budget</p><h3>Estimate with care</h3><p>Use a simple payment estimate to explore possible monthly costs.</p></div></div></section>
 
     {settings.financing_enabled ? <section className="finance-cta"><div className="container finance-cta-inner"><div><p className="eyebrow">A simple next step</p><h2>Questions about financing?</h2><p>{settings.financing_notes || "Contact our team to discuss your options."}</p></div><Link className="button button-light" href="/financing">Explore financing <ArrowUpRight size={16} /></Link></div></section> : null}
-    <section className="closing-cta"><div className="container closing-cta-inner"><div><p className="eyebrow">Your next drive starts here</p><h2>Found something you like?</h2><p>Browse the current inventory or send the team a question about a car.</p></div><div className="closing-buttons"><Link className="button button-dark" href="/cars">Browse all cars <ArrowUpRight size={16} /></Link><Link className="text-link" href="/contact">Contact the dealership</Link></div></div></section>
+    <section className="closing-cta"><div className="container closing-cta-inner"><div><p className="eyebrow">Your next drive starts here</p><h2>Found something you like?</h2><p>Browse the current inventory or send the team a question about a car.</p></div><div className="closing-buttons"><Link className="button button-dark" href="/cars">Browse all cars <ArrowUpRight size={16} /></Link>{whatsappHref ? <a className="text-link" href={whatsappHref} target="_blank" rel="noreferrer">Message us on WhatsApp <ArrowUpRight size={16} /></a> : <Link className="text-link" href="/contact">Contact the dealership</Link>}</div></div></section>
   </>;
 }

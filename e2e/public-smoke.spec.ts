@@ -67,6 +67,9 @@ test("admin sends an unconfigured project to setup guidance", async ({ page }) =
 test("mobile navigation opens and inventory fits the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await expect(page.locator(".hero-search-advanced")).toBeVisible();
+  const homeWidths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
+  expect(homeWidths.page).toBeLessThanOrEqual(homeWidths.viewport);
   await page.getByRole("button", { name: "Open menu" }).click();
   await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
   await page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link", { name: "Inventory" }).click();
