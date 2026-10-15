@@ -40,6 +40,21 @@ test("inventory filters persist in the URL and show a useful empty state", async
   await expect(page.getByRole("heading", { name: "No cars match those filters" })).toBeVisible();
 });
 
+test("mobile inventory filters open in an accessible drawer and apply to the URL", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/cars");
+  const filterButton = page.getByRole("button", { name: /filters/i });
+  await expect(filterButton).toBeVisible();
+  await filterButton.click();
+  const drawer = page.getByRole("dialog", { name: "Refine your search" });
+  await expect(drawer).toBeVisible();
+  await drawer.getByLabel("Search").fill("Toyota");
+  await drawer.getByRole("button", { name: /apply filters/i }).click();
+  await expect(page).toHaveURL(/search=Toyota/);
+  const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
+  expect(widths.page).toBeLessThanOrEqual(widths.viewport);
+});
+
 test("supporting public pages render on direct visits", async ({ page }) => {
   for (const route of ["/about", "/contact", "/financing", "/faq", "/privacy", "/terms", "/compare", "/favorites"]) {
     const response = await page.goto(route);
