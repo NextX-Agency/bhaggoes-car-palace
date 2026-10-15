@@ -27,13 +27,13 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
   const pageCount = Math.ceil(total / pageSize);
   const activeFilterCount = Object.entries(filters).filter(([key, value]) => !["sort", "page", "pageSize"].includes(key) && Boolean(value)).length;
   return <div className="container page-wrap inventory-page">
-    <div className="page-intro page-intro-row"><div><p className="eyebrow">Bhaggoes Car Palace · Inventory</p><h1>Find your next car.</h1><p>Explore current listings, narrow your search, and compare the details that matter to you.</p></div><Link href="/compare" className="text-link">Compare saved cars ↗</Link></div>
+    <div className="page-intro page-intro-row"><h1>Available Cars</h1><Link href="/compare" className="text-link">Compare cars ↗</Link></div>
     <div className="inventory-layout">
       <aside className="filter-panel"><div className="filter-heading"><h2><SlidersHorizontal size={18} /> Refine your search</h2><Link href="/cars" aria-label="Clear filters"><X size={16} /> Clear</Link></div>
         <VehicleFilterForm filters={filters} options={options} />
       </aside>
       <div className="inventory-results"><div className="results-bar"><div className="results-count"><div className="mobile-filter-trigger"><MobileFilterDrawer activeCount={activeFilterCount}><VehicleFilterForm filters={filters} options={options} /></MobileFilterDrawer></div><p><strong>{total}</strong> {total === 1 ? "car" : "cars"} found</p></div><form className="sort-compact" action="/cars">{Object.entries(params).map(([key, value]) => key !== "page" && key !== "sort" ? (Array.isArray(value) ? value.map((entry, index) => <input key={`${key}-${index}`} type="hidden" name={key} value={entry} />) : value ? <input key={key} type="hidden" name={key} value={value} /> : null) : null)}<label htmlFor="sort-compact">Sort</label><select id="sort-compact" name="sort" defaultValue={filters.sort}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="price-asc">Price: low first</option><option value="price-desc">Price: high first</option><option value="year-desc">Year: newest</option><option value="mileage-asc">Mileage: lowest</option></select><button aria-label="Sort inventory">↗</button></form></div>
-        <VehicleGrid vehicles={vehicles} />
+        <VehicleGrid vehicles={vehicles} emptyTitle={activeFilterCount ? "No cars match those filters" : "No vehicles listed yet"} emptyText={activeFilterCount ? "Try a broader search or reset the filters." : "Contact us to ask about current availability."} emptyHref={activeFilterCount ? "/cars" : "/contact"} emptyAction={activeFilterCount ? "Clear filters" : "Contact us"} />
         {pageCount > 1 ? <nav className="pagination" aria-label="Inventory pages"><span>Page {page} of {pageCount}</span><div>{page > 1 ? <Link href={`/cars?${query.toString()}&page=${page - 1}`}>← Previous</Link> : null}{page < pageCount ? <Link href={`/cars?${query.toString()}&page=${page + 1}`}>Next →</Link> : null}</div></nav> : null}
       </div>
     </div>

@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_request: Request, { params }: { params: Promise<{ path: string[] }> }) {
   if (!hasSupabaseEnv()) return new NextResponse(null, { status: 404 });
   const { path: parts } = await params;
-  const path = parts.map((part) => decodeURIComponent(part)).join("/");
+  const path = parts.join("/");
   if (!path || path.split("/").some((part) => !part || part === "." || part === "..") || path.length > 500) return new NextResponse(null, { status: 400 });
   try {
     const supabase = await createClient();

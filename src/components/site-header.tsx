@@ -15,10 +15,10 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
   const visibleLinks = links.filter(([label]) => label !== "Financing" || settings.financing_enabled);
   return (
     <header className="site-header">
-      <div className="topline"><div className="container topline-inner"><span>{settings.slogan}</span><span className="topline-note">A better way to find your next car</span></div></div>
+      <div className="topline"><div className="container topline-inner"><span>{settings.slogan}</span></div></div>
       <div className="container nav-row">
         <Link href="/" className="brand" aria-label={`${settings.business_name} home`} onClick={() => setOpen(false)}>
-          <Image src={settings.logo_url || "/images/bhaggoes-logo-source.png"} alt={settings.business_name} width={260} height={104} priority unoptimized />
+          <Image src={settings.logo_url || "/images/bhaggoes-logo-source.png"} alt={settings.business_name} width={260} height={104} loading="eager" unoptimized />
         </Link>
         <nav className="desktop-nav" aria-label="Main navigation">
           {visibleLinks.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}

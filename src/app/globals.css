@@ -2,7 +2,7 @@
 
 :root{--ink:#101a28;--navy:#11233a;--navy-2:#203b59;--blue:#1678bd;--blue-2:#e8f3fa;--orange:#ee914a;--warm:#f7f6f2;--line:#e3e7e8;--muted:#66717d;--white:#fff;--green:#2e7d5b;--shadow:0 14px 40px rgba(17,35,58,.08);--radius:14px}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:auto}
 body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
 button,input,textarea,select{font:inherit}
 button,a{-webkit-tap-highlight-color:transparent}
@@ -69,6 +69,47 @@ dialog.image-lightbox{position:fixed;inset:0;z-index:100;width:100vw;height:100d
 @media(max-width:1000px){.search-band-inner{align-items:stretch;flex-direction:column;gap:19px}.hero-search-advanced{width:100%}}
 @media(max-width:760px){.hero-search-advanced{height:auto;padding:12px}.hero-search-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.hero-search-advanced button{grid-column:1/-1;height:43px}}
 @media(max-width:350px){.hero-search-fields{grid-template-columns:1fr}}
+
+/* Dealership presentation: compact sections and readable controls. */
+:root{--radius:8px;--shadow:0 8px 24px rgba(17,35,58,.07)}
+body{font-size:16px}
+body:has(.admin-layout) .site-header,body:has(.admin-layout) .site-footer,body:has(.admin-login-wrap) .site-header,body:has(.admin-login-wrap) .site-footer{display:none}
+:where(a,button,input,select,textarea,summary):focus-visible{outline:3px solid #2180b7;outline-offset:2px}
+.hero{min-height:490px}
+.hero-content{padding-top:125px;padding-bottom:125px}
+.hero h1{max-width:650px;font-family:Arial,Helvetica,sans-serif;font-size:clamp(46px,5.5vw,68px);font-weight:750;line-height:1.03;letter-spacing:-.045em}
+.hero-copy{margin:18px 0 26px;font-size:17px}
+.section{padding-block:68px}
+.section-heading h2,.closing-cta h2{font-family:Arial,Helvetica,sans-serif;font-size:clamp(27px,3.2vw,38px);font-weight:700;letter-spacing:-.035em}
+.closing-cta{padding-block:48px}
+.search-band-inner{padding-block:25px}
+.vehicle-card,.filter-panel,.support-card,.admin-section,.admin-form-section{border-radius:6px;box-shadow:none}
+.vehicle-card:hover{transform:none;box-shadow:0 5px 18px rgba(17,35,58,.08)}
+.vehicle-card h3{font-family:Arial,Helvetica,sans-serif;font-size:19px;font-weight:700;line-height:1.25}
+.vehicle-card-specs,.card-link,.tag,.results-bar,.filter-form label,.calculator-controls label,.form-grid label,.admin-field,.admin-table th,.admin-table td,.admin-nav a{font-size:13px}
+.vehicle-price{font-size:16px}
+.text-link,.desktop-nav a,.footer-main a,.footer-main span{font-size:13px}
+.button{font-size:13px}
+.hero-search-advanced label,.hero-search-advanced input,.hero-search-advanced select,.hero-search-advanced button{font-size:13px}
+.hero-search-advanced input,.hero-search-advanced select,.filter-form input,.filter-form select,.calculator-controls input,.calculator-controls select,.form-grid input,.form-grid textarea,.admin-field input,.admin-field select,.admin-field textarea,.admin-input{min-height:44px;font-size:14px}
+.hero-search-advanced button{min-height:44px}
+.page-intro h1{font-family:Arial,Helvetica,sans-serif;font-size:clamp(34px,4vw,48px);font-weight:700;letter-spacing:-.04em}
+.page-intro>p:not(.eyebrow),.support-copy{font-size:15px}
+.admin-form-section h2,.support-card h2{font-family:Arial,Helvetica,sans-serif;font-weight:700}
+.admin-feedback,.admin-field .help-text{font-size:12px}
+.admin-photo button,.photo-actions button{min-width:38px;min-height:38px}
+.about-content{max-width:720px;display:grid;justify-items:start;gap:24px}
+.about-content .support-copy{margin:0;white-space:pre-line}
+.about-slogan{margin:0;color:var(--blue);font-size:14px;font-weight:800;letter-spacing:.08em}
+.search-band h2{font-family:Arial,Helvetica,sans-serif;font-weight:700}
+.admin-login img{object-fit:cover;object-position:center}
+.admin-login h1{font-family:Arial,Helvetica,sans-serif;font-weight:700}
+.empty-state{min-height:210px}
+.empty-state h2,.empty-state h3{font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700}
+.empty-state p{font-size:13px}
+@media(max-width:760px){.hero{min-height:430px}.hero-content{padding-top:100px;padding-bottom:100px}.hero h1{font-size:clamp(40px,10vw,55px)}.section{padding-block:48px}.closing-cta{padding-block:38px}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-stat{padding:12px}.admin-stat strong{font-size:24px}}
+@media(max-width:760px){.nav-cta{display:none}}
+@media(max-width:420px){.admin-stats{grid-template-columns:1fr 1fr}.vehicle-card-specs{font-size:12px}.sort-compact select{font-size:12px}}
 .footer-brand img{display:block;width:180px;height:60px;border-radius:4px;background:#fff;filter:none;opacity:1}
 .footer-brand .footer-logo-default{object-fit:cover;object-position:center 50%;padding:0}
 .footer-brand .footer-logo-custom{object-fit:contain;padding:7px}

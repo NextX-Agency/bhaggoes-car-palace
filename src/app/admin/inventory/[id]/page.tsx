@@ -9,5 +9,5 @@ export default async function EditVehiclePage({ params }: { params: Promise<{ id
   const { user } = await requireAdmin(); const { id } = await params; const result = await getAdminVehicle(id);
   if (!result) notFound();
   const editorVehicle = { ...result.vehicle, vin: result.privateDetails.vin, admin_notes: result.privateDetails.admin_notes };
-  return <AdminFrame active="/admin/inventory" email={user.email ?? "Administrator"}><div className="admin-topline inner-admin-title"><div><h1>Edit vehicle</h1><p>Update the listing and its public details.</p></div><div className="admin-row-actions"><Link className="text-link" href={`/admin/inventory/${result.vehicle.id}/preview`} target="_blank">Preview listing ↗</Link><Link className="text-link" href="/admin/inventory">Back to inventory</Link></div></div><AdminVehicleEditor vehicle={editorVehicle} /></AdminFrame>;
+  return <AdminFrame active="/admin/inventory" email={user.email ?? "Administrator"}><div className="admin-topline inner-admin-title"><h1>Edit Vehicle</h1><div className="admin-row-actions"><Link className="text-link" href={`/admin/inventory/${result.vehicle.id}/preview`} target="_blank">Preview listing ↗</Link><Link className="text-link" href="/admin/inventory">Back to inventory</Link></div></div><AdminVehicleEditor vehicle={editorVehicle} /></AdminFrame>;
 }

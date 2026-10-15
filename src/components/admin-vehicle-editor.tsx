@@ -54,6 +54,7 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const formData = new FormData(form); formData.set("features", featureText);
     const files = Array.from(form.querySelector<HTMLInputElement>('input[name="photos"]')?.files ?? []);
+    formData.delete("photos");
     startTransition(async () => { setMessage(""); const result = await saveVehicleAction({}, formData); setState(result); if (result.error) { setMessage(result.error); return; } if (!result.id) { setMessage("Vehicle could not be saved."); return; } setSavedId(result.id); setMessage("Vehicle saved."); if (files.length) await uploadFiles(result.id, files); if (!vehicle) router.replace(`/admin/inventory/${result.id}`); });
   }
   async function uploadFiles(vehicleId: string, files: File[]) {
@@ -89,10 +90,11 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
     finally { setUploading(false); setUploadProgress(null); }
   }
   async function removePhoto(image: Vehicle["images"][number]) {
-    const client = createClient(); const storage = await client.storage.from("vehicle-images").remove([image.storage_path]);
-    if (storage.error) { setMessage("Could not remove this photo."); return; }
+    const client = createClient();
     const { error } = await client.from("vehicle_images").delete().eq("id", image.id);
     if (error) { setMessage("Could not remove the photo record."); return; }
+    const storage = await client.storage.from("vehicle-images").remove([image.storage_path]);
+    if (storage.error) setMessage("Photo removed from the listing, but its stored file could not be deleted. Ask an administrator to clean up storage.");
     const remaining = photos.filter((item) => item.id !== image.id);
     if (savedId && remaining.length) {
       const { error: orderError } = await client.rpc("reorder_vehicle_images", { p_vehicle_id: savedId, p_image_ids: remaining.map((item) => item.id) });
@@ -133,8 +135,8 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
         <div className="photo-actions"><button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Move photo ${index + 1} earlier`} disabled={index === 0}><ArrowUp size={12} /></button><button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Move photo ${index + 1} later`} disabled={index === photos.length - 1}><ArrowDown size={12} /></button>{index === 0 ? <span>Cover</span> : null}</div>
       </div>)}</div>
       <div className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!savedId) { setMessage("Save this vehicle first to enable photo uploads."); return; } if (files.some((file) => !file.type.startsWith("image/"))) { setMessage("Drop image files only."); return; } if (files.length) void uploadFiles(savedId, files); }}>
-        <ImagePlus size={20} /><strong>Add vehicle photos</strong><label className="photo-file-picker">Choose image files<input type="file" name="photos" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={!savedId || photos.length >= 15 || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); input.value = ""; if (savedId && files.length) void uploadFiles(savedId, files); }} /></label>
-        <p>{!savedId ? "Save this vehicle first to enable photo uploads." : `${photos.length} of 15 photos · Drop files here to upload`}</p>
+        <ImagePlus size={20} /><strong>Add vehicle photos</strong><label className="photo-file-picker">Choose image files<input type="file" name="photos" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={photos.length >= 15 || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (savedId && files.length) { input.value = ""; void uploadFiles(savedId, files); } else if (files.length) setMessage(`${files.length} photo${files.length === 1 ? "" : "s"} selected. Save the vehicle to upload.`); }} /></label>
+        <p>{savedId ? `${photos.length} of 15 photos · Drop files here to upload` : "Select photos, then save the vehicle to upload them."}</p>
       </div>
       {uploadProgress ? <p className="admin-feedback" role="status" aria-live="polite"><LoaderCircle size={14} className="spin" /> Preparing and uploading photo {uploadProgress.current} of {uploadProgress.total}: {uploadProgress.name}</p> : null}
     </section>

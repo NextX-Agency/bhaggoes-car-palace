@@ -1,10 +1,26 @@
 import Link from "next/link";
-import { ArrowUpRight, CarFront, Inbox, Plus, Settings2 } from "lucide-react";
+import { ArrowUpRight, Plus } from "lucide-react";
 import { AdminFrame } from "@/components/admin-frame";
 import { getAdminInquiries, getAdminStats } from "@/lib/data";
 import { requireAdmin } from "@/lib/admin-auth";
 
 export default async function AdminDashboardPage() {
-  const { user } = await requireAdmin(); const [stats, inquiries] = await Promise.all([getAdminStats(), getAdminInquiries()]);
-  return <AdminFrame active="/admin" email={user.email ?? "Administrator"}><div className="admin-stats">{[["Total vehicles", stats?.total ?? 0], ["Available", stats?.available ?? 0], ["Reserved", stats?.reserved ?? 0], ["Sold", stats?.sold ?? 0], ["On the way", stats?.onTheWay ?? 0], ["Featured", stats?.featured ?? 0], ["New inquiries", stats?.newInquiries ?? 0]].map(([label, value]) => <article className="admin-stat" key={label}><span>{label}</span><strong>{value}</strong></article>)}</div><section className="admin-section"><div className="admin-section-head"><div><h2>Quick actions</h2><p>Pick up where you need to.</p></div></div><div className="admin-quick-links"><Link className="button button-dark" href="/admin/inventory/new"><Plus size={15} /> Add vehicle</Link><Link className="button button-outline" href="/admin/inventory"><CarFront size={15} /> Manage inventory</Link><Link className="button button-outline" href="/admin/inquiries"><Inbox size={15} /> View inquiries</Link><Link className="button button-outline" href="/admin/settings"><Settings2 size={15} /> Edit website details</Link></div></section><section className="admin-section"><div className="admin-section-head"><div><h2>Recent inquiries</h2><p>New customer questions from the website.</p></div><Link className="text-link" href="/admin/inquiries">All inquiries <ArrowUpRight size={15} /></Link></div>{inquiries.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Customer</th><th>About</th><th>Received</th><th>Status</th></tr></thead><tbody>{inquiries.slice(0, 6).map((item: { id: string; name: string; message: string; submitted_at: string; status: string; vehicles?: { title: string } | null }) => <tr key={item.id}><td>{item.name}</td><td className="inquiry-message" title={item.message}>{item.vehicles?.title ?? item.message}</td><td>{new Date(item.submitted_at).toLocaleDateString()}</td><td><span className="admin-badge draft">{item.status}</span></td></tr>)}</tbody></table></div> : <p className="table-empty">No inquiries yet. Messages from the contact form will appear here.</p>}</section></AdminFrame>;
+  const { user } = await requireAdmin();
+  const [stats, inquiries] = await Promise.all([getAdminStats(), getAdminInquiries()]);
+  return <AdminFrame active="/admin" email={user.email ?? "Administrator"}>
+    <div className="admin-stats">
+      {([["Vehicles", stats?.total ?? 0], ["Available", stats?.available ?? 0], ["New inquiries", stats?.newInquiries ?? 0]] as const).map(([label, value]) =>
+        <article className="admin-stat" key={label}><span>{label}</span><strong>{value}</strong></article>)}
+    </div>
+    <section className="admin-section">
+      <div className="admin-section-head"><h2>Inventory</h2><Link className="text-link" href="/admin/inventory">Manage vehicles <ArrowUpRight size={15} /></Link></div>
+      <Link className="button button-dark" href="/admin/inventory/new"><Plus size={16} /> Add Vehicle</Link>
+    </section>
+    <section className="admin-section">
+      <div className="admin-section-head"><h2>Recent Inquiries</h2><Link className="text-link" href="/admin/inquiries">View all <ArrowUpRight size={15} /></Link></div>
+      {inquiries.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Customer</th><th>About</th><th>Received</th><th>Status</th></tr></thead><tbody>
+        {inquiries.slice(0, 6).map((item) => <tr key={item.id}><td>{item.name}</td><td className="inquiry-message" title={item.message}>{item.vehicles?.title ?? item.message}</td><td>{new Date(item.submitted_at).toLocaleDateString()}</td><td>{item.status}</td></tr>)}
+      </tbody></table></div> : <p className="table-empty">No inquiries yet.</p>}
+    </section>
+  </AdminFrame>;
 }

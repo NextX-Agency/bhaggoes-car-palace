@@ -2,12 +2,12 @@ import { expect, test } from "@playwright/test";
 
 test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Find a car that feels right.");
-  await expect(page.getByRole("link", { name: /explore our cars/i })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Browse Our Cars");
+  await expect(page.getByRole("link", { name: /browse inventory/i }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "No vehicles listed yet" })).toBeVisible();
-  await page.getByRole("link", { name: /explore our cars/i }).click();
+  await page.getByRole("link", { name: /browse inventory/i }).first().click();
   await expect(page).toHaveURL(/\/cars$/);
-  await expect(page.getByRole("heading", { name: "Find your next car." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Available Cars" })).toBeVisible();
 });
 
 test("homepage vehicle search sends all selected filters to inventory", async ({ page }) => {
@@ -26,7 +26,7 @@ test("homepage vehicle search sends all selected filters to inventory", async ({
   await expect(page).toHaveURL(/minPrice=10000/);
   await expect(page).toHaveURL(/maxPrice=25000/);
   await expect(page).toHaveURL(/availability=available/);
-  await expect(page.getByRole("heading", { name: "Find your next car." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Available Cars" })).toBeVisible();
 });
 
 test("inventory filters persist in the URL and show a useful empty state", async ({ page }) => {
@@ -61,6 +61,17 @@ test("supporting public pages render on direct visits", async ({ page }) => {
     expect(response?.status(), `${route} should respond successfully`).toBe(200);
     await expect(page.locator("main")).toBeVisible();
   }
+});
+
+test("contact form requires a return address and reports unavailable delivery", async ({ page }) => {
+  await page.goto("/contact");
+  await page.getByLabel("Your name").fill("Test Customer");
+  await page.getByLabel("How can we help?").fill("Is this car available?");
+  await page.getByRole("button", { name: /send inquiry/i }).click();
+  await expect(page.getByRole("status")).toHaveText("Enter an email address or phone number.");
+  await page.getByLabel(/Email/).fill("test@example.com");
+  await page.getByRole("button", { name: /send inquiry/i }).click();
+  await expect(page.getByRole("status")).toHaveText("Messages are unavailable right now. Please try again later.");
 });
 
 test("financing stays unpublished until the dealership enables it", async ({ page }) => {

@@ -22,7 +22,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         {vehicle.transmission ? <span><Settings2 size={14} />{vehicle.transmission}</span> : null}
         {vehicle.fuel_type ? <span><Fuel size={14} />{vehicle.fuel_type}</span> : null}
       </div>
-      <Link className="card-link" href={`/cars/${vehicle.slug}`}>Explore this car <ArrowUpRight size={16} /></Link>
+      <Link className="card-link" href={`/cars/${vehicle.slug}`}>View details <ArrowUpRight size={16} /></Link>
     </div>
   </article>;
 }

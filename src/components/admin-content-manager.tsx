@@ -11,8 +11,8 @@ type Page = { slug: string; title: string; body: string; published: boolean; seo
 export function AdminContentManager({ faqs, pages }: { faqs: Faq[]; pages: Page[] }) {
   const [showNew, setShowNew] = useState(false);
   return <div className="admin-content-manager">
-    <section className="admin-section"><div className="admin-section-head"><div><h2>Frequently asked questions</h2><p>Published answers appear on the public FAQ page.</p></div><button className="button button-outline" onClick={() => setShowNew((value) => !value)}><Plus size={15} /> Add question</button></div>{showNew ? <FaqForm onDone={() => setShowNew(false)} /> : null}{faqs.length ? <div className="faq-admin-list">{faqs.map((faq) => <FaqRow key={faq.id} faq={faq} />)}</div> : <p className="table-empty">No FAQ content yet. Add questions customers frequently ask.</p>}</section>
-    <section className="admin-section"><div className="admin-section-head"><div><h2>Policy pages</h2><p>Edit the privacy and terms content shown on the public website.</p></div></div><div className="policy-admin-grid">{(["privacy", "terms"] as const).map((slug) => <PageEditor key={slug} slug={slug} page={pages.find((page) => page.slug === slug)} />)}</div></section>
+    <section className="admin-section"><div className="admin-section-head"><h2>Frequently Asked Questions</h2><button className="button button-outline" onClick={() => setShowNew((value) => !value)}><Plus size={15} /> Add question</button></div>{showNew ? <FaqForm onDone={() => setShowNew(false)} /> : null}{faqs.length ? <div className="faq-admin-list">{faqs.map((faq) => <FaqRow key={faq.id} faq={faq} />)}</div> : <p className="table-empty">No questions yet.</p>}</section>
+    <section className="admin-section"><div className="admin-section-head"><h2>Policy Pages</h2></div><div className="policy-admin-grid">{(["privacy", "terms"] as const).map((slug) => <PageEditor key={slug} slug={slug} page={pages.find((page) => page.slug === slug)} />)}</div></section>
   </div>;
 }
 

@@ -35,9 +35,9 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
   return <div className="container page-wrap detail-page">
     <nav className="breadcrumbs"><Link href="/cars"><ArrowLeft size={14} /> Inventory</Link><span>/</span><span>{vehicle.make} {vehicle.model}</span></nav>
     <div className="detail-layout"><div className="detail-primary"><VehicleGallery images={vehicle.images} title={title} />
-      <div className="detail-description"><p className="eyebrow">About this car</p><h2>Details that matter.</h2><p>{vehicle.description || "More information about this car is available from the dealership team. Send an inquiry and ask any questions you have."}</p>
+      {vehicle.description || vehicle.features.length ? <div className="detail-description">{vehicle.description ? <><h2>Description</h2><p>{vehicle.description}</p></> : null}
         {vehicle.features.length ? <div className="feature-list"><h3>Features and equipment</h3><ul>{vehicle.features.map((feature) => <li key={feature}><Check size={15} />{feature}</li>)}</ul></div> : null}
-      </div>
+      </div> : null}
       {settings.financing_enabled ? <FinanceCalculator price={vehicle.price ?? 0} currency={vehicle.currency ?? settings.currency ?? ""} /> : null}
     </div><aside className="detail-aside"><div className="detail-title"><span className={`tag tag-${vehicle.availability}`}>{availabilityLabels[vehicle.availability]}</span><p className="eyebrow">{vehicle.year ?? "Year available on request"} · {vehicle.make}</p><h1>{vehicle.model}{vehicle.variant ? ` ${vehicle.variant}` : ""}</h1><strong>{formatAmount(vehicle.price, vehicle.currency ?? settings.currency)}</strong></div>
       <div className="detail-quick-specs">{vehicle.mileage != null ? <span><Gauge size={17} />{new Intl.NumberFormat().format(vehicle.mileage)} km</span> : null}{vehicle.transmission ? <span><Settings2 size={17} />{vehicle.transmission}</span> : null}{vehicle.fuel_type ? <span><Fuel size={17} />{vehicle.fuel_type}</span> : null}</div>
@@ -45,9 +45,9 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
       <VehicleShareButton title={title} businessName={settings.business_name} />
       {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer">Ask about this car on WhatsApp <ArrowUpRight size={16} /></a> : null}
       <div className="spec-list"><h2>Vehicle specifications</h2>{specifications.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
-      <div className="detail-inquiry"><p className="eyebrow">Interested?</p><h2>Ask us about this car.</h2><ContactForm vehicleId={vehicle.id} vehicleName={title} /></div>
+      <div className="detail-inquiry"><h2>Send Inquiry</h2><ContactForm vehicleId={vehicle.id} vehicleName={title} /></div>
     </aside></div>
-    {related.length ? <section className="section related-section"><div className="section-heading"><div><p className="eyebrow">More to explore</p><h2>Similar cars</h2></div><Link className="text-link" href="/cars">View all <ArrowUpRight size={16} /></Link></div><VehicleGrid vehicles={related} /></section> : null}
+    {related.length ? <section className="section related-section"><div className="section-heading"><h2>Similar Cars</h2><Link className="text-link" href="/cars">View all <ArrowUpRight size={16} /></Link></div><VehicleGrid vehicles={related} /></section> : null}
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
   </div>;
 }

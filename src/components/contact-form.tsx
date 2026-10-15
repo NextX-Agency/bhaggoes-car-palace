@@ -7,14 +7,21 @@ export function ContactForm({ vehicleId, vehicleName }: { vehicleId?: string; ve
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
   async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setState("sending"); setMessage("");
+    event.preventDefault(); setMessage("");
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
+    if (!String(data.email ?? "").trim() && !String(data.phone ?? "").trim()) {
+      setState("error"); setMessage("Enter an email address or phone number."); return;
+    }
+    setState("sending");
     try {
       const response = await fetch("/api/inquiries", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...data, vehicleId }) });
-      if (!response.ok) throw new Error("Please check the details and try again.");
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(response.status === 400 || response.status === 429 ? payload?.error || "Please check the details and try again." : "Messages are unavailable right now. Please try again later.");
+      }
       form.reset(); setState("sent"); setMessage("Your message has been sent. The team will be in touch.");
-    } catch { setState("error"); setMessage("We couldn't send that just now. Please try again or use the phone and WhatsApp links."); }
+    } catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "Messages are unavailable right now. Please try again later."); }
   }
   return <form className="contact-form" onSubmit={submit}>
     {vehicleName ? <p className="form-context">Your message about <strong>{vehicleName}</strong></p> : null}

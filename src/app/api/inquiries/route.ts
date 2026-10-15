@@ -14,7 +14,7 @@ const inquirySchema = z.object({
 
 const requests = new Map<string, { count: number; expires: number }>();
 export async function POST(request: Request) {
-  if (!hasSupabaseEnv()) return NextResponse.json({ error: "Inquiry service is not configured yet." }, { status: 503 });
+  if (!hasSupabaseEnv()) return NextResponse.json({ error: "Messages are unavailable right now. Please try again later." }, { status: 503 });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   const parsed = inquirySchema.safeParse(body);
@@ -34,5 +34,5 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: limited ? error.message : "We couldn't save your inquiry." }, { status: limited ? 429 : 400 });
     }
     return NextResponse.json({ ok: true }, { status: 201 });
-  } catch { return NextResponse.json({ error: "Inquiry service is not configured yet." }, { status: 503 }); }
+  } catch { return NextResponse.json({ error: "Messages are unavailable right now. Please try again later." }, { status: 503 }); }
 }

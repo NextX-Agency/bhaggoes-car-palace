@@ -10,7 +10,7 @@ export function FinanceCalculator({ price = 0, currency = "" }: { price?: number
   const [months, setMonths] = useState(60);
   const result = calculateFinance(amount, down, rate, months);
   return <section className="calculator-panel">
-    <div className="calculator-intro"><p className="eyebrow">Plan with confidence</p><h2>Estimate your monthly payment</h2><p>Adjust the numbers to see a simple estimate. This is not an approved financing offer.</p></div>
+    <div className="calculator-intro"><h2>Estimate your monthly payment</h2><p>Estimates only. Rates and terms must be confirmed with a provider.</p></div>
     <div className="calculator-controls">
       <label>Car price <span className="input-with-prefix"><span>{currency || "Amount"}</span><input type="number" min="0" value={amount || ""} onChange={(event) => setAmount(Number(event.target.value))} /></span></label>
       <label>Down payment <span className="input-with-prefix"><span>{currency || "Amount"}</span><input type="number" min="0" max={amount} value={down || ""} onChange={(event) => setDown(Number(event.target.value))} /></span></label>
