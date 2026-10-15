@@ -69,3 +69,6 @@ dialog.image-lightbox{position:fixed;inset:0;z-index:100;width:100vw;height:100d
 @media(max-width:1000px){.search-band-inner{align-items:stretch;flex-direction:column;gap:19px}.hero-search-advanced{width:100%}}
 @media(max-width:760px){.hero-search-advanced{height:auto;padding:12px}.hero-search-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.hero-search-advanced button{grid-column:1/-1;height:43px}}
 @media(max-width:350px){.hero-search-fields{grid-template-columns:1fr}}
+.footer-brand img{display:block;width:180px;height:60px;border-radius:4px;background:#fff;filter:none;opacity:1}
+.footer-brand .footer-logo-default{object-fit:cover;object-position:center 50%;padding:0}
+.footer-brand .footer-logo-custom{object-fit:contain;padding:7px}
