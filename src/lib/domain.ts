@@ -174,6 +174,18 @@ export function buildWhatsAppLink(number: string | null | undefined, message: st
   return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : null;
 }
 
+export type DealershipLocation = { name: string | null; address: string; mapUrl: string };
+
+// The address setting holds one location per line, optionally named: "Showroom: Kwattaweg 100, Paramaribo".
+export function parseLocations(value: string | null | undefined): DealershipLocation[] {
+  return (value ?? "").split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+    const split = line.indexOf(": ");
+    const name = split > 0 ? line.slice(0, split).trim() : null;
+    const address = split > 0 ? line.slice(split + 2).trim() : line;
+    return { name, address, mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` };
+  }).filter((location) => location.address);
+}
+
 export function safeExternalUrl(value: string | null | undefined) {
   if (!value) return null;
   try {

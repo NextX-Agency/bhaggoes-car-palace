@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { HeroSearch } from "@/components/hero-search";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getAvailableCount, getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
-import { buildWhatsAppLink } from "@/lib/domain";
+import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -17,6 +17,7 @@ export default async function HomePage() {
   const vehicles = featured.length >= 3 ? featured : recent;
   const whatsappHref = buildWhatsAppLink(settings.whatsapp, `Hello, I have a question about a car at ${settings.business_name}.`);
   const hours = Object.entries(settings.business_hours ?? {});
+  const locations = parseLocations(settings.address);
   const hasVisitDetails = Boolean(settings.address || settings.phone || settings.email || hours.length);
   const makes = filterOptions.makes.filter((make) => filterOptions.makeCounts[make]);
 
@@ -65,7 +66,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="visit-details">
-          {settings.address ? <div><h3>Address</h3><p>{settings.address}</p></div> : null}
+          {locations.length ? <div><h3>{locations.length === 1 ? "Location" : "Locations"}</h3>{locations.map((location) => <p key={location.address}>{location.name ? <><strong>{location.name}</strong><br /></> : null}<a href={location.mapUrl} target="_blank" rel="noreferrer">{location.address}</a></p>)}</div> : null}
           {settings.phone ? <div><h3>Phone</h3><a href={`tel:${settings.phone}`}>{settings.phone}</a></div> : null}
           {settings.email ? <div><h3>Email</h3><a href={`mailto:${settings.email}`}>{settings.email}</a></div> : null}
           {hours.length ? <div><h3>Opening hours</h3><div className="hours">{hours.map(([day, time]) => <div key={day}><span>{day}</span><span>{time}</span></div>)}</div></div> : null}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWhatsAppLink, calculateFinance, formatAmount, safeExternalUrl, slugify } from "./domain";
+import { buildWhatsAppLink, calculateFinance, formatAmount, parseLocations, safeExternalUrl, slugify } from "./domain";
 
 describe("dealership helpers", () => {
   it("calculates a zero-interest loan without adding interest", () => {
@@ -36,5 +36,15 @@ describe("dealership helpers", () => {
   it("formats missing prices without inventing a value", () => {
     expect(formatAmount(null)).toBe("Price on request");
     expect(formatAmount(1234, "SRD")).toBe(`SRD ${new Intl.NumberFormat().format(1234)}`);
+  });
+
+  it("reads one dealership location per line with an optional name", () => {
+    const locations = parseLocations("Showroom: Kwattaweg 1, Paramaribo\n\nLelydorp 22");
+    expect(locations.map(({ name, address }) => ({ name, address }))).toEqual([
+      { name: "Showroom", address: "Kwattaweg 1, Paramaribo" },
+      { name: null, address: "Lelydorp 22" },
+    ]);
+    expect(locations[0].mapUrl).toContain(encodeURIComponent("Kwattaweg 1, Paramaribo"));
+    expect(parseLocations(null)).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { SiteSettings } from "@/lib/domain";
-import { buildWhatsAppLink, safeExternalUrl } from "@/lib/domain";
+import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
 
 export function SiteFooter({ settings }: { settings: SiteSettings }) {
   const socialPlatforms = [["instagram", "Instagram"], ["facebook", "Facebook"], ["youtube", "YouTube"], ["tiktok", "TikTok"]] as const;
@@ -32,10 +32,10 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       </nav>
       {hasContact ? <div className="footer-col">
         <p className="footer-label">Contact</p>
-        {settings.phone ? <a href={`tel:${settings.phone}`}>{settings.phone}</a> : null}
         {whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a> : null}
+        {settings.phone ? <a href={`tel:${settings.phone}`}>{settings.phone}</a> : null}
         {settings.email ? <a href={`mailto:${settings.email}`}>{settings.email}</a> : null}
-        {settings.address ? <p>{settings.address}</p> : null}
+        {parseLocations(settings.address).map((location) => <a key={location.address} href={location.mapUrl} target="_blank" rel="noreferrer">{location.name ?? location.address}</a>)}
         {socialLinks.map(({ label, url }) => <a href={url} key={label} target="_blank" rel="noopener noreferrer">{label}</a>)}
       </div> : null}
     </div>
