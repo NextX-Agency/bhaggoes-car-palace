@@ -1,6 +1,6 @@
 # Bhaggoes Car Palace
 
-Responsive dealership website and staff dashboard built with Next.js App Router, TypeScript, Tailwind CSS, and Supabase. The public site starts with an empty inventory so it never displays invented cars or customer claims.
+Responsive dealership website and staff dashboard built with Next.js App Router, TypeScript, Tailwind CSS, and Supabase. The live catalog currently contains two clearly marked demo vehicles with illustrative photos, specifications, and USD example prices. They are not real cars for sale.
 
 ## Local setup
 
@@ -28,12 +28,12 @@ Replace the example email with the invited account's email. The auth trigger cre
 ## Admin dashboard
 
 - Sign in at `/admin/login`.
-- Create, edit, duplicate, publish, and remove inventory at `/admin/inventory`.
+- Create and edit inventory at `/admin/inventory`. Use **Show on website** to make a listing public, **Archive** to hide it without deleting it, **Restore** to return an archived listing as a hidden draft, or **Delete permanently** in the editor to remove it.
 - Add up to 15 vehicle photos to private Supabase Storage. Images are served only when the listing policy allows access; photo reordering is checked in a database function.
-- Review customer inquiries and change their status at `/admin/inquiries`.
+- Customer questions currently go to the dealership's WhatsApp account. WhatsApp chats are not synced to the dashboard; the separate website inquiry inbox and its submission endpoint are disabled until that feature is enabled.
 - Edit contact details, homepage copy, financing visibility, the logo, and policy/FAQ content from the dashboard.
 
-The dashboard and public catalog rely on the database. No demonstration inventory is seeded. Financing estimates are not offers, and financing is hidden from the homepage and vehicle pages until enabled in settings.
+The dashboard and public catalog rely on the database. The two demo listings use `DEMO-` stock numbers; archive them when verified real inventory is ready. Financing estimates are not offers, and financing is hidden from the homepage and vehicle pages until enabled in settings. A price requires a currency, such as USD or SRD.
 
 ## Database and access model
 

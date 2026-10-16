@@ -45,7 +45,7 @@ const vehicleSchema = z.object({
   title: z.string().trim().min(2).max(180), make: z.string().trim().min(1).max(80), model: z.string().trim().min(1).max(100),
   variant: z.string().max(120), year: z.number().int().min(1886).max(2200).nullable(), price: z.number().min(0).nullable(), currency: z.string().max(8), mileage: z.number().min(0).nullable(),
   engine_capacity: z.string().max(50), fuel_type: z.string().max(50), transmission: z.string().max(50), drive_type: z.string().max(50), body_type: z.string().max(50), exterior_color: z.string().max(50), interior_color: z.string().max(50), seats: z.number().int().min(1).max(100).nullable(), doors: z.number().int().min(1).max(20).nullable(), description: z.string().max(10000), condition: z.enum(["new", "used"]), availability: z.enum(["available", "on_the_way", "reserved", "sold", "rental"]), featured: z.boolean(), published: z.boolean(), stock_number: z.string().max(80), vin: z.string().max(80), admin_notes: z.string().max(5000), features: z.array(z.string().max(80)).max(60),
-});
+}).refine((value) => value.price === null || Boolean(value.currency.trim()), { path: ["currency"], message: "Choose a currency when entering a price." });
 
 export async function saveVehicleAction(_previous: ActionState & { id?: string; slug?: string }, form: FormData): Promise<ActionState & { id?: string; slug?: string }> {
   try {
@@ -60,18 +60,21 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
     const existingId = text(form, "id");
     const slugBase = slugify([value.year, value.make, value.model, value.variant].filter(Boolean).join(" ")) || "vehicle";
     let slug = `${slugBase}-${crypto.randomUUID().slice(0, 6)}`;
+    let archived = false;
     if (existingId) {
-      const { data: current } = await supabase.from("vehicles").select("slug").eq("id", existingId).maybeSingle();
-      slug = current?.slug ?? slugBase;
+      const { data: current, error: currentError } = await supabase.from("vehicles").select("slug, archived_at").eq("id", existingId).maybeSingle();
+      if (currentError || !current) return { error: "This car could not be found. Return to Inventory and try again." };
+      slug = current.slug;
+      archived = Boolean(current.archived_at);
     }
     const vehiclePayload = {
       slug,
       title: value.title, make: value.make, model: value.model, variant: nullable(value.variant), year: value.year, price: value.price, currency: nullable(value.currency), mileage: value.mileage,
-      engine_capacity: nullable(value.engine_capacity), fuel_type: nullable(value.fuel_type), transmission: nullable(value.transmission), drive_type: nullable(value.drive_type), body_type: nullable(value.body_type), exterior_color: nullable(value.exterior_color), interior_color: nullable(value.interior_color), seats: value.seats, doors: value.doors, description: nullable(value.description), condition: value.condition, availability: value.availability, featured: value.featured, published: value.published, stock_number: nullable(value.stock_number), archived_at: null,
+      engine_capacity: nullable(value.engine_capacity), fuel_type: nullable(value.fuel_type), transmission: nullable(value.transmission), drive_type: nullable(value.drive_type), body_type: nullable(value.body_type), exterior_color: nullable(value.exterior_color), interior_color: nullable(value.interior_color), seats: value.seats, doors: value.doors, description: nullable(value.description), condition: value.condition, availability: value.availability, featured: value.featured, published: archived ? false : value.published, stock_number: nullable(value.stock_number),
     };
     const result = existingId
       ? await supabase.from("vehicles").update(vehiclePayload).eq("id", existingId).select("id,slug").single()
-      : await supabase.from("vehicles").insert(vehiclePayload).select("id,slug").single();
+      : await supabase.from("vehicles").insert({ ...vehiclePayload, archived_at: null }).select("id,slug").single();
     if (result.error || !result.data) return { error: result.error?.code === "23505" ? "That stock number is already in use." : "The vehicle could not be saved." };
     const { error: privateError } = await supabase.from("vehicle_private").upsert({ vehicle_id: result.data.id, vin: nullable(value.vin), admin_notes: nullable(value.admin_notes) }, { onConflict: "vehicle_id" });
     if (privateError) return { error: "The vehicle was saved, but its private VIN and notes were not. Save again to retry." };

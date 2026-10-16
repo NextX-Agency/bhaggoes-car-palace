@@ -6,7 +6,7 @@ test("homepage and inventory show a complete empty state", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "No cars are listed right now" })).toBeVisible();
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Inventory" }).click();
   await expect(page).toHaveURL(/\/cars$/);
-  await expect(page.getByRole("heading", { name: "Cars for sale" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Browse cars" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Inventory" }).first()).toHaveAttribute("aria-current", "page");
 });
 
@@ -20,7 +20,7 @@ test("homepage vehicle search sends all selected filters to inventory", async ({
   await expect(page).toHaveURL(/\/cars\?.*model=Corolla/);
   await expect(page).toHaveURL(/year=2022/);
   await expect(page).toHaveURL(/maxPrice=25000/);
-  await expect(page.getByRole("heading", { name: "Cars for sale" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Browse cars" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Remove filter Corolla" })).toBeVisible();
 });
 
@@ -119,7 +119,7 @@ test("unknown pages and removed cars lead back to the inventory", async ({ page 
     await page.goto(route);
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Open menu" }).or(page.getByRole("navigation", { name: "Main navigation" }))).toBeVisible();
-    await page.getByRole("link", { name: "Browse available cars" }).click();
+    await page.getByRole("link", { name: "Browse cars" }).click();
     await expect(page).toHaveURL(/\/cars$/);
   }
 });

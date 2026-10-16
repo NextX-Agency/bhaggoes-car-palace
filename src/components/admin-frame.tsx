@@ -20,9 +20,9 @@ export function AdminFrame({ active, email, title, actions, children }: { active
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> View website</Link>
           <div className="admin-user">
             <span className="admin-avatar" aria-hidden="true">{email.slice(0, 1).toUpperCase()}</span>
-            <span className="admin-email" title={email}>{email}</span>
-            <form action={signOutAction}><button className="admin-icon-button" aria-label="Sign out" title="Sign out"><LogOut size={17} /></button></form>
+            <div className="admin-user-details"><span className="admin-user-label">Signed in as</span><span className="admin-email" title={email}>{email}</span></div>
           </div>
+          <form action={signOutAction}><button className="admin-signout-button" type="submit"><LogOut size={16} aria-hidden="true" /> Sign out</button></form>
         </div>
       </aside>
       <section className="admin-content">

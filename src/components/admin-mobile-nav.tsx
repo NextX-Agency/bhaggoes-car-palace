@@ -46,7 +46,7 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
         </nav>
         <footer className="admin-drawer-foot">
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> View website</Link>
-          <p className="admin-email" title={email}>{email}</p>
+          <p className="admin-drawer-user"><span className="admin-user-label">Signed in as</span><span className="admin-email" title={email}>{email}</span></p>
           <form action={signOutAction}><button className="button button-outline button-block" type="submit"><LogOut size={17} aria-hidden="true" /> Sign out</button></form>
         </footer>
       </Dialog.Content>

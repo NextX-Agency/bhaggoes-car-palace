@@ -19,9 +19,11 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .admin-site-link:hover { background: var(--surface); color: var(--ink); }
 .admin-user { display: flex; align-items: center; gap: 10px; padding: 6px 4px 0 10px; }
 .admin-avatar { display: grid; flex: 0 0 auto; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--navy); color: #fff; font-size: var(--fs-xs); font-weight: 700; }
-.admin-email { overflow: hidden; flex: 1; min-width: 0; color: var(--ink-2); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
-.admin-icon-button { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); cursor: pointer; }
-.admin-icon-button:hover { background: var(--surface); color: var(--ink); }
+.admin-user-details, .admin-drawer-user { display: grid; min-width: 0; gap: 2px; }
+.admin-user-label { color: var(--muted); font-size: var(--fs-2xs); font-weight: 500; }
+.admin-email { color: var(--ink-2); font-size: var(--fs-xs); line-height: 1.3; overflow-wrap: anywhere; }
+.admin-signout-button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; width: 100%; padding: 0 12px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 600; text-align: left; cursor: pointer; }
+.admin-signout-button:hover { background: var(--surface); color: var(--ink); }
 
 /* Mobile top bar and menu drawer (below 860px the sidebar is replaced by these) */
 .admin-mobile-bar { position: sticky; top: 0; z-index: 20; display: none; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 6px 12px 6px 16px; border-bottom: 1px solid var(--line); background: #fff; }
@@ -35,7 +37,6 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .admin-drawer-nav a.active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
 .admin-drawer-foot { display: grid; gap: 10px; padding: 14px 20px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 .admin-drawer-foot .admin-site-link { margin-inline: -12px; }
-.admin-drawer-foot .admin-email { margin: 0; }
 
 /* Content */
 .admin-content { min-width: 0; padding: 28px clamp(16px, 3vw, 40px) 64px; }

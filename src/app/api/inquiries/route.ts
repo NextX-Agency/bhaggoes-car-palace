@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import { websiteInquiriesEnabled } from "@/lib/features";
 
 const inquirySchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -14,6 +15,7 @@ const inquirySchema = z.object({
 
 const requests = new Map<string, { count: number; expires: number }>();
 export async function POST(request: Request) {
+  if (!websiteInquiriesEnabled) return NextResponse.json({ error: "Website inquiries are disabled. Please contact the dealership on WhatsApp." }, { status: 404 });
   if (!hasSupabaseEnv()) return NextResponse.json({ error: "Messages are unavailable right now. Please try again later." }, { status: 503 });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }

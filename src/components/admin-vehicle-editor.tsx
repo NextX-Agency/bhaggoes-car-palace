@@ -117,6 +117,7 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
   const privateInfo = vehicle as (Vehicle & { vin?: string | null; admin_notes?: string | null }) | null | undefined;
   const defaults = { title: vehicle?.title ?? "", make: vehicle?.make ?? "", model: vehicle?.model ?? "", variant: vehicle?.variant ?? "", year: vehicle?.year ?? "", price: vehicle?.price ?? "", currency: vehicle?.currency ?? "", mileage: vehicle?.mileage ?? "", engine_capacity: vehicle?.engine_capacity ?? "", fuel_type: vehicle?.fuel_type ?? "", transmission: vehicle?.transmission ?? "", drive_type: vehicle?.drive_type ?? "", body_type: vehicle?.body_type ?? "", exterior_color: vehicle?.exterior_color ?? "", interior_color: vehicle?.interior_color ?? "", seats: vehicle?.seats ?? "", doors: vehicle?.doors ?? "", description: vehicle?.description ?? "", stock_number: vehicle?.stock_number ?? "", vin: privateInfo?.vin ?? "", admin_notes: privateInfo?.admin_notes ?? "" };
   const demo = vehicle ? isDemoVehicle(vehicle) : false;
+  const archived = Boolean(vehicle?.archived_at);
   const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
   const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
   return <form className="admin-form vehicle-editor" onSubmit={handleSubmit}>
@@ -176,11 +177,13 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
     <div className="editor-side">
       <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
         {demo ? <p className="help-text">This is a demo listing. Its price appears as an example, and visitors cannot inquire about buying it. Keep the DEMO- stock number while using it as a sample.</p> : null}
+        {archived ? <p className="help-text">This car is archived and hidden. Saving edits will keep it archived. Use Restore in Inventory when you want to show it again.</p> : null}
         <div className="price-field"><label className="admin-field">Price<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label></div>
+        <p className="help-text">If you enter a price, enter its currency too (for example USD or SRD).</p>
         <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
         <label className="admin-field">Stock number<input name="stock_number" defaultValue={defaults.stock_number} /></label>
         <div className="admin-switches">
-          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} /><span><strong>Show on website</strong><small>Visitors can open this listing</small></span></label>
+          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} disabled={archived} /><span><strong>Show on website</strong><small>{archived ? "Restore this car in Inventory first" : "Visitors can open this listing"}</small></span></label>
           <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Show on homepage</strong><small>Appears in the homepage car section</small></span></label>
         </div>
       </div></section>
