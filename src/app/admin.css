@@ -43,6 +43,7 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .admin-topline h1 { font-size: clamp(1.5rem, 1vw + 1.1rem, 1.875rem); }
 .admin-topline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-callout { margin-bottom: 24px; }
+.admin-whatsapp-note { margin-top: 20px; padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--r-md); background: #fff; color: var(--ink-2); font-size: var(--fs-sm); }
 .admin-inventory-intro { max-width: 86ch; margin: -8px 0 20px; color: var(--muted); font-size: var(--fs-sm); }
 .admin-preview { padding: clamp(16px, 2.5vw, 32px); border: 1px solid var(--line); border-radius: var(--r-lg); background: #fff; }
 .admin-preview .detail-aside { top: 24px; }
@@ -51,7 +52,7 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .inline-form { display: flex; align-items: center; gap: 8px; }
 .link-button { padding: 0; border: 0; background: none; color: var(--brand); font-weight: 600; cursor: pointer; }
 
-.admin-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
 .admin-stat { display: grid; gap: 6px; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--r-md); background: #fff; transition: border-color 0.15s; }
 .admin-stat:hover { border-color: var(--line-strong); }
 .admin-stat span { color: var(--muted); font-size: var(--fs-xs); font-weight: 500; }

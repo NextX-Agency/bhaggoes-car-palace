@@ -174,6 +174,7 @@ img { max-width: 100%; }
 .brand-logo { display: inline-block; width: 20px; height: 20px; flex: 0 0 20px; color: currentColor; vertical-align: middle; }
 .detail-brand { display: flex; align-items: center; gap: 8px; }
 .demo-disclaimer { margin-top: 10px; color: var(--muted); font-size: var(--fs-sm); }
+.demo-contact-note { width: 100%; color: var(--muted); font-size: var(--fs-xs); }
 .demo-detail-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 10px; background: var(--neutral-soft); color: var(--ink-2); font-size: var(--fs-xs); font-weight: 700; }
 .mobile-cta-demo { font-size: var(--fs-sm); font-weight: 700; }
 

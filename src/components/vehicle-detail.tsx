@@ -19,14 +19,17 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
   const demo = isDemoVehicle(vehicle);
   const price = formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
   const hasPrice = vehicle.price != null;
-  const whatsApp = preview ? null : buildWhatsAppLink(settings.whatsapp, `Hello, I'm interested in the ${name} listed at ${settings.business_name}. Is it still available? ${siteUrl()}/cars/${vehicle.slug}`);
+  const message = demo
+    ? `Hello ${settings.business_name}, I saw the ${name} demo on your website. Do you have a similar car available? ${siteUrl()}/cars/${vehicle.slug}`
+    : `Hello, I'm interested in the ${name} listed at ${settings.business_name}. Is it still available? ${siteUrl()}/cars/${vehicle.slug}`;
+  const whatsApp = preview ? null : buildWhatsAppLink(settings.whatsapp, message);
   const keySpecs = ([
     ["Mileage", formatMileage(vehicle.mileage)], ["Transmission", vehicle.transmission], ["Fuel", vehicle.fuel_type],
     ["Engine", vehicle.engine_capacity], ["Body type", vehicle.body_type],
   ] as [string, string | null][]).filter((item): item is [string, string] => Boolean(item[1])).slice(0, 4);
   const specifications = vehicleSpecifications(vehicle);
   const Title = preview ? "h2" : "h1";
-  const inquire = vehicle.availability !== "sold" && !demo;
+  const inquire = vehicle.availability !== "sold" || demo;
 
   return <>
     <div className="detail-layout">
@@ -46,9 +49,10 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           {demo && hasPrice ? <p className="demo-price-note">Example price · not a sales offer</p> : null}
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
-            {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask on WhatsApp</a> : null}
+            {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> {demo ? "Ask about similar cars" : "Ask on WhatsApp"}</a> : null}
             {!whatsApp ? <a className="button button-primary" href="/contact">Contact the dealership</a> : null}
             {settings.phone ? <a className="button button-ghost" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> {settings.phone}</a> : null}
+            {demo && whatsApp ? <p className="demo-contact-note">Opens WhatsApp with a question about a similar car.</p> : null}
           </div> : null}
           {!preview ? <div className="detail-tools"><VehicleActions vehicleId={vehicle.id} /><VehicleShareButton title={name} businessName={settings.business_name} /></div> : null}
         </div>
@@ -73,7 +77,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
 
     {!preview ? <div className="mobile-cta">
       <div className="mobile-cta-price"><span>{demo ? "Example price · not for sale" : heading}</span><strong>{price}</strong></div>
-      {demo ? <span className="mobile-cta-demo">Demo only</span> : whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
+      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : demo ? <a className="button button-primary" href="/contact">Ask us</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;
 }
