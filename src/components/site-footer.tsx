@@ -5,6 +5,7 @@ import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain
 import { compareCarsEnabled } from "@/lib/features";
 
 export function SiteFooter({ settings }: { settings: SiteSettings }) {
+  const copyrightYear = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "America/Paramaribo" }).format(new Date());
   const socialPlatforms = [["instagram", "Instagram"], ["facebook", "Facebook"], ["youtube", "YouTube"], ["tiktok", "TikTok"]] as const;
   const socialLinks = socialPlatforms.flatMap(([platform, label]) => {
     const url = safeExternalUrl(settings.social_links?.[platform]);
@@ -41,8 +42,8 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       </div> : null}
     </div>
     <div className="container footer-bottom">
-      <span>© {new Date().getFullYear()} {settings.business_name}</span>
-      <nav aria-label="Legal"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/admin/login">Staff sign in</Link></nav>
+      <span>© {copyrightYear} {settings.business_name}</span>
+      <nav aria-label="Legal"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav>
     </div>
   </footer>;
 }
