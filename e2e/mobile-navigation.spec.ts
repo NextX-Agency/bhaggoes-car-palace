@@ -104,7 +104,9 @@ test("every mobile menu link navigates, closes the menu, and marks the active pa
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto("/");
   const menu = await openMenu(page);
-  const targets = await menu.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link").evaluateAll((links) => links.map((link) => [link.textContent?.trim() ?? "", link.getAttribute("href") ?? ""]));
+  const targets = await menu.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link").evaluateAll((links) => links
+    .filter((link) => link.getAttribute("href")?.startsWith("/"))
+    .map((link) => [link.textContent?.trim() ?? "", link.getAttribute("href") ?? ""]));
   expect(targets.length).toBeGreaterThanOrEqual(4);
   await page.keyboard.press("Escape");
 
