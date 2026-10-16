@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Phone } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone } from "lucide-react";
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { HeroSearch } from "@/components/hero-search";
@@ -23,13 +23,18 @@ export default async function HomePage() {
 
   return <>
     <section className="hero" aria-labelledby="hero-title">
-      <Image className="hero-photo" src="/images/hero-suv.webp" alt="" fill loading="eager" fetchPriority="high" sizes="100vw" />
+      <Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Illustrative image of a premium black pickup at a dealership" fill loading="eager" fetchPriority="high" sizes="100vw" />
       <div className="hero-shade" />
       <div className="container hero-content">
         <h1 id="hero-title">{settings.homepage_title}</h1>
         {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
         {settings.homepage_subtitle ? <p className="hero-copy">{settings.homepage_subtitle}</p> : null}
+        <div className="hero-actions">
+          <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
+          {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask us on WhatsApp</a> : null}
+        </div>
         {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available</p> : null}
+        <p className="hero-photo-note">Illustrative vehicle image</p>
       </div>
     </section>
 

@@ -5,7 +5,7 @@ import { VehicleActions } from "@/components/vehicle-actions";
 import { VehicleGallery } from "@/components/vehicle-gallery";
 import { VehicleShareButton } from "@/components/vehicle-share-button";
 import type { SiteSettings, Vehicle } from "@/lib/domain";
-import { buildWhatsAppLink, formatAmount, formatMileage, vehicleSpecifications } from "@/lib/domain";
+import { buildWhatsAppLink, formatAmount, formatMileage, isDemoVehicle, vehicleSpecifications } from "@/lib/domain";
 import { siteUrl } from "@/lib/site-url";
 
 export function vehicleDisplayName(vehicle: Vehicle) {
@@ -15,7 +15,7 @@ export function vehicleDisplayName(vehicle: Vehicle) {
 export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle: Vehicle; settings: SiteSettings; preview?: boolean }) {
   const name = vehicleDisplayName(vehicle);
   const heading = [vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
-  const price = formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
+  const price = isDemoVehicle(vehicle) ? "Demo only" : formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
   const hasPrice = vehicle.price != null;
   const whatsApp = preview ? null : buildWhatsAppLink(settings.whatsapp, `Hello, I'm interested in the ${name} listed at ${settings.business_name}. Is it still available? ${siteUrl()}/cars/${vehicle.slug}`);
   const keySpecs = ([
@@ -24,7 +24,8 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
   ] as [string, string | null][]).filter((item): item is [string, string] => Boolean(item[1])).slice(0, 4);
   const specifications = vehicleSpecifications(vehicle);
   const Title = preview ? "h2" : "h1";
-  const inquire = vehicle.availability !== "sold";
+  const demo = isDemoVehicle(vehicle);
+  const inquire = vehicle.availability !== "sold" && !demo;
 
   return <>
     <div className="detail-layout">
@@ -35,6 +36,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           <div>
             <p className="eyebrow">{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
             <Title>{heading}</Title>
+            {demo ? <p className="demo-disclaimer">Demo listing with an illustrative image. This vehicle is not available for purchase.</p> : null}
           </div>
           <div className="detail-head-row">
             <strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong>
@@ -69,7 +71,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
 
     {!preview ? <div className="mobile-cta">
       <div className="mobile-cta-price"><span>{heading}</span><strong>{price}</strong></div>
-      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
+      {demo ? <span className="mobile-cta-demo">Demo only</span> : whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;
 }

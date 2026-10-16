@@ -43,6 +43,10 @@ export interface VehicleImage {
   url?: string;
 }
 
+export function isDemoVehicle(vehicle: Pick<Vehicle, "stock_number">) {
+  return vehicle.stock_number?.startsWith("DEMO-") ?? false;
+}
+
 export interface SiteSettings {
   business_name: string;
   slogan: string;

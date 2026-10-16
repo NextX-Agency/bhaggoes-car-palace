@@ -137,7 +137,7 @@ export async function updateVehicleAction(form: FormData) {
   if (["available", "on_the_way", "reserved", "sold", "rental"].includes(status)) payload.availability = status;
   if (published) payload.published = published === "true";
   if (featured) payload.featured = featured === "true";
-  if (archived === "true") payload.archived_at = new Date().toISOString();
+  if (archived === "true") { payload.archived_at = new Date().toISOString(); payload.published = false; }
   if (archived === "false") payload.archived_at = null;
   if (!Object.keys(payload).length) return;
   const supabase = await verifyAdmin();

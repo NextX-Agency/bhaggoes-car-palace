@@ -4,6 +4,10 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 const PAGE_SIZE = 12;
+const demoImagePaths: Record<string, string[]> = {
+  "DEMO-RAV4": ["/images/demo-rav4.webp", "/images/demo-rav4-rear.webp"],
+  "DEMO-FIT": ["/images/demo-fit.webp", "/images/demo-fit-rear.webp"],
+};
 
 async function clientOrNull() {
   if (!hasSupabaseEnv()) return null;
@@ -23,7 +27,7 @@ export const getSettings = cache(async (): Promise<SiteSettings> => {
   return settings;
 });
 
-async function attachVehicleMedia(rows: Record<string, unknown>[], client: Awaited<ReturnType<typeof createClient>>) {
+async function attachVehicleMedia(rows: Record<string, unknown>[], client: Awaited<ReturnType<typeof createClient>>, includeDemoImages = false) {
   if (!rows.length) return [] as Vehicle[];
   const ids = rows.map((row) => row.id as string);
   const [imageResult, featureResult] = await Promise.all([
@@ -51,7 +55,14 @@ async function attachVehicleMedia(rows: Record<string, unknown>[], client: Await
       sort_order: image.sort_order,
       is_cover: image.is_cover,
       url: `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}`,
-    })),
+    })).concat(!includeDemoImages || (byVehicle.get(row.id as string) ?? []).length ? [] : (demoImagePaths[String(row.stock_number)] ?? []).map((url, index) => ({
+      id: `demo-${row.id}-${index}`,
+      storage_path: "",
+      alt_text: `Illustrative demo image ${index + 1} for ${row.title}`,
+      sort_order: index,
+      is_cover: index === 0,
+      url,
+    }))),
     features: byFeature.get(row.id as string) ?? [],
   })) as unknown as Vehicle[];
 }
@@ -90,7 +101,7 @@ export async function getVehicles(filters: VehicleFilters = {}) {
 
   const { data, count, error } = await query;
   if (error || !data) return { vehicles: [] as Vehicle[], total: 0, page, pageSize };
-  return { vehicles: await attachVehicleMedia(data, client), total: count ?? 0, page, pageSize };
+  return { vehicles: await attachVehicleMedia(data, client, true), total: count ?? 0, page, pageSize };
 }
 
 export async function getFeaturedVehicles(limit = 4) {
@@ -99,7 +110,7 @@ export async function getFeaturedVehicles(limit = 4) {
   const { data, error } = await client.from("vehicles").select("*")
     .eq("published", true).eq("featured", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(limit);
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  return error || !data ? [] : attachVehicleMedia(data, client, true);
 }
 
 export async function getRecentVehicles(limit = 4) {
@@ -108,15 +119,15 @@ export async function getRecentVehicles(limit = 4) {
   const { data, error } = await client.from("vehicles").select("*")
     .eq("published", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  return error || !data ? [] : attachVehicleMedia(data, client, true);
 }
 
 export async function getAvailableCount() {
   const client = await clientOrNull();
   if (!client) return 0;
-  const { count, error } = await client.from("vehicles").select("id", { count: "exact", head: true })
+  const { data, error } = await client.from("vehicles").select("stock_number")
     .eq("published", true).eq("availability", "available").is("archived_at", null);
-  return error ? 0 : count ?? 0;
+  return error ? 0 : (data ?? []).filter((vehicle) => !vehicle.stock_number?.startsWith("DEMO-")).length;
 }
 
 export async function getVehicleBySlug(slug: string) {
@@ -125,7 +136,7 @@ export async function getVehicleBySlug(slug: string) {
   const { data, error } = await client.from("vehicles").select("*").eq("slug", slug)
     .eq("published", true).is("archived_at", null).maybeSingle();
   if (error || !data) return null;
-  const [vehicle] = await attachVehicleMedia([data], client);
+  const [vehicle] = await attachVehicleMedia([data], client, true);
   return vehicle;
 }
 
@@ -135,7 +146,7 @@ export async function getVehiclesByIds(ids: string[]) {
   if (!client || !safeIds.length) return [] as Vehicle[];
   const { data, error } = await client.from("vehicles").select("*").in("id", safeIds)
     .eq("published", true).is("archived_at", null);
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  return error || !data ? [] : attachVehicleMedia(data, client, true);
 }
 
 export async function getVehicleFilterOptions() {
@@ -191,7 +202,7 @@ export async function getAdminVehicles() {
   if (!client) return [];
   const { data, error } = await client.from("vehicles").select("*")
     .order("updated_at", { ascending: false });
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  return error || !data ? [] : attachVehicleMedia(data, client, true);
 }
 
 export async function getAdminVehicle(id: string) {
