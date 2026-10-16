@@ -35,8 +35,8 @@
   --danger: #b42318;
   --danger-soft: #fcecea;
   --neutral-soft: #eef0f3;
-  --whatsapp: #128049;
-  --whatsapp-hover: #0d6a3c;
+  --whatsapp: #0b1a2e;
+  --whatsapp-hover: #13294a;
 
   /* Type */
   --font-sans: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -168,6 +168,9 @@ img { max-width: 100%; }
 .button-hero-outline { border: 1px solid rgb(255 255 255 / 0.75); background: rgb(8 18 33 / 0.18); color: #fff; }
 .button-hero-outline:hover { border-color: #fff; background: rgb(255 255 255 / 0.12); }
 .vcard-demo { position: absolute; left: 12px; bottom: 12px; z-index: 1; border-radius: 4px; padding: 5px 9px; background: #fff; color: var(--navy); font-size: 0.75rem; font-weight: 700; }
+.demo-section-note { max-width: 68ch; margin: -12px 0 28px; color: var(--muted); font-size: var(--fs-sm); }
+.demo-price-note { display: block; margin-top: 4px; color: var(--muted); font-size: var(--fs-xs); font-weight: 500; }
+.inventory-demo-note { max-width: 60ch; margin-top: 8px; color: var(--muted); font-size: var(--fs-sm); }
 .brand-logo { display: inline-block; width: 20px; height: 20px; flex: 0 0 20px; color: currentColor; vertical-align: middle; }
 .detail-brand { display: flex; align-items: center; gap: 8px; }
 .demo-disclaimer { margin-top: 10px; color: var(--muted); font-size: var(--fs-sm); }

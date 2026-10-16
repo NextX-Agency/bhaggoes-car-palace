@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
-import type { Vehicle } from "@/lib/domain";
+import { isDemoVehicle, type Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, saveVehicleAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -116,6 +116,7 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
   }
   const privateInfo = vehicle as (Vehicle & { vin?: string | null; admin_notes?: string | null }) | null | undefined;
   const defaults = { title: vehicle?.title ?? "", make: vehicle?.make ?? "", model: vehicle?.model ?? "", variant: vehicle?.variant ?? "", year: vehicle?.year ?? "", price: vehicle?.price ?? "", currency: vehicle?.currency ?? "", mileage: vehicle?.mileage ?? "", engine_capacity: vehicle?.engine_capacity ?? "", fuel_type: vehicle?.fuel_type ?? "", transmission: vehicle?.transmission ?? "", drive_type: vehicle?.drive_type ?? "", body_type: vehicle?.body_type ?? "", exterior_color: vehicle?.exterior_color ?? "", interior_color: vehicle?.interior_color ?? "", seats: vehicle?.seats ?? "", doors: vehicle?.doors ?? "", description: vehicle?.description ?? "", stock_number: vehicle?.stock_number ?? "", vin: privateInfo?.vin ?? "", admin_notes: privateInfo?.admin_notes ?? "" };
+  const demo = vehicle ? isDemoVehicle(vehicle) : false;
   const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
   const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
   return <form className="admin-form vehicle-editor" onSubmit={handleSubmit}>
@@ -174,12 +175,13 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
 
     <div className="editor-side">
       <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
+        {demo ? <p className="help-text">This is a demo listing. Its price appears as an example, and visitors cannot inquire about buying it. Keep the DEMO- stock number while using it as a sample.</p> : null}
         <div className="price-field"><label className="admin-field">Price<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label></div>
         <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
         <label className="admin-field">Stock number<input name="stock_number" defaultValue={defaults.stock_number} /></label>
         <div className="admin-switches">
-          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} /><span><strong>Published</strong><small>Visible on the website</small></span></label>
-          <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Featured</strong><small>Shown on the homepage</small></span></label>
+          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} /><span><strong>Show on website</strong><small>Visitors can open this listing</small></span></label>
+          <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Show on homepage</strong><small>Appears in the homepage car section</small></span></label>
         </div>
       </div></section>
       <section className="admin-form-section" aria-labelledby="private-heading"><h2 id="private-heading">Private</h2><div className="admin-form-grid single">
@@ -189,6 +191,6 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
       </div></section>
     </div>
 
-    <div className="admin-form-footer"><div>{state.error ? <p className="admin-feedback admin-error" role="alert">{state.error}</p> : message ? <p className="admin-feedback" role="status"><Check size={14} /> {message}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={pending || uploading} onClick={() => { if (!window.confirm("Permanently delete this vehicle and its photo records?")) return; const data = new FormData(); data.set("id", savedId); setDeleting(true); startTransition(async () => { const result = await deleteVehicleAction(data); setDeleting(false); if (result.error) { setState(result); setMessage(""); return; } if (result.warning) window.alert(result.warning); router.push("/admin/inventory"); }); }}>{deleting ? "Deleting…" : "Delete"}</button> : null}<Link className="button button-ghost" href="/admin/inventory">Cancel</Link><button className="button button-primary" type="submit" disabled={pending || uploading}>{pending && !deleting ? "Saving…" : savedId ? "Save changes" : "Save car"}</button></div></div>
+    <div className="admin-form-footer"><div>{state.error ? <p className="admin-feedback admin-error" role="alert">{state.error}</p> : message ? <p className="admin-feedback" role="status"><Check size={14} /> {message}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={pending || uploading} onClick={() => { if (!window.confirm("Delete this car permanently? This cannot be undone. To hide it without losing it, use Archive in Inventory.")) return; const data = new FormData(); data.set("id", savedId); setDeleting(true); startTransition(async () => { const result = await deleteVehicleAction(data); setDeleting(false); if (result.error) { setState(result); setMessage(""); return; } if (result.warning) window.alert(result.warning); router.push("/admin/inventory"); }); }}>{deleting ? "Deleting…" : "Delete permanently"}</button> : null}<Link className="button button-ghost" href="/admin/inventory">Cancel</Link><button className="button button-primary" type="submit" disabled={pending || uploading}>{pending && !deleting ? "Saving…" : savedId ? "Save changes" : "Save car"}</button></div></div>
   </form>;
 }

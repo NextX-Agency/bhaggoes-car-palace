@@ -170,17 +170,19 @@ export async function getAdminStats() {
   const client = await clientOrNull();
   if (!client) return null;
   const [vehicles, inquiries] = await Promise.all([
-    client.from("vehicles").select("availability, featured, published, archived_at"),
+    client.from("vehicles").select("availability, featured, published, archived_at, stock_number"),
     client.from("inquiries").select("id, status", { count: "exact", head: true }).eq("status", "new"),
   ]);
   if (vehicles.error || !vehicles.data) return null;
   const active = vehicles.data.filter((vehicle) => !vehicle.archived_at);
+  const real = active.filter((vehicle) => !vehicle.stock_number?.startsWith("DEMO-"));
   return {
     total: active.length,
-    available: active.filter((vehicle) => vehicle.availability === "available").length,
-    reserved: active.filter((vehicle) => vehicle.availability === "reserved").length,
-    sold: active.filter((vehicle) => vehicle.availability === "sold").length,
-    onTheWay: active.filter((vehicle) => vehicle.availability === "on_the_way").length,
+    demos: active.length - real.length,
+    available: real.filter((vehicle) => vehicle.published && vehicle.availability === "available").length,
+    reserved: real.filter((vehicle) => vehicle.availability === "reserved").length,
+    sold: real.filter((vehicle) => vehicle.availability === "sold").length,
+    onTheWay: real.filter((vehicle) => vehicle.availability === "on_the_way").length,
     featured: active.filter((vehicle) => vehicle.featured).length,
     newInquiries: inquiries.count ?? 0,
   };

@@ -16,7 +16,8 @@ export function vehicleDisplayName(vehicle: Vehicle) {
 export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle: Vehicle; settings: SiteSettings; preview?: boolean }) {
   const name = vehicleDisplayName(vehicle);
   const heading = [vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
-  const price = isDemoVehicle(vehicle) ? "Demo only" : formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
+  const demo = isDemoVehicle(vehicle);
+  const price = formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
   const hasPrice = vehicle.price != null;
   const whatsApp = preview ? null : buildWhatsAppLink(settings.whatsapp, `Hello, I'm interested in the ${name} listed at ${settings.business_name}. Is it still available? ${siteUrl()}/cars/${vehicle.slug}`);
   const keySpecs = ([
@@ -25,7 +26,6 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
   ] as [string, string | null][]).filter((item): item is [string, string] => Boolean(item[1])).slice(0, 4);
   const specifications = vehicleSpecifications(vehicle);
   const Title = preview ? "h2" : "h1";
-  const demo = isDemoVehicle(vehicle);
   const inquire = vehicle.availability !== "sold" && !demo;
 
   return <>
@@ -37,12 +37,13 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           <div>
             <p className="eyebrow detail-brand"><BrandLogo make={vehicle.make} />{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
             <Title>{heading}</Title>
-            {demo ? <p className="demo-disclaimer">Demo listing with illustrative photos and sample specifications. This vehicle is not available for purchase.</p> : null}
+            {demo ? <p className="demo-disclaimer">Demo listing with illustrative photos, sample specifications and an example price. This vehicle is not available for purchase.</p> : null}
           </div>
           <div className="detail-head-row">
             <strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong>
             {demo ? <span className="demo-detail-badge">Demo listing</span> : <AvailabilityBadge availability={vehicle.availability} />}
           </div>
+          {demo && hasPrice ? <p className="demo-price-note">Example price · not a sales offer</p> : null}
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
             {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask on WhatsApp</a> : null}
@@ -66,12 +67,12 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           <h2 id="features-heading">Features</h2>
           <ul className="feature-list">{vehicle.features.map((feature) => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
         </section> : null}
-        {settings.financing_enabled && hasPrice && !preview ? <section className="detail-block"><FinanceCalculator price={vehicle.price ?? 0} currency={vehicle.currency ?? settings.currency ?? ""} /></section> : null}
+        {settings.financing_enabled && hasPrice && !demo && !preview ? <section className="detail-block"><FinanceCalculator price={vehicle.price ?? 0} currency={vehicle.currency ?? settings.currency ?? ""} /></section> : null}
       </div>
     </div>
 
     {!preview ? <div className="mobile-cta">
-      <div className="mobile-cta-price"><span>{heading}</span><strong>{price}</strong></div>
+      <div className="mobile-cta-price"><span>{demo ? "Example price · not for sale" : heading}</span><strong>{price}</strong></div>
       {demo ? <span className="mobile-cta-demo">Demo only</span> : whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;

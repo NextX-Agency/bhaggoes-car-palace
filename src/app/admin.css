@@ -43,6 +43,7 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .admin-topline h1 { font-size: clamp(1.5rem, 1vw + 1.1rem, 1.875rem); }
 .admin-topline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-callout { margin-bottom: 24px; }
+.admin-inventory-intro { max-width: 86ch; margin: -8px 0 20px; color: var(--muted); font-size: var(--fs-sm); }
 .admin-preview { padding: clamp(16px, 2.5vw, 32px); border: 1px solid var(--line); border-radius: var(--r-lg); background: #fff; }
 .admin-preview .detail-aside { top: 24px; }
 .muted { color: var(--muted); }
@@ -78,13 +79,15 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .table-sort:hover { color: var(--ink); }
 .table-empty { padding: 40px 16px !important; color: var(--muted) !important; text-align: center !important; white-space: normal !important; }
 .col-select { width: 44px; }
-.col-actions { width: 1%; }
+.col-actions { min-width: 160px; }
 .inventory-table .col-title { min-width: 280px; white-space: normal; }
 .vehicle-admin-cell { display: flex; align-items: center; gap: 14px; }
 .vehicle-admin-link { display: grid; gap: 2px; line-height: 1.3; }
 .vehicle-admin-link small { color: var(--muted); font-size: var(--fs-xs); font-weight: 400; }
 .inventory-table-photo { position: relative; display: grid; flex: 0 0 auto; place-items: center; width: 64px; height: 48px; overflow: hidden; border-radius: var(--r-sm); background: var(--surface-2); color: var(--muted-2); }
 .inventory-table-photo img { object-fit: cover; }
+.admin-price { display: grid; line-height: 1.3; }
+.admin-price small, .inventory-mobile-title > small { color: var(--muted); font-size: var(--fs-2xs); font-weight: 400; }
 .archived-row { opacity: 0.6; }
 .inquiry-message { max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
 
@@ -98,9 +101,10 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .admin-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .admin-badge.published, .admin-badge.inquiry-closed { background: var(--ok-soft); color: var(--ok); }
 .admin-badge.draft, .admin-badge.archived { background: var(--neutral-soft); color: var(--muted); }
+.admin-badge.demo { background: var(--brand-soft); color: var(--brand); }
 .admin-badge.inquiry-new { background: var(--brand-soft); color: var(--brand); }
 .admin-badge.inquiry-contacted { background: var(--warn-soft); color: var(--warn); }
-.star-toggle { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--line-strong); cursor: pointer; }
+.star-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 62px; height: 36px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
 .star-toggle:hover { background: var(--surface); color: var(--muted); }
 .star-toggle.is-on { color: #e2a400; }
 .status-select { min-height: 34px; padding: 0 30px 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background-color: #fff; color: var(--ink); font-size: var(--fs-xs); font-weight: 600; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364707f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }

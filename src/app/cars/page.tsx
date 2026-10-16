@@ -8,10 +8,10 @@ import { VehicleFilterForm, sortLabels } from "@/components/vehicle-filter-form"
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getVehicles, getVehicleFilterOptions } from "@/lib/data";
 import type { Availability, VehicleCondition, VehicleFilters } from "@/lib/domain";
-import { availabilityLabels, formatMileage } from "@/lib/domain";
+import { availabilityLabels, formatMileage, isDemoVehicle } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
 
-export const metadata: Metadata = { title: "Cars for Sale", description: "Search current Bhaggoes Car Palace vehicle listings by make, price, year, condition, and more.", alternates: { canonical: "/cars" } };
+export const metadata: Metadata = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, condition, and more.", alternates: { canonical: "/cars" } };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 const numberValue = (value: string | string[] | undefined) => { const parsed = Number(one(value)); return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined; };
@@ -29,6 +29,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
     sort: sort && sort in sortLabels ? sort as VehicleFilters["sort"] : "newest", page: numberValue(params.page) ?? 1,
   };
   const [{ vehicles, total, page, pageSize }, options] = await Promise.all([getVehicles(filters), getVehicleFilterOptions()]);
+  const demoOnly = total > 0 && vehicles.length > 0 && vehicles.every(isDemoVehicle);
 
   const active = filterKeys.flatMap((key) => filters[key] ? [[key, String(filters[key])] as [string, string]] : []);
   const query = (entries: [string, string][]) => { const search = new URLSearchParams(entries); return search.size ? `/cars?${search}` : "/cars"; };
@@ -51,8 +52,9 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
   return <div className="container page-wrap inventory-page">
     <div className="inventory-head">
       <div>
-        <h1>Cars for sale</h1>
+        <h1>{demoOnly ? "Demo cars" : "Browse cars"}</h1>
         <p><strong>{total}</strong> {total === 1 ? "car" : "cars"}{active.length ? " match your filters" : " listed"}</p>
+        {demoOnly ? <p className="inventory-demo-note">Example listings with sample prices. These cars are not for sale.</p> : null}
       </div>
       {compareCarsEnabled ? <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link> : null}
     </div>
