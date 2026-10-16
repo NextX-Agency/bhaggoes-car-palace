@@ -100,7 +100,13 @@ test("admin sends an unconfigured project to setup guidance", async ({ page }) =
 test("mobile navigation opens and inventory fits the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.getByRole("search", { name: "Search cars" })).toBeVisible();
+  const search = page.getByRole("search", { name: "Search cars" });
+  await expect(search).toBeVisible();
+  await expect(search.getByLabel("Make")).toBeVisible();
+  await expect(search.getByLabel("Model")).toBeVisible();
+  await expect(search.getByLabel("Max price")).toBeHidden();
+  await expect(search.getByLabel("Year")).toBeHidden();
+  await expect(search.getByRole("link", { name: "More filters on the cars page" })).toHaveAttribute("href", "/cars");
   const homeWidths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
   expect(homeWidths.page).toBeLessThanOrEqual(homeWidths.viewport);
   await page.getByRole("button", { name: "Open menu" }).click();
