@@ -55,11 +55,22 @@ test("mobile inventory filters open in an accessible drawer and apply to the URL
 });
 
 test("supporting public pages render on direct visits", async ({ page }) => {
-  for (const route of ["/about", "/contact", "/financing", "/faq", "/privacy", "/terms", "/compare", "/favorites"]) {
+  for (const route of ["/about", "/contact", "/financing", "/faq", "/privacy", "/terms", "/favorites"]) {
     const response = await page.goto(route);
     expect(response?.status(), `${route} should respond successfully`).toBe(200);
     await expect(page.locator("main")).toBeVisible();
   }
+});
+
+test("comparison is hidden from the public offer", async ({ page }) => {
+  await page.goto("/cars");
+  await expect(page.getByRole("link", { name: /compare cars/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /compare/i })).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await expect(page.getByRole("dialog", { name: "Menu" }).getByRole("link", { name: /compare/i })).toHaveCount(0);
+  await page.goto("/compare");
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
 });
 
 test("contact is WhatsApp-first without a customer inquiry form", async ({ page }) => {

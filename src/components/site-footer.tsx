@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { SiteSettings } from "@/lib/domain";
 import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
+import { compareCarsEnabled } from "@/lib/features";
 
 export function SiteFooter({ settings }: { settings: SiteSettings }) {
   const socialPlatforms = [["instagram", "Instagram"], ["facebook", "Facebook"], ["youtube", "YouTube"], ["tiktok", "TikTok"]] as const;
@@ -21,7 +22,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         <p className="footer-label">Cars</p>
         <Link href="/cars">Inventory</Link>
         <Link href="/favorites">Saved cars</Link>
-        <Link href="/compare">Compare cars</Link>
+        {compareCarsEnabled ? <Link href="/compare">Compare cars</Link> : null}
         {settings.financing_enabled ? <Link href="/financing">Financing</Link> : null}
       </nav>
       <nav className="footer-col" aria-label="Dealership">

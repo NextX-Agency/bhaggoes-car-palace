@@ -9,6 +9,7 @@ import { VehicleGrid } from "@/components/vehicle-grid";
 import { getVehicles, getVehicleFilterOptions } from "@/lib/data";
 import type { Availability, VehicleCondition, VehicleFilters } from "@/lib/domain";
 import { availabilityLabels, formatMileage } from "@/lib/domain";
+import { compareCarsEnabled } from "@/lib/features";
 
 export const metadata: Metadata = { title: "Cars for Sale", description: "Search current Bhaggoes Car Palace vehicle listings by make, price, year, condition, and more.", alternates: { canonical: "/cars" } };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -53,7 +54,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
         <h1>Cars for sale</h1>
         <p><strong>{total}</strong> {total === 1 ? "car" : "cars"}{active.length ? " match your filters" : " listed"}</p>
       </div>
-      <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link>
+      {compareCarsEnabled ? <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link> : null}
     </div>
     <div className="inventory-layout">
       <aside className="filter-panel" aria-label="Filters">

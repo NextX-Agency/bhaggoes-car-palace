@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, Heart, Menu, X } from "lucide-react";
 import type { SiteSettings } from "@/lib/domain";
+import { compareCarsEnabled } from "@/lib/features";
 import { emptyBrowserSnapshot, FAVORITES_KEY, parseStoredIds, readBrowserSnapshot, subscribeToBrowserStore } from "@/lib/browser-store";
 
 const links = [
@@ -76,7 +77,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
           </div>
           <nav className="mobile-nav container" aria-label="Mobile navigation">
             {visibleLinks.map(([label, href]) => <Link href={href} key={href} aria-current={isActive(href) ? "page" : undefined}>{label}<ArrowRight size={18} aria-hidden="true" /></Link>)}
-            <Link href="/compare" aria-current={isActive("/compare") ? "page" : undefined}>Compare cars<ArrowRight size={18} aria-hidden="true" /></Link>
+            {compareCarsEnabled ? <Link href="/compare" aria-current={isActive("/compare") ? "page" : undefined}>Compare cars<ArrowRight size={18} aria-hidden="true" /></Link> : null}
             <Link href="/favorites" aria-current={isActive("/favorites") ? "page" : undefined}>Saved cars{savedCount ? ` (${savedCount})` : ""}<ArrowRight size={18} aria-hidden="true" /></Link>
             {settings.phone ? <div className="mobile-nav-actions"><a className="button button-outline" href={`tel:${settings.phone}`}>Call {settings.phone}</a></div> : null}
           </nav>
