@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { HeroSearch } from "@/components/hero-search";
 import { VehicleGrid } from "@/components/vehicle-grid";
+import { BrandLogo } from "@/components/brand-logo";
 import { getAvailableCount, getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
 import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
 
@@ -56,7 +57,7 @@ export default async function HomePage() {
       <div className="container">
         <div className="section-heading"><h2 id="home-makes">Browse by make</h2></div>
         <nav className="make-links" aria-label="Browse by make">
-          {makes.map((make) => <Link key={make} href={`/cars?make=${encodeURIComponent(make)}`}>{make}<span>{filterOptions.makeCounts[make]}</span></Link>)}
+          {makes.map((make) => <Link key={make} href={`/cars?make=${encodeURIComponent(make)}`}><BrandLogo make={make} />{make}<span>{filterOptions.makeCounts[make]}</span></Link>)}
         </nav>
       </div>
     </section> : null}

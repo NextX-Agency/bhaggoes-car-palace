@@ -5,6 +5,7 @@ import type { Vehicle } from "@/lib/domain";
 import { coverImage, formatAmount, formatMileage, isDemoVehicle } from "@/lib/domain";
 import { AvailabilityBadge } from "@/components/availability-badge";
 import { VehicleActions } from "@/components/vehicle-actions";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function VehicleCard({ vehicle, priority = false }: { vehicle: Vehicle; priority?: boolean }) {
   const image = coverImage(vehicle.images);
@@ -21,7 +22,7 @@ export function VehicleCard({ vehicle, priority = false }: { vehicle: Vehicle; p
       <VehicleActions vehicleId={vehicle.id} name={vehicle.title} compact />
     </div>
     <div className="vcard-body">
-      <p className="vcard-meta">{[vehicle.year, vehicle.make].filter(Boolean).join(" · ")}</p>
+      <p className="vcard-meta"><BrandLogo make={vehicle.make} />{[vehicle.year, vehicle.make].filter(Boolean).join(" · ")}</p>
       <h3 className="vcard-title"><Link href={`/cars/${vehicle.slug}`}>{name}</Link></h3>
       {specs.length ? <ul className="vcard-specs">{specs.map((spec) => <li key={spec}>{spec}</li>)}</ul> : null}
       <strong className={`vcard-price${hasPrice ? "" : " is-request"}`}>{isDemoVehicle(vehicle) ? "Demo only" : formatAmount(vehicle.price, vehicle.currency)}</strong>

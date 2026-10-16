@@ -4,6 +4,7 @@ import { FinanceCalculator } from "@/components/finance-calculator";
 import { VehicleActions } from "@/components/vehicle-actions";
 import { VehicleGallery } from "@/components/vehicle-gallery";
 import { VehicleShareButton } from "@/components/vehicle-share-button";
+import { BrandLogo } from "@/components/brand-logo";
 import type { SiteSettings, Vehicle } from "@/lib/domain";
 import { buildWhatsAppLink, formatAmount, formatMileage, isDemoVehicle, vehicleSpecifications } from "@/lib/domain";
 import { siteUrl } from "@/lib/site-url";
@@ -34,13 +35,13 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
       <aside className="detail-aside" aria-label="Price and contact">
         <div className="detail-summary">
           <div>
-            <p className="eyebrow">{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
+            <p className="eyebrow detail-brand"><BrandLogo make={vehicle.make} />{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
             <Title>{heading}</Title>
-            {demo ? <p className="demo-disclaimer">Demo listing with an illustrative image. This vehicle is not available for purchase.</p> : null}
+            {demo ? <p className="demo-disclaimer">Demo listing with illustrative photos and sample specifications. This vehicle is not available for purchase.</p> : null}
           </div>
           <div className="detail-head-row">
             <strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong>
-            <AvailabilityBadge availability={vehicle.availability} />
+            {demo ? <span className="demo-detail-badge">Demo listing</span> : <AvailabilityBadge availability={vehicle.availability} />}
           </div>
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
