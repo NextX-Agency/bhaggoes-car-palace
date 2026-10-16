@@ -1,6 +1,5 @@
-import { Check, MessageCircle, Phone, Send } from "lucide-react";
+import { Check, MessageCircle, Phone } from "lucide-react";
 import { AvailabilityBadge } from "@/components/availability-badge";
-import { ContactForm } from "@/components/contact-form";
 import { FinanceCalculator } from "@/components/finance-calculator";
 import { VehicleActions } from "@/components/vehicle-actions";
 import { VehicleGallery } from "@/components/vehicle-gallery";
@@ -44,7 +43,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
             {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask on WhatsApp</a> : null}
-            <a className={`button ${whatsApp ? "button-outline" : "button-primary"}`} href="#inquiry"><Send size={17} aria-hidden="true" /> Send an inquiry</a>
+            {!whatsApp ? <a className="button button-primary" href="/contact">Contact the dealership</a> : null}
             {settings.phone ? <a className="button button-ghost" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> {settings.phone}</a> : null}
           </div> : null}
           {!preview ? <div className="detail-tools"><VehicleActions vehicleId={vehicle.id} /><VehicleShareButton title={name} businessName={settings.business_name} /></div> : null}
@@ -65,16 +64,12 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           <ul className="feature-list">{vehicle.features.map((feature) => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
         </section> : null}
         {settings.financing_enabled && hasPrice && !preview ? <section className="detail-block"><FinanceCalculator price={vehicle.price ?? 0} currency={vehicle.currency ?? settings.currency ?? ""} /></section> : null}
-        {!preview ? <section className="detail-block inquiry-block" id="inquiry" aria-labelledby="inquiry-heading">
-          <h2 id="inquiry-heading">Ask about this car</h2>
-          <ContactForm vehicleId={vehicle.id} />
-        </section> : null}
       </div>
     </div>
 
     {!preview ? <div className="mobile-cta">
       <div className="mobile-cta-price"><span>{heading}</span><strong>{price}</strong></div>
-      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="#inquiry">Inquire</a>}
+      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;
 }

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { MessageCircle } from "lucide-react";
-import { ContactForm } from "@/components/contact-form";
 import { getSettings } from "@/lib/data";
-import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
+import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
 
 export const metadata: Metadata = { title: "Contact", description: "Contact Bhaggoes Car Palace on WhatsApp, by phone, or visit one of its locations.", alternates: { canonical: "/contact" } };
 
@@ -11,12 +10,15 @@ export default async function ContactPage() {
   const whatsapp = buildWhatsAppLink(settings.whatsapp, `Hello ${settings.business_name}, I have a question.`);
   const locations = parseLocations(settings.address);
   const hours = Object.entries(settings.business_hours ?? {});
-  const reachable = Boolean(whatsapp || settings.phone || settings.email);
+  const socialLinks = (["facebook", "tiktok", "instagram", "youtube"] as const).flatMap((platform) => {
+    const url = safeExternalUrl(settings.social_links?.[platform]);
+    return url ? [{ platform, url }] : [];
+  });
 
   return <div className="container page-wrap">
     <div className="page-intro"><h1>Contact</h1></div>
 
-    {reachable ? <section className="contact-direct" aria-label="Contact options">
+    <section className="contact-direct" aria-label="Contact options">
       {whatsapp ? <a className="contact-whatsapp" href={whatsapp} target="_blank" rel="noreferrer">
         <MessageCircle size={26} aria-hidden="true" />
         <span><strong>WhatsApp</strong>{settings.whatsapp}</span>
@@ -26,7 +28,8 @@ export default async function ContactPage() {
         {settings.phone ? <div><dt>Phone</dt><dd><a href={`tel:${settings.phone}`}>{settings.phone}</a></dd></div> : null}
         {settings.email ? <div><dt>Email</dt><dd><a href={`mailto:${settings.email}`}>{settings.email}</a></dd></div> : null}
       </dl> : null}
-    </section> : <div className="support-single"><ContactForm /></div>}
+      {socialLinks.length ? <div className="contact-social"><h2>Social media</h2><div>{socialLinks.map(({ platform, url }) => <a className="text-link" href={url} key={platform} target="_blank" rel="noopener noreferrer">{platform[0].toUpperCase() + platform.slice(1)}</a>)}</div></div> : null}
+    </section>
 
     {locations.length ? <section className="contact-section" aria-labelledby="locations-heading">
       <h2 id="locations-heading">{locations.length === 1 ? "Location" : "Locations"}</h2>

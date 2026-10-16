@@ -88,12 +88,12 @@ export interface VehicleFilters {
 export const defaultSettings: SiteSettings = {
   business_name: "Bhaggoes Car Palace",
   slogan: "WE BEAT ANYBODY'S PRICES",
-  phone: null,
-  whatsapp: null,
+  phone: "+597 894-6870",
+  whatsapp: "+597 894-6870",
   email: null,
-  address: null,
+  address: "Kwattaweg 407, Paramaribo, Suriname",
   business_hours: null,
-  social_links: null,
+  social_links: { facebook: "https://www.facebook.com/100057843361600/" },
   homepage_title: "Browse Our Cars",
   homepage_subtitle: "",
   seo_title: "Bhaggoes Car Palace | Vehicle Inventory",
@@ -182,7 +182,10 @@ export function parseLocations(value: string | null | undefined): DealershipLoca
     const split = line.indexOf(": ");
     const name = split > 0 ? line.slice(0, split).trim() : null;
     const address = split > 0 ? line.slice(split + 2).trim() : line;
-    return { name, address, mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` };
+    const mapUrl = address.toLowerCase() === "kwattaweg 407, paramaribo, suriname"
+      ? "https://maps.app.goo.gl/UgiPvc2SsBrTQYG79"
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    return { name, address, mapUrl };
   }).filter((location) => location.address);
 }
 

@@ -62,15 +62,12 @@ test("supporting public pages render on direct visits", async ({ page }) => {
   }
 });
 
-test("contact form requires a return address and reports unavailable delivery", async ({ page }) => {
+test("contact is WhatsApp-first without a customer inquiry form", async ({ page }) => {
   await page.goto("/contact");
-  await page.getByLabel("Your name").fill("Test Customer");
-  await page.getByLabel("Message", { exact: true }).fill("Is this car available?");
-  await page.getByRole("button", { name: /send inquiry/i }).click();
-  await expect(page.getByRole("status")).toHaveText("Enter an email address or phone number.");
-  await page.getByLabel(/Email/).fill("test@example.com");
-  await page.getByRole("button", { name: /send inquiry/i }).click();
-  await expect(page.getByRole("status")).toHaveText("Messages are unavailable right now. Please try again later.");
+  await expect(page.locator("main form")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /WhatsApp.*Start chat/i })).toHaveAttribute("href", /wa\.me\/5978946870/);
+  await expect(page.getByRole("link", { name: "Facebook" }).first()).toHaveAttribute("href", "https://www.facebook.com/100057843361600/");
+  await expect(page.getByText("Kwattaweg 407, Paramaribo, Suriname").first()).toBeVisible();
 });
 
 test("financing stays unpublished until the dealership enables it", async ({ page }) => {

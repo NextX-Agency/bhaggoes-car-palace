@@ -532,6 +532,9 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 .contact-details dt { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
 .contact-details dd { margin: 2px 0 0; color: var(--ink); }
 .contact-details a:hover { color: var(--brand); }
+.contact-social h2 { margin-bottom: 8px; font-size: 1rem; }
+.contact-social > div { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.financing-contact { margin-top: 24px; }
 .contact-section { max-width: 920px; margin-top: clamp(40px, 5vw, 56px); }
 .contact-section > h2 { margin-bottom: 16px; font-size: 1.25rem; }
 .location-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }

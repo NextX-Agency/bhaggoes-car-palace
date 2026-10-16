@@ -46,5 +46,6 @@ describe("dealership helpers", () => {
     ]);
     expect(locations[0].mapUrl).toContain(encodeURIComponent("Kwattaweg 1, Paramaribo"));
     expect(parseLocations(null)).toEqual([]);
+    expect(parseLocations("Kwattaweg 407, Paramaribo, Suriname")[0].mapUrl).toBe("https://maps.app.goo.gl/UgiPvc2SsBrTQYG79");
   });
 });
