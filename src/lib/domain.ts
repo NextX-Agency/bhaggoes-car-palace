@@ -107,6 +107,19 @@ export const defaultSettings: SiteSettings = {
   logo_url: null,
 };
 
+export function normalizeSiteSettings(data: Partial<SiteSettings>): SiteSettings {
+  return {
+    ...defaultSettings,
+    ...data,
+    phone: data.phone?.trim() || defaultSettings.phone,
+    whatsapp: data.whatsapp?.trim() || defaultSettings.whatsapp,
+    address: data.address?.trim() || defaultSettings.address,
+    social_links: data.social_links == null
+      ? defaultSettings.social_links
+      : { ...defaultSettings.social_links, ...data.social_links },
+  };
+}
+
 export const availabilityLabels: Record<Availability, string> = {
   available: "Available",
   on_the_way: "On the way",

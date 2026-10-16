@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { defaultSettings, type SiteSettings, type Vehicle, type VehicleFilters } from "@/lib/domain";
+import { defaultSettings, normalizeSiteSettings, type SiteSettings, type Vehicle, type VehicleFilters } from "@/lib/domain";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,7 +16,7 @@ export const getSettings = cache(async (): Promise<SiteSettings> => {
   if (!client) return defaultSettings;
   const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
   if (error || !data) return defaultSettings;
-  const settings = { ...defaultSettings, ...data } as SiteSettings;
+  const settings = normalizeSiteSettings(data as Partial<SiteSettings>);
   settings.logo_url = settings.logo_path
     ? settings.logo_path.startsWith("http") ? settings.logo_path : client.storage.from("site-assets").getPublicUrl(settings.logo_path).data.publicUrl
     : null;
