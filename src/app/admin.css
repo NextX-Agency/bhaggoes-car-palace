@@ -103,7 +103,6 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .admin-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .admin-badge.published, .admin-badge.inquiry-closed { background: var(--ok-soft); color: var(--ok); }
 .admin-badge.draft, .admin-badge.archived { background: var(--neutral-soft); color: var(--muted); }
-.admin-badge.demo { background: var(--brand-soft); color: var(--brand); }
 .admin-badge.inquiry-new { background: var(--brand-soft); color: var(--brand); }
 .admin-badge.inquiry-contacted { background: var(--warn-soft); color: var(--warn); }
 .star-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 62px; height: 36px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }

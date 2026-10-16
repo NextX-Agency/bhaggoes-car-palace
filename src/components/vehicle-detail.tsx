@@ -19,9 +19,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
   const demo = isDemoVehicle(vehicle);
   const price = formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
   const hasPrice = vehicle.price != null;
-  const message = demo
-    ? `Hello ${settings.business_name}, I saw the ${name} demo on your website. Do you have a similar car available? ${siteUrl()}/cars/${vehicle.slug}`
-    : `Hello, I'm interested in the ${name} listed at ${settings.business_name}. Is it still available? ${siteUrl()}/cars/${vehicle.slug}`;
+  const message = `Hello ${settings.business_name}, I saw the ${name} on your website. Can you confirm its current availability and price? ${siteUrl()}/cars/${vehicle.slug}`;
   const whatsApp = preview ? null : buildWhatsAppLink(settings.whatsapp, message);
   const keySpecs = ([
     ["Mileage", formatMileage(vehicle.mileage)], ["Transmission", vehicle.transmission], ["Fuel", vehicle.fuel_type],
@@ -29,7 +27,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
   ] as [string, string | null][]).filter((item): item is [string, string] => Boolean(item[1])).slice(0, 4);
   const specifications = vehicleSpecifications(vehicle);
   const Title = preview ? "h2" : "h1";
-  const inquire = vehicle.availability !== "sold" || demo;
+  const inquire = vehicle.availability !== "sold";
 
   return <>
     <div className="detail-layout">
@@ -40,19 +38,16 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           <div>
             <p className="eyebrow detail-brand"><BrandLogo make={vehicle.make} />{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
             <Title>{heading}</Title>
-            {demo ? <p className="demo-disclaimer">Demo listing with illustrative photos, sample specifications and an example price. This vehicle is not available for purchase.</p> : null}
           </div>
           <div className="detail-head-row">
             <strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong>
-            {demo ? <span className="demo-detail-badge">Demo listing</span> : <AvailabilityBadge availability={vehicle.availability} />}
+            {demo ? <span className="status">Check availability</span> : <AvailabilityBadge availability={vehicle.availability} />}
           </div>
-          {demo && hasPrice ? <p className="demo-price-note">Example price · not a sales offer</p> : null}
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
-            {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> {demo ? "Ask about similar cars" : "Ask on WhatsApp"}</a> : null}
+            {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask on WhatsApp</a> : null}
             {!whatsApp ? <a className="button button-primary" href="/contact">Contact the dealership</a> : null}
             {settings.phone ? <a className="button button-ghost" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> {settings.phone}</a> : null}
-            {demo && whatsApp ? <p className="demo-contact-note">Opens WhatsApp with a question about a similar car.</p> : null}
           </div> : null}
           {!preview ? <div className="detail-tools"><VehicleActions vehicleId={vehicle.id} /><VehicleShareButton title={name} businessName={settings.business_name} /></div> : null}
         </div>
@@ -76,8 +71,8 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
     </div>
 
     {!preview ? <div className="mobile-cta">
-      <div className="mobile-cta-price"><span>{demo ? "Example price · not for sale" : heading}</span><strong>{price}</strong></div>
-      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : demo ? <a className="button button-primary" href="/contact">Ask us</a> : <a className="button button-primary" href="/contact">Contact</a>}
+      <div className="mobile-cta-price"><span>{heading}</span><strong>{price}</strong></div>
+      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;
 }

@@ -1,6 +1,6 @@
 # Bhaggoes Car Palace
 
-Responsive dealership website and staff dashboard built with Next.js App Router, TypeScript, Tailwind CSS, and Supabase. The live catalog currently contains two clearly marked demo vehicles with illustrative photos, specifications, and USD example prices. They are not real cars for sale.
+Responsive dealership website and staff dashboard built with Next.js App Router, TypeScript, Tailwind CSS, and Supabase. The live catalog currently contains two test vehicle records with generated photos and unverified USD prices. They must be replaced or verified before the site is used to offer actual cars for sale.
 
 ## Local setup
 
@@ -33,11 +33,11 @@ Replace the example email with the invited account's email. The auth trigger cre
 - Customer questions currently go to the dealership's WhatsApp account. WhatsApp chats are not synced to the dashboard; the separate website inquiry inbox and its submission endpoint are disabled until that feature is enabled.
 - Edit contact details, homepage copy, financing visibility, the logo, and policy/FAQ content from the dashboard.
 
-The dashboard and public catalog rely on the database. The two demo listings use `DEMO-` stock numbers; archive them when verified real inventory is ready. Financing estimates are not offers, and financing is hidden from the homepage and vehicle pages until enabled in settings. A price requires a currency, such as USD or SRD.
+The dashboard and public catalog rely on the database. The two test listings retain `DEMO-` stock numbers internally; archive them when verified real inventory is ready. Their public pages are excluded from search indexing and the sitemap. Financing estimates are not offers, and financing is hidden from the homepage and vehicle pages until enabled in settings. A price requires a currency, such as USD or SRD.
 
 ## Database and access model
 
-The migration at `supabase/migrations/20261015182531_dealership_platform.sql` creates inventory, private vehicle fields, media metadata, settings, FAQs, policy pages, profiles, and inquiries. Row Level Security is enabled on every application table. Anonymous visitors can read published public content and submit inquiries through a validated, rate-limited database function. Only administrator profiles can manage dealership content. VINs and staff notes live in a separate restricted table.
+The migration at `supabase/migrations/20261015182531_dealership_platform.sql` creates inventory, private vehicle fields, media metadata, settings, FAQs, policy pages, profiles, and inquiries. Row Level Security is enabled on every application table. Anonymous visitors can read published public content; the inquiry function is currently disabled for public roles. Only administrator profiles can manage dealership content. VINs and staff notes live in a separate restricted table.
 
 ## Commands
 

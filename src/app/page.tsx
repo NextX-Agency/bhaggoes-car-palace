@@ -7,7 +7,7 @@ import { HeroSearch } from "@/components/hero-search";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { BrandLogo } from "@/components/brand-logo";
 import { getAvailableCount, getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
-import { buildWhatsAppLink, isDemoVehicle, parseLocations } from "@/lib/domain";
+import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -16,7 +16,6 @@ export default async function HomePage() {
     getSettings(), getFeaturedVehicles(6), getRecentVehicles(6), getVehicleFilterOptions(), getAvailableCount(),
   ]);
   const vehicles = featured.length >= 3 ? featured : recent;
-  const demoOnly = vehicles.length > 0 && vehicles.every(isDemoVehicle) && availableCount === 0;
   const whatsappHref = buildWhatsAppLink(settings.whatsapp, `Hello, I have a question about a car at ${settings.business_name}.`);
   const hours = Object.entries(settings.business_hours ?? {});
   const locations = parseLocations(settings.address);
@@ -25,18 +24,17 @@ export default async function HomePage() {
 
   return <>
     <section className="hero" aria-labelledby="hero-title">
-      <Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Illustrative image of a premium black pickup at a dealership" fill loading="eager" fetchPriority="high" sizes="100vw" />
+      <Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Black pickup at a dealership" fill loading="eager" fetchPriority="high" sizes="100vw" />
       <div className="hero-shade" />
       <div className="container hero-content">
         <h1 id="hero-title">{settings.homepage_title}</h1>
         {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
         {settings.homepage_subtitle ? <p className="hero-copy">{settings.homepage_subtitle}</p> : null}
         <div className="hero-actions">
-          <Link className="button button-primary" href="/cars">{demoOnly ? "View demo cars" : "Explore the cars"} <ArrowRight size={18} aria-hidden="true" /></Link>
+          <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
           {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask us on WhatsApp</a> : null}
         </div>
         {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available</p> : null}
-        <p className="hero-photo-note">Illustrative vehicle image</p>
       </div>
     </section>
 
@@ -45,10 +43,9 @@ export default async function HomePage() {
     <section className="section home-inventory" aria-labelledby="home-cars">
       <div className="container">
         <div className="section-heading">
-          <h2 id="home-cars">{demoOnly ? "Demo cars" : vehicles === featured ? "Featured cars" : "Latest cars"}</h2>
+          <h2 id="home-cars">{vehicles === featured ? "Featured cars" : "Latest cars"}</h2>
           {vehicles.length ? <Link className="text-link" href="/cars">View all cars <ArrowRight size={16} /></Link> : null}
         </div>
-        {demoOnly ? <p className="demo-section-note">These sample listings show how vehicle photos, details and prices will appear. They are not for sale.</p> : null}
         {vehicles.length
           ? <VehicleGrid vehicles={vehicles} />
           : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}

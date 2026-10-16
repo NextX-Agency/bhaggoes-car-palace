@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
-import { isDemoVehicle, type Vehicle } from "@/lib/domain";
+import type { Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, saveVehicleAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -116,7 +116,6 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
   }
   const privateInfo = vehicle as (Vehicle & { vin?: string | null; admin_notes?: string | null }) | null | undefined;
   const defaults = { title: vehicle?.title ?? "", make: vehicle?.make ?? "", model: vehicle?.model ?? "", variant: vehicle?.variant ?? "", year: vehicle?.year ?? "", price: vehicle?.price ?? "", currency: vehicle?.currency ?? "", mileage: vehicle?.mileage ?? "", engine_capacity: vehicle?.engine_capacity ?? "", fuel_type: vehicle?.fuel_type ?? "", transmission: vehicle?.transmission ?? "", drive_type: vehicle?.drive_type ?? "", body_type: vehicle?.body_type ?? "", exterior_color: vehicle?.exterior_color ?? "", interior_color: vehicle?.interior_color ?? "", seats: vehicle?.seats ?? "", doors: vehicle?.doors ?? "", description: vehicle?.description ?? "", stock_number: vehicle?.stock_number ?? "", vin: privateInfo?.vin ?? "", admin_notes: privateInfo?.admin_notes ?? "" };
-  const demo = vehicle ? isDemoVehicle(vehicle) : false;
   const archived = Boolean(vehicle?.archived_at);
   const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
   const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
@@ -176,7 +175,6 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
 
     <div className="editor-side">
       <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
-        {demo ? <p className="help-text">This is a demo listing. Its price appears as an example, and visitors cannot inquire about buying it. Keep the DEMO- stock number while using it as a sample.</p> : null}
         {archived ? <p className="help-text">This car is archived and hidden. Saving edits will keep it archived. Use Restore in Inventory when you want to show it again.</p> : null}
         <div className="price-field"><label className="admin-field">Price<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label></div>
         <p className="help-text">If you enter a price, enter its currency too (for example USD or SRD).</p>

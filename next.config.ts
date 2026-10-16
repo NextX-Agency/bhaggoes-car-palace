@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  redirects: async () => [
+    { source: "/cars/demo-toyota-rav4", destination: "/cars/2021-toyota-rav4", permanent: true },
+    { source: "/cars/demo-honda-fit", destination: "/cars/2018-honda-fit", permanent: true },
+  ],
   poweredByHeader: false,
   compress: true,
   images: {

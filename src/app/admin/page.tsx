@@ -10,7 +10,7 @@ const inquiryLabels: Record<string, string> = { new: "New", contacted: "Contacte
 export default async function AdminDashboardPage() {
   const { user } = await requireAdmin();
   const [stats, inquiries] = await Promise.all([getAdminStats(), websiteInquiriesEnabled ? getAdminInquiries() : Promise.resolve([])]);
-  const tiles = [["All listings", stats?.total ?? 0, "/admin/inventory"], ["Cars for sale", stats?.available ?? 0, "/admin/inventory"], ["Demo listings", stats?.demos ?? 0, "/admin/inventory"], ...(websiteInquiriesEnabled ? [["New inquiries", stats?.newInquiries ?? 0, "/admin/inquiries"] as const] : [])] as const;
+  const tiles = [["All listings", stats?.total ?? 0, "/admin/inventory"], ["Visible on website", stats?.visible ?? 0, "/admin/inventory"], ...(websiteInquiriesEnabled ? [["New inquiries", stats?.newInquiries ?? 0, "/admin/inquiries"] as const] : [])] as const;
   return <AdminFrame active="/admin" email={user.email ?? "Administrator"} actions={<Link className="button button-primary" href="/admin/inventory/new"><Plus size={17} /> Add car</Link>}>
     <div className="admin-stats">
       {tiles.map(([label, value, href]) => <Link className="admin-stat" href={href} key={label}><span>{label}</span><strong>{value}</strong></Link>)}

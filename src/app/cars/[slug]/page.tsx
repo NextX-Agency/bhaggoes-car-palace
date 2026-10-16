@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!vehicle) return { title: "Car not found", robots: { index: false, follow: false } };
   const image = coverImage(vehicle.images)?.url;
   const demo = isDemoVehicle(vehicle);
-  return { title: `${demo ? "Demo · " : ""}${vehicleDisplayName(vehicle)}`, description: demo ? `Example listing for a ${vehicleDisplayName(vehicle)}. Illustrative price and photos; not for sale.` : vehicle.description?.slice(0, 155) || `${vehicleDisplayName(vehicle)} for sale at Bhaggoes Car Palace.`, alternates: { canonical: `/cars/${slug}` }, openGraph: { images: image ? [image] : [] }, robots: { index: !demo, follow: true } };
+  return { title: vehicleDisplayName(vehicle), description: demo ? `View the ${vehicleDisplayName(vehicle)} and contact Bhaggoes Car Palace for current availability.` : vehicle.description?.slice(0, 155) || `${vehicleDisplayName(vehicle)} at Bhaggoes Car Palace.`, alternates: { canonical: `/cars/${slug}` }, openGraph: { images: image ? [image] : [] }, robots: { index: !demo, follow: true } };
 }
 
 export default async function VehiclePage({ params }: { params: Promise<{ slug: string }> }) {

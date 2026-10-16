@@ -176,7 +176,7 @@ export function vehicleSpecifications(vehicle: Vehicle): [string, string][] {
     ["Year", vehicle.year?.toString() ?? null], ["Condition", vehicle.condition === "new" ? "New" : "Used"], ["Mileage", formatMileage(vehicle.mileage)],
     ["Engine", vehicle.engine_capacity], ["Fuel", vehicle.fuel_type], ["Transmission", vehicle.transmission], ["Drive type", vehicle.drive_type],
     ["Body type", vehicle.body_type], ["Exterior", vehicle.exterior_color], ["Interior", vehicle.interior_color],
-    ["Seats", vehicle.seats?.toString() ?? null], ["Doors", vehicle.doors?.toString() ?? null], ["Stock no.", vehicle.stock_number ?? null],
+    ["Seats", vehicle.seats?.toString() ?? null], ["Doors", vehicle.doors?.toString() ?? null], ["Stock no.", isDemoVehicle(vehicle) ? null : vehicle.stock_number ?? null],
   ];
   return rows.filter((row): row is [string, string] => Boolean(row[1]));
 }

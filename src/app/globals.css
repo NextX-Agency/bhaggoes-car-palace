@@ -162,21 +162,12 @@ img { max-width: 100%; }
 .hero-copy { max-width: 46ch; margin-top: 16px; color: rgb(255 255 255 / 0.82); font-size: 1.0625rem; }
 .hero-stock { margin-top: 24px; color: rgb(255 255 255 / 0.9); font-size: var(--fs-sm); font-weight: 500; }
 .hero-stock strong { font-weight: 700; }
-.hero-photo-note { margin-top: 18px; color: rgb(255 255 255 / 0.7); font-size: 0.75rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .hero-actions .button { min-height: 50px; padding-inline: 22px; }
 .button-hero-outline { border: 1px solid rgb(255 255 255 / 0.75); background: rgb(8 18 33 / 0.18); color: #fff; }
 .button-hero-outline:hover { border-color: #fff; background: rgb(255 255 255 / 0.12); }
-.vcard-demo { position: absolute; left: 12px; bottom: 12px; z-index: 1; border-radius: 4px; padding: 5px 9px; background: #fff; color: var(--navy); font-size: 0.75rem; font-weight: 700; }
-.demo-section-note { max-width: 68ch; margin: -12px 0 28px; color: var(--muted); font-size: var(--fs-sm); }
-.demo-price-note { display: block; margin-top: 4px; color: var(--muted); font-size: var(--fs-xs); font-weight: 500; }
-.inventory-demo-note { max-width: 60ch; margin-top: 8px; color: var(--muted); font-size: var(--fs-sm); }
 .brand-logo { display: inline-block; width: 20px; height: 20px; flex: 0 0 20px; color: currentColor; vertical-align: middle; }
 .detail-brand { display: flex; align-items: center; gap: 8px; }
-.demo-disclaimer { margin-top: 10px; color: var(--muted); font-size: var(--fs-sm); }
-.demo-contact-note { width: 100%; color: var(--muted); font-size: var(--fs-xs); }
-.demo-detail-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 10px; background: var(--neutral-soft); color: var(--ink-2); font-size: var(--fs-xs); font-weight: 700; }
-.mobile-cta-demo { font-size: var(--fs-sm); font-weight: 700; }
 
 /* Hero search: docked to the bottom edge of the hero */
 .hero-search-dock { position: relative; z-index: 3; margin-top: -76px; }
