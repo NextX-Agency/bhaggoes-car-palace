@@ -5,7 +5,7 @@ import { VehicleGallery } from "@/components/vehicle-gallery";
 import { VehicleShareButton } from "@/components/vehicle-share-button";
 import { BrandLogo } from "@/components/brand-logo";
 import type { SiteSettings, Vehicle } from "@/lib/domain";
-import { buildWhatsAppLink, formatAmount, isDemoVehicle, parseLocations, safeExternalUrl, vehicleSpecifications } from "@/lib/domain";
+import { bankFinancingText, buildWhatsAppLink, formatAmount, internalFinancingText, isDemoVehicle, parseLocations, safeExternalUrl, vehicleSpecifications } from "@/lib/domain";
 import { siteUrl } from "@/lib/site-url";
 
 export function vehicleDisplayName(vehicle: Vehicle) {
@@ -65,18 +65,19 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           <h2 id="features-heading">Uitvoering</h2>
           <ul className="feature-list">{vehicle.features.map((feature) => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
         </section> : null}
-        <section className="detail-block dealership-benefits" aria-labelledby="benefits-heading">
+        {settings.sales_terms.benefits.length ? <section className="detail-block dealership-benefits" aria-labelledby="benefits-heading">
           <h2 id="benefits-heading">Bij aankoop krijgt u</h2>
           <ul className="feature-list">
-            {["1 jaar keuring en verzekering", "Nieuwe kentekenplaat", "Snelle en vlotte afhandeling", "Complete servicebeurt", "Stoom- en poetsbeurt", "Volle tank benzine"].map((benefit) => <li key={benefit}><Check size={16} aria-hidden="true" />{benefit}</li>)}
+            {settings.sales_terms.benefits.map((benefit) => <li key={benefit}><Check size={16} aria-hidden="true" />{benefit}</li>)}
           </ul>
-        </section>
-        <section className="detail-block dealership-terms" aria-labelledby="terms-heading">
-          <h2 id="terms-heading">Financiering en inruil</h2>
-          <p><strong>Intern:</strong> 70% aanbetaling, maximaal 6 maanden.</p>
-          <p><strong>Bank:</strong> vanaf 25% aanbetaling.</p>
-          <p>Inruil mogelijk. Neem vandaag contact op voor eventuele extra korting.</p>
-        </section>
+        </section> : null}
+        {settings.financing_enabled || settings.sales_terms.trade_in || settings.sales_terms.promo_text ? <section className="detail-block dealership-terms" aria-labelledby="terms-heading">
+          <h2 id="terms-heading">{settings.financing_enabled ? settings.sales_terms.trade_in ? "Financiering en inruil" : "Financiering" : settings.sales_terms.trade_in ? "Inruil en actie" : "Actie"}</h2>
+          {settings.financing_enabled ? <><p><strong>Intern:</strong> {internalFinancingText(settings.sales_terms)}.</p><p><strong>Bank:</strong> {bankFinancingText(settings.sales_terms)}.</p></> : null}
+          {settings.sales_terms.trade_in ? <p>Inruil mogelijk.</p> : null}
+          {settings.sales_terms.promo_text ? <p>{settings.sales_terms.promo_text}</p> : null}
+          {settings.financing_enabled && settings.financing_notes ? <p>{settings.financing_notes}</p> : null}
+        </section> : null}
         {locations.length ? <section className="detail-block dealership-locations" aria-labelledby="locations-heading"><h2 id="locations-heading">Bezoek ons</h2><div>{locations.map((location) => <a key={location.address} href={location.mapUrl} target="_blank" rel="noreferrer"><MapPin size={18} aria-hidden="true" /><span><strong>{location.name ?? "Locatie"}</strong>{location.address}</span></a>)}</div></section> : null}
       </div>
     </div>

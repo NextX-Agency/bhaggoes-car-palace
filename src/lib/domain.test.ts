@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWhatsAppLink, calculateFinance, formatAmount, normalizeSiteSettings, parseLocations, safeExternalUrl, slugify } from "./domain";
+import { bankFinancingText, buildWhatsAppLink, calculateFinance, formatAmount, internalFinancingText, normalizeSiteSettings, parseLocations, safeExternalUrl, slugify } from "./domain";
 
 describe("dealership helpers", () => {
   it("calculates a zero-interest loan without adding interest", () => {
@@ -33,6 +33,17 @@ describe("dealership helpers", () => {
     expect(settings.address).toBe("HK: Kwattaweg-Tomaatstraat 495, Suriname\nWanica: Indira Ghandiweg 50, Suriname");
     expect(settings.social_links?.facebook).toBe("https://www.facebook.com/100057843361600/");
     expect(normalizeSiteSettings({ phone: "+597 866-8777" }).phone).toBe("+597 866-8777");
+  });
+
+  it("uses one set of sales terms across listings and financing", () => {
+    const terms = normalizeSiteSettings({ sales_terms: {
+      benefits: ["Gratis keuring"], internal_down_percent: 60,
+      internal_max_months: 8, bank_down_percent: 20,
+      trade_in: false, promo_text: "",
+    } }).sales_terms;
+    expect(terms.benefits).toEqual(["Gratis keuring"]);
+    expect(internalFinancingText(terms)).toBe("60% aanbetaling · maximaal 8 maanden");
+    expect(bankFinancingText(terms)).toBe("Vanaf 20% aanbetaling");
   });
 
   it("allows only HTTP social URLs", () => {

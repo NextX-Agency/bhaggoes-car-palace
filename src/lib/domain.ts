@@ -64,11 +64,45 @@ export interface SiteSettings {
   about_text: string | null;
   financing_enabled: boolean;
   financing_notes: string | null;
+  sales_terms: SalesTerms;
   currency: string | null;
   show_sold: boolean;
   logo_path: string | null;
   logo_url?: string | null;
   updated_at?: string;
+}
+
+export interface SalesTerms {
+  benefits: string[];
+  internal_down_percent: number;
+  internal_max_months: number;
+  bank_down_percent: number;
+  trade_in: boolean;
+  promo_text: string;
+}
+
+export const defaultSalesTerms: SalesTerms = {
+  benefits: [
+    "1 jaar keuring en verzekering",
+    "Nieuwe kentekenplaat",
+    "Snelle en vlotte afhandeling",
+    "Complete servicebeurt",
+    "Stoom- en poetsbeurt",
+    "Volle tank benzine",
+  ],
+  internal_down_percent: 70,
+  internal_max_months: 6,
+  bank_down_percent: 25,
+  trade_in: true,
+  promo_text: "Neem vandaag contact op voor eventuele extra korting.",
+};
+
+export function internalFinancingText(terms: SalesTerms) {
+  return `${terms.internal_down_percent}% aanbetaling · maximaal ${terms.internal_max_months} maanden`;
+}
+
+export function bankFinancingText(terms: SalesTerms) {
+  return `Vanaf ${terms.bank_down_percent}% aanbetaling`;
 }
 
 export interface VehicleFilters {
@@ -105,7 +139,8 @@ export const defaultSettings: SiteSettings = {
   seo_description: "Browse the Bhaggoes Car Palace vehicle inventory and contact the dealership about a car.",
   about_text: null,
   financing_enabled: true,
-  financing_notes: "Interne financiering: 70% aanbetaling, maximaal 6 maanden. Bankfinanciering: vanaf 25% aanbetaling. Inruil mogelijk.",
+  financing_notes: null,
+  sales_terms: defaultSalesTerms,
   currency: null,
   show_sold: false,
   logo_path: null,
@@ -113,6 +148,7 @@ export const defaultSettings: SiteSettings = {
 };
 
 export function normalizeSiteSettings(data: Partial<SiteSettings>): SiteSettings {
+  const incomingTerms = data.sales_terms;
   return {
     ...defaultSettings,
     ...data,
@@ -122,6 +158,13 @@ export function normalizeSiteSettings(data: Partial<SiteSettings>): SiteSettings
     social_links: data.social_links == null
       ? defaultSettings.social_links
       : { ...defaultSettings.social_links, ...data.social_links },
+    sales_terms: {
+      ...defaultSalesTerms,
+      ...(incomingTerms ?? {}),
+      benefits: Array.isArray(incomingTerms?.benefits)
+        ? incomingTerms.benefits.filter((item): item is string => typeof item === "string")
+        : defaultSalesTerms.benefits,
+    },
   };
 }
 

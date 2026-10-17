@@ -171,12 +171,28 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .editor-template-panel { grid-column: 1 / -1; display: grid; gap: 14px; border-color: #b9d5e9; background: #f5faff; }
 .editor-template-panel h2 { margin-bottom: 5px; font-size: 1.0625rem; }
 .editor-template-panel .muted { max-width: 850px; font-size: var(--fs-sm); line-height: 1.5; }
+.editor-shared-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 12px; border: 1px solid #cce2d8; border-radius: var(--r-sm); background: #f5fbf7; }
+.editor-shared-summary strong { width: 100%; color: var(--ink); font-size: var(--fs-xs); }
+.editor-shared-summary span { padding: 5px 8px; border-radius: 5px; background: #e2f2e8; color: #17643d; font-size: var(--fs-xs); }
+.editor-shared-summary a { margin-left: auto; color: var(--brand); font-size: var(--fs-xs); font-weight: 700; }
+.editor-template-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 12px; padding-top: 4px; }
+.editor-template-heading strong { font-size: var(--fs-sm); }
+.editor-template-heading span { color: var(--muted); font-size: var(--fs-xs); }
+.editor-import { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-sm); background: #fff; }
+.editor-import summary { color: var(--brand); font-weight: 700; cursor: pointer; }
+.editor-import > .help-text { margin: 10px 0 14px; line-height: 1.5; }
+.editor-import > .button { margin-top: 12px; }
+.editor-import-preview { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+.editor-import-preview strong { margin-right: 4px; font-size: var(--fs-xs); }
+.editor-import-preview span { padding: 5px 8px; border-radius: 6px; background: var(--brand-soft); color: var(--brand); font-size: var(--fs-xs); }
 .editor-template-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
 .editor-template-controls .admin-field { flex: 1 1 250px; max-width: 440px; }
 .editor-template-controls .button { min-height: 40px; }
 .editor-advanced summary { color: var(--ink); font-weight: 700; cursor: pointer; }
 .editor-advanced > .help-text { margin: 12px 0 18px; }
 .editor-advanced > .admin-form-grid { margin-top: 18px; }
+.shared-sales-settings > .help-text { margin: -7px 0 18px; line-height: 1.5; }
+.shared-sales-settings > .admin-checkbox-row { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
 .editor-main, .editor-side { display: grid; gap: 20px; min-width: 0; }
 .editor-side { position: sticky; top: 20px; }
 .vehicle-editor .admin-form-footer { grid-column: 1 / -1; }

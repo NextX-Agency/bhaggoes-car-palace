@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
-import type { Vehicle } from "@/lib/domain";
+import { bankFinancingText, defaultSettings, internalFinancingText, parseLocations, type SiteSettings, type Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, deleteVehicleTemplateAction, saveVehicleAction, saveVehicleTemplateAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
+import { parseListingText } from "@/lib/listing-import";
 import { listingTitle, templateFieldNames, type VehicleTemplate, type VehicleTemplateFields } from "@/lib/vehicle-templates";
 
 const commonFeatures = ["Air conditioning", "Backup camera", "Bluetooth", "Apple CarPlay", "Android Auto", "Leather seats", "Keyless entry", "Alloy wheels", "Cruise control", "Sunroof", "Parking sensors"];
+const importLabels: Record<string, string> = { year: "Bouwjaar", make: "Merk", model: "Model", fuel_type: "Brandstof", transmission: "Transmissie", body_type: "Carrosserie", seats: "Zitplaatsen", stock_number: "Stocknummer", price: "Interne prijs", cash_price: "Cashprijs" };
 const maxPhotoBytes = 15 * 1024 * 1024;
 
 async function optimizePhoto(file: File): Promise<File> {
@@ -37,7 +39,7 @@ async function optimizePhoto(file: File): Promise<File> {
   }
 }
 
-export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehicle | null; templates?: VehicleTemplate[] }) {
+export function AdminVehicleEditor({ vehicle, templates = [], settings = defaultSettings }: { vehicle?: Vehicle | null; templates?: VehicleTemplate[]; settings?: SiteSettings }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const generatedTitle = useRef("");
@@ -49,6 +51,9 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
   const [draggingPhoto, setDraggingPhoto] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templateName, setTemplateName] = useState("");
+  const [importText, setImportText] = useState("");
+  const imported = parseListingText(importText);
+  const locationsCount = parseLocations(settings.address).length;
   const previewUrls = useRef(new Set<string>());
   useEffect(() => () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
   const toggledFeature = (feature: string, checked: boolean) => {
@@ -76,6 +81,19 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
     setFeatureText(template.fields.features.join("\n"));
     refreshTitle(form);
     setMessage(`Template “${template.name}” toegepast. Controleer de gegevens voor u opslaat.`);
+  };
+  const applyImportedText = () => {
+    const form = formRef.current;
+    if (!form) return;
+    const entries = Object.entries(imported.fields);
+    if (!entries.length && !imported.features.length) { setMessage("Geen herkenbare voertuiggegevens gevonden. Vul ze handmatig in."); return; }
+    for (const [name, value] of entries) {
+      const input = field(form, name);
+      if (input && value) input.value = value;
+    }
+    if (imported.features.length) setFeatureText((current) => [...new Set([...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), ...imported.features])].join("\n"));
+    refreshTitle(form);
+    setMessage("Advertentiegegevens ingevuld. Controleer de specificaties en prijzen voordat u opslaat.");
   };
   const saveTemplate = () => {
     const form = formRef.current;
@@ -182,7 +200,14 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
   return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit}>
     <input type="hidden" name="id" value={savedId} />
     <section className="admin-form-section editor-template-panel" aria-labelledby="template-heading">
-      <div><h2 id="template-heading">Sneller een auto plaatsen</h2><p className="muted">Gebruik een template voor merk, model, specificaties en opties. Prijzen, stocknummer en foto’s vult u per auto in. Contact, locaties, aankoopvoordelen en financiering verschijnen automatisch op de website.</p></div>
+      <div><h2 id="template-heading">{vehicle ? "Voertuiggegevens sneller beheren" : "Nieuwe auto in drie stappen"}</h2><p className="muted">1. Plak een bestaande advertentie of kies een template. 2. Controleer de gegevens die per auto verschillen. 3. Voeg foto’s toe en zet de auto online. Voor nieuwe auto’s wordt een stocknummer aangemaakt; vaste verkoopinformatie komt uit de website-instellingen.</p></div>
+      <div className="editor-shared-summary"><strong>Verschijnt automatisch op elke auto</strong><span>{settings.sales_terms.benefits.length} aankoopvoordelen</span>{settings.financing_enabled ? <><span>Intern: {internalFinancingText(settings.sales_terms)}</span><span>Bank: {bankFinancingText(settings.sales_terms)}</span></> : null}{settings.sales_terms.trade_in ? <span>Inruil mogelijk</span> : null}<span>{locationsCount} {locationsCount === 1 ? "locatie" : "locaties"}</span>{settings.whatsapp ? <span>WhatsApp {settings.whatsapp}</span> : null}<Link href="/admin/settings">Pas vaste informatie aan</Link></div>
+      {!vehicle ? <details className="editor-import"><summary>Advertentietekst plakken</summary><p className="help-text">Plak bijvoorbeeld een WhatsApp- of Facebook-bericht. Bouwjaar, merk, model, prijzen, bekende specificaties en opties worden herkend. Er wordt niets gepubliceerd voordat u de auto opslaat.</p>
+        <label className="admin-field">Bestaande advertentie<textarea value={importText} onChange={(event) => setImportText(event.target.value)} rows={5} placeholder={"2018 - Toyota Harrier | Panoramic sunroof | JBL sound system\nPrijs: $26950,-\nGiraal deal: $25950,-"} /></label>
+        {Object.keys(imported.fields).length || imported.features.length ? <div className="editor-import-preview"><strong>Herkend:</strong>{Object.entries(imported.fields).map(([name, value]) => <span key={name}>{importLabels[name] ?? name}: {value}</span>)}{imported.features.length ? <span>Opties: {imported.features.join(", ")}</span> : null}</div> : null}
+        <button className="button button-primary" type="button" onClick={applyImportedText} disabled={!importText.trim()}>Vul formulier in</button>
+      </details> : null}
+      <div className="editor-template-heading"><strong>Herbruikbare voertuigtemplates</strong><span>Voor vaste uitvoeringen en opties</span></div>
       <div className="editor-template-controls">
         <label className="admin-field">Voertuigtemplate<select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)}><option value="">Kies een template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
         <button className="button button-primary" type="button" onClick={applyTemplate} disabled={!selectedTemplate || pending}>Gebruik template</button>
@@ -255,7 +280,7 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
         <label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency || "USD"} placeholder="USD" maxLength={8} /></label>
         <p className="help-text">If you enter a price, enter its currency too (for example USD or SRD).</p>
         <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
-        <label className="admin-field">Stock number<input name="stock_number" defaultValue={defaults.stock_number} /></label>
+        <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} placeholder="Automatisch bij opslaan" /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer uw eigen nummer in.</span></label>
         <div className="admin-switches">
           <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} disabled={archived} /><span><strong>Show on website</strong><small>{archived ? "Restore this car in Inventory first" : "Visitors can open this listing"}</small></span></label>
           <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Show on homepage</strong><small>Appears in the homepage car section</small></span></label>
