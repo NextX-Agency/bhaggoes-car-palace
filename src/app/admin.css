@@ -263,7 +263,10 @@ button.admin-badge:hover { filter: brightness(0.96); }
   .logo-drop { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
-  .editor-template-controls .admin-field { flex-basis: 100%; max-width: none; }
+  .editor-template-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .editor-template-controls .admin-field { grid-column: 1 / -1; max-width: none; }
+  .editor-template-controls .button { width: 100%; }
+  .editor-template-controls + .editor-template-controls .button { grid-column: 1 / -1; }
   .editor-side { grid-template-columns: 1fr; }
   .admin-form-grid .span-2 { grid-column: 1 / -1; }
   .admin-form-section { padding: 16px; }
