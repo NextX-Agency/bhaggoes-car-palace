@@ -5,12 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
-import { bankFinancingText, defaultSettings, internalFinancingText, parseLocations, type SiteSettings, type Vehicle } from "@/lib/domain";
+import type { Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, deleteVehicleTemplateAction, saveVehicleAction, saveVehicleTemplateAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
 import { listingTitle, templateFieldNames, type VehicleTemplate, type VehicleTemplateFields } from "@/lib/vehicle-templates";
-import { SocialIcon } from "@/components/social-icon";
 
 const commonFeatures = ["Air conditioning", "Backup camera", "Bluetooth", "Apple CarPlay", "Android Auto", "Leather seats", "Keyless entry", "Alloy wheels", "Cruise control", "Sunroof", "Parking sensors"];
 const importLabels: Record<string, string> = { year: "Bouwjaar", make: "Merk", model: "Model", fuel_type: "Brandstof", transmission: "Transmissie", body_type: "Carrosserie", seats: "Zitplaatsen", stock_number: "Stocknummer", price: "Interne prijs", cash_price: "Cashprijs" };
@@ -40,7 +39,7 @@ async function optimizePhoto(file: File): Promise<File> {
   }
 }
 
-export function AdminVehicleEditor({ vehicle, templates = [], settings = defaultSettings }: { vehicle?: Vehicle | null; templates?: VehicleTemplate[]; settings?: SiteSettings }) {
+export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehicle | null; templates?: VehicleTemplate[] }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const generatedTitle = useRef("");
@@ -55,7 +54,6 @@ export function AdminVehicleEditor({ vehicle, templates = [], settings = default
   const [importText, setImportText] = useState("");
   const [startMode, setStartMode] = useState<"paste" | "template">(vehicle ? "template" : "paste");
   const imported = parseListingText(importText);
-  const locationsCount = parseLocations(settings.address).length;
   const previewUrls = useRef(new Set<string>());
   useEffect(() => () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
   const toggledFeature = (feature: string, checked: boolean) => {
@@ -204,19 +202,19 @@ export function AdminVehicleEditor({ vehicle, templates = [], settings = default
   return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit}>
     <input type="hidden" name="id" value={savedId} />
     <section className="admin-form-section editor-template-panel" aria-labelledby="template-heading">
-      <div><h2 id="template-heading">{vehicle ? "Voertuiggegevens sneller beheren" : "Nieuwe auto in drie stappen"}</h2><p className="muted">{vehicle ? "Pas een bewaarde uitvoering toe of bewaar deze auto als nieuwe template." : "1. Plak een advertentie of kies een template. 2. Controleer de unieke gegevens. 3. Voeg foto’s toe en publiceer. Een stocknummer wordt automatisch aangemaakt."} Vaste verkoopinformatie komt uit de website-instellingen.</p></div>
-      <div className="editor-shared-summary"><strong>Verschijnt automatisch op elke auto</strong><span>{settings.sales_terms.benefits.length} aankoopvoordelen</span>{settings.financing_enabled ? <><span>Intern: {internalFinancingText(settings.sales_terms)}</span><span>Bank: {bankFinancingText(settings.sales_terms)}</span></> : null}{settings.sales_terms.trade_in ? <span>Inruil mogelijk</span> : null}<span>{locationsCount} {locationsCount === 1 ? "locatie" : "locaties"}</span>{settings.whatsapp ? <span className="social-inline"><SocialIcon platform="whatsapp" size={14} />WhatsApp {settings.whatsapp}</span> : null}<Link href="/admin/settings">Pas vaste informatie aan</Link></div>
+      <h2 id="template-heading">{vehicle ? "Gegevens hergebruiken" : "Snelle start"}</h2>
+      <div className="editor-shared-summary"><strong>Financiering, aankoopvoordelen en contact worden automatisch toegevoegd.</strong><Link href="/admin/settings">Wijzig vaste informatie</Link></div>
       {!vehicle ? <div className="editor-mode-switch" role="group" aria-label="Kies een snelle start"><button type="button" aria-pressed={startMode === "paste"} onClick={() => setStartMode("paste")}>Advertentie plakken</button><button type="button" aria-pressed={startMode === "template"} onClick={() => setStartMode("template")}>Template kiezen</button></div> : null}
       {!vehicle && startMode === "paste" ? <div className="editor-import"><h3>Advertentietekst plakken</h3><p className="help-text">Plak een bestaand bericht. Controleer de ingevulde gegevens voordat u opslaat.</p>
         <label className="admin-field">Bestaande advertentie<textarea value={importText} onChange={(event) => setImportText(event.target.value)} rows={5} placeholder={"2018 - Toyota Harrier | Panoramic sunroof | JBL sound system\nPrijs: $26950,-\nGiraal deal: $25950,-"} /></label>
         {Object.keys(imported.fields).length || imported.features.length ? <div className="editor-import-preview"><strong>Herkend:</strong>{Object.entries(imported.fields).map(([name, value]) => <span key={name}>{importLabels[name] ?? name}: {value}</span>)}{imported.features.length ? <span>Opties: {imported.features.join(", ")}</span> : null}</div> : null}
         <button className="button button-primary" type="button" onClick={applyImportedText} disabled={!importText.trim()}>Vul formulier in</button>
-      </div> : <div className="editor-template-box"><div className="editor-template-heading"><strong>Gebruik gegevens van een eerder opgeslagen uitvoering</strong><span>Handig als merk, model en opties vaker hetzelfde zijn.</span></div>
+      </div> : <div className="editor-template-box"><div className="editor-template-heading"><strong>Bewaarde uitvoeringen</strong></div>
         <div className="editor-template-controls">
           <label className="admin-field">Bewaarde uitvoering<select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)}><option value="">Kies een uitvoering</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
         </div>
-        {templatePreview ? <div className="editor-template-preview"><strong>Wordt ingevuld: {templatePreview.name}</strong><p>{templateValues.length ? templateValues.map((name) => templatePreview.fields[name]).join(" · ") : "Geen specificaties opgeslagen"}</p><p>{templatePreview.fields.features.length ? `${templatePreview.fields.features.length} opties: ${templatePreview.fields.features.join(", ")}` : "Geen opties opgeslagen"}</p><small>Jaar, prijzen, stocknummer en foto’s blijven per auto apart.</small><button className="button button-primary" type="button" onClick={applyTemplate} disabled={pending}>Vul deze gegevens in</button></div> : <p className="help-text">Kies een uitvoering om vooraf te zien welke gegevens worden ingevuld. Heb je een nieuwe uitvoering? Vul de auto hieronder in en bewaar die daarna voor later.</p>}
-        <details className="editor-template-manage"><summary>Uitvoeringen beheren</summary><p className="help-text">Vul eerst de voertuiggegevens en opties hieronder in. Sla ze daarna op onder een herkenbare naam; prijzen, jaar, stocknummer en foto’s worden nooit meegenomen.</p><div className="editor-template-controls"><label className="admin-field">Naam voor hergebruik<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} maxLength={80} placeholder="Bijv. Toyota Harrier Premium" /></label><button className="button button-ghost" type="button" onClick={saveTemplate} disabled={pending || !templateName.trim()}>Bewaar uitvoering</button></div>{templatePreview ? <button className="editor-template-delete" type="button" onClick={deleteTemplate} disabled={pending}>Verwijder “{templatePreview.name}”</button> : null}</details>
+        {templatePreview ? <div className="editor-template-preview"><strong>{templatePreview.name}</strong><p>{templateValues.length ? templateValues.map((name) => templatePreview.fields[name]).join(" · ") : "Geen specificaties opgeslagen"}</p><p>{templatePreview.fields.features.length ? `${templatePreview.fields.features.length} opties: ${templatePreview.fields.features.join(", ")}` : "Geen opties opgeslagen"}</p><small>Jaar, prijzen, stocknummer en foto’s blijven per auto apart.</small><button className="button button-primary" type="button" onClick={applyTemplate} disabled={pending}>Vul deze gegevens in</button></div> : null}
+        <details className="editor-template-manage"><summary>Uitvoeringen beheren</summary><p className="help-text">Bewaar de ingevulde specificaties en opties voor de volgende auto.</p><div className="editor-template-controls"><label className="admin-field">Naam voor hergebruik<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} maxLength={80} placeholder="Bijv. Toyota Harrier Premium" /></label><button className="button button-ghost" type="button" onClick={saveTemplate} disabled={pending || !templateName.trim()}>Bewaar uitvoering</button></div>{templatePreview ? <button className="editor-template-delete" type="button" onClick={deleteTemplate} disabled={pending}>Verwijder “{templatePreview.name}”</button> : null}</details>
       </div>}
     </section>
     <div className="editor-main">

@@ -201,7 +201,7 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .editor-template-panel h2 { margin-bottom: 5px; font-size: 1.0625rem; }
 .editor-template-panel .muted { max-width: 850px; font-size: var(--fs-sm); line-height: 1.5; }
 .editor-shared-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 12px; border: 1px solid #cce2d8; border-radius: var(--r-sm); background: #f5fbf7; }
-.editor-shared-summary strong { width: 100%; color: var(--ink); font-size: var(--fs-xs); }
+.editor-shared-summary strong { color: var(--ink); font-size: var(--fs-xs); }
 .editor-shared-summary span { padding: 5px 8px; border-radius: 5px; background: #e2f2e8; color: #17643d; font-size: var(--fs-xs); }
 .editor-shared-summary .social-inline { display: inline-flex; align-items: center; gap: 5px; }
 .social-field-label { display: inline-flex; align-items: center; gap: 7px; }
