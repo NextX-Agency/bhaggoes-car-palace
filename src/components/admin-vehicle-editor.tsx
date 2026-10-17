@@ -52,6 +52,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], settings = default
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [importText, setImportText] = useState("");
+  const [startMode, setStartMode] = useState<"paste" | "template">(vehicle ? "template" : "paste");
   const imported = parseListingText(importText);
   const locationsCount = parseLocations(settings.address).length;
   const previewUrls = useRef(new Set<string>());
@@ -200,23 +201,24 @@ export function AdminVehicleEditor({ vehicle, templates = [], settings = default
   return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit}>
     <input type="hidden" name="id" value={savedId} />
     <section className="admin-form-section editor-template-panel" aria-labelledby="template-heading">
-      <div><h2 id="template-heading">{vehicle ? "Voertuiggegevens sneller beheren" : "Nieuwe auto in drie stappen"}</h2><p className="muted">1. Plak een bestaande advertentie of kies een template. 2. Controleer de gegevens die per auto verschillen. 3. Voeg foto’s toe en zet de auto online. Voor nieuwe auto’s wordt een stocknummer aangemaakt; vaste verkoopinformatie komt uit de website-instellingen.</p></div>
+      <div><h2 id="template-heading">{vehicle ? "Voertuiggegevens sneller beheren" : "Nieuwe auto in drie stappen"}</h2><p className="muted">{vehicle ? "Pas een bewaarde uitvoering toe of bewaar deze auto als nieuwe template." : "1. Plak een advertentie of kies een template. 2. Controleer de unieke gegevens. 3. Voeg foto’s toe en publiceer. Een stocknummer wordt automatisch aangemaakt."} Vaste verkoopinformatie komt uit de website-instellingen.</p></div>
       <div className="editor-shared-summary"><strong>Verschijnt automatisch op elke auto</strong><span>{settings.sales_terms.benefits.length} aankoopvoordelen</span>{settings.financing_enabled ? <><span>Intern: {internalFinancingText(settings.sales_terms)}</span><span>Bank: {bankFinancingText(settings.sales_terms)}</span></> : null}{settings.sales_terms.trade_in ? <span>Inruil mogelijk</span> : null}<span>{locationsCount} {locationsCount === 1 ? "locatie" : "locaties"}</span>{settings.whatsapp ? <span>WhatsApp {settings.whatsapp}</span> : null}<Link href="/admin/settings">Pas vaste informatie aan</Link></div>
-      {!vehicle ? <details className="editor-import"><summary>Advertentietekst plakken</summary><p className="help-text">Plak bijvoorbeeld een WhatsApp- of Facebook-bericht. Bouwjaar, merk, model, prijzen, bekende specificaties en opties worden herkend. Er wordt niets gepubliceerd voordat u de auto opslaat.</p>
+      {!vehicle ? <div className="editor-mode-switch" role="group" aria-label="Kies een snelle start"><button type="button" aria-pressed={startMode === "paste"} onClick={() => setStartMode("paste")}>Advertentie plakken</button><button type="button" aria-pressed={startMode === "template"} onClick={() => setStartMode("template")}>Template kiezen</button></div> : null}
+      {!vehicle && startMode === "paste" ? <div className="editor-import"><h3>Advertentietekst plakken</h3><p className="help-text">Plak bijvoorbeeld een WhatsApp- of Facebook-bericht. Bouwjaar, merk, model, prijzen, bekende specificaties en opties worden herkend. Er wordt niets gepubliceerd voordat u de auto opslaat.</p>
         <label className="admin-field">Bestaande advertentie<textarea value={importText} onChange={(event) => setImportText(event.target.value)} rows={5} placeholder={"2018 - Toyota Harrier | Panoramic sunroof | JBL sound system\nPrijs: $26950,-\nGiraal deal: $25950,-"} /></label>
         {Object.keys(imported.fields).length || imported.features.length ? <div className="editor-import-preview"><strong>Herkend:</strong>{Object.entries(imported.fields).map(([name, value]) => <span key={name}>{importLabels[name] ?? name}: {value}</span>)}{imported.features.length ? <span>Opties: {imported.features.join(", ")}</span> : null}</div> : null}
         <button className="button button-primary" type="button" onClick={applyImportedText} disabled={!importText.trim()}>Vul formulier in</button>
-      </details> : null}
-      <div className="editor-template-heading"><strong>Herbruikbare voertuigtemplates</strong><span>Voor vaste uitvoeringen en opties</span></div>
-      <div className="editor-template-controls">
-        <label className="admin-field">Voertuigtemplate<select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)}><option value="">Kies een template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
-        <button className="button button-primary" type="button" onClick={applyTemplate} disabled={!selectedTemplate || pending}>Gebruik template</button>
-        <button className="button button-ghost" type="button" onClick={deleteTemplate} disabled={!selectedTemplate || pending}>Verwijder</button>
-      </div>
-      <div className="editor-template-controls">
-        <label className="admin-field">Bewaar huidige gegevens als template<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} maxLength={80} placeholder="Bijv. Toyota Harrier Premium" /></label>
-        <button className="button button-ghost" type="button" onClick={saveTemplate} disabled={pending}>Bewaar template</button>
-      </div>
+      </div> : <div className="editor-template-box"><div className="editor-template-heading"><strong>Herbruikbare voertuigtemplates</strong><span>Voor vaste uitvoeringen en opties</span></div>
+        <div className="editor-template-controls">
+          <label className="admin-field">Voertuigtemplate<select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)}><option value="">Kies een template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+          <button className="button button-primary" type="button" onClick={applyTemplate} disabled={!selectedTemplate || pending}>Gebruik template</button>
+          <button className="button button-ghost" type="button" onClick={deleteTemplate} disabled={!selectedTemplate || pending}>Verwijder</button>
+        </div>
+        <div className="editor-template-controls">
+          <label className="admin-field">Bewaar huidige gegevens als template<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} maxLength={80} placeholder="Bijv. Toyota Harrier Premium" /></label>
+          <button className="button button-ghost" type="button" onClick={saveTemplate} disabled={pending}>Bewaar template</button>
+        </div>
+      </div>}
     </section>
     <div className="editor-main">
       <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basic details</h2><div className="admin-form-grid">

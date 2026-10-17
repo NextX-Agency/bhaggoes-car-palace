@@ -73,7 +73,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
         </section> : null}
         {settings.financing_enabled || settings.sales_terms.trade_in || settings.sales_terms.promo_text ? <section className="detail-block dealership-terms" aria-labelledby="terms-heading">
           <h2 id="terms-heading">{settings.financing_enabled ? settings.sales_terms.trade_in ? "Financiering en inruil" : "Financiering" : settings.sales_terms.trade_in ? "Inruil en actie" : "Actie"}</h2>
-          {settings.financing_enabled ? <><p><strong>Intern:</strong> {internalFinancingText(settings.sales_terms)}.</p><p><strong>Bank:</strong> {bankFinancingText(settings.sales_terms)}.</p></> : null}
+          {settings.financing_enabled ? <><p><strong>Intern:</strong> {`${internalFinancingText(settings.sales_terms)}.`}</p><p><strong>Bank:</strong> {`${bankFinancingText(settings.sales_terms)}.`}</p></> : null}
           {settings.sales_terms.trade_in ? <p>Inruil mogelijk.</p> : null}
           {settings.sales_terms.promo_text ? <p>{settings.sales_terms.promo_text}</p> : null}
           {settings.financing_enabled && settings.financing_notes ? <p>{settings.financing_notes}</p> : null}
