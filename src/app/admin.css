@@ -45,6 +45,38 @@ body:has(.admin-page) .site-footer, body:has(.admin-login-wrap) .site-footer { d
 .admin-topline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-callout { margin-bottom: 24px; }
 .admin-whatsapp-note { margin-top: 20px; padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--r-md); background: #fff; color: var(--ink-2); font-size: var(--fs-sm); }
+.dashboard-intro { margin: -8px 0 20px; color: var(--muted); font-size: var(--fs-sm); }
+.dashboard-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.dashboard-metric { display: grid; align-content: space-between; min-height: 142px; gap: 9px; padding: 20px; border: 1px solid var(--line); border-radius: var(--r-md); background: #fff; transition: border-color .15s, transform .15s; }
+.dashboard-metric:hover { border-color: var(--brand); transform: translateY(-2px); }
+.dashboard-metric span { color: var(--ink-2); font-size: var(--fs-sm); font-weight: 650; }
+.dashboard-metric strong { font-family: var(--font-head); font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1; font-variant-numeric: tabular-nums; }
+.dashboard-metric small { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-xs); line-height: 1.35; }
+.dashboard-metric-attention { border-color: #d7dfed; background: #f5f8fe; }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+.dashboard-panel { margin-top: 16px; }
+.dashboard-grid .dashboard-panel { margin-top: 0; }
+.dashboard-vehicle-list { margin: 0; padding: 0; list-style: none; }
+.dashboard-vehicle-list li + li { border-top: 1px solid var(--line); }
+.dashboard-vehicle-list li > a { display: flex; align-items: center; gap: 14px; min-height: 70px; padding: 12px 2px; color: var(--ink); }
+.dashboard-vehicle-list li > a:hover strong { color: var(--brand); }
+.dashboard-vehicle-list li > a > svg { flex: 0 0 auto; margin-left: auto; color: var(--muted); }
+.dashboard-vehicle-main { display: grid; min-width: 0; gap: 4px; }
+.dashboard-vehicle-main strong { font-size: var(--fs-sm); line-height: 1.3; }
+.dashboard-vehicle-main small { color: var(--muted); font-size: var(--fs-xs); }
+.dashboard-issues { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-left: auto; }
+.dashboard-issues span, .dashboard-publication { padding: 4px 7px; border-radius: 5px; background: #f1f3f6; color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 600; white-space: nowrap; }
+.dashboard-publication { margin-left: auto; }
+.dashboard-empty { padding: 18px 0 4px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+.dashboard-empty a { color: var(--brand); font-weight: 700; }
+.dashboard-more { display: inline-flex; margin-top: 14px; }
+.dashboard-shortcuts > a { display: flex; align-items: center; gap: 12px; padding: 13px 2px; border-top: 1px solid var(--line); color: var(--ink); }
+.dashboard-shortcuts > a:hover strong { color: var(--brand); }
+.dashboard-shortcuts > a > svg:first-child { flex: 0 0 auto; color: var(--brand); }
+.dashboard-shortcuts > a > svg:last-child { flex: 0 0 auto; margin-left: auto; color: var(--muted); }
+.dashboard-shortcuts > a > span { display: grid; gap: 3px; }
+.dashboard-shortcuts strong { font-size: var(--fs-sm); }
+.dashboard-shortcuts small { color: var(--muted); font-size: var(--fs-xs); line-height: 1.35; }
 .admin-inventory-intro { max-width: 86ch; margin: -8px 0 20px; color: var(--muted); font-size: var(--fs-sm); }
 .admin-preview { padding: clamp(16px, 2.5vw, 32px); border: 1px solid var(--line); border-radius: var(--r-lg); background: #fff; }
 .admin-preview .detail-aside { top: 24px; }
@@ -182,6 +214,15 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .editor-template-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 12px; padding-top: 4px; }
 .editor-template-heading strong { font-size: var(--fs-sm); }
 .editor-template-heading span { color: var(--muted); font-size: var(--fs-xs); }
+.editor-template-preview { display: grid; justify-items: start; gap: 8px; padding: 14px; border: 1px solid #cbd8e9; border-radius: var(--r-sm); background: #f8fbff; }
+.editor-template-preview strong { font-size: var(--fs-sm); }
+.editor-template-preview p, .editor-template-preview small { margin: 0; color: var(--ink-2); font-size: var(--fs-xs); line-height: 1.45; }
+.editor-template-preview small { color: var(--muted); }
+.editor-template-preview .button { margin-top: 5px; }
+.editor-template-manage { padding-top: 12px; border-top: 1px solid var(--line); }
+.editor-template-manage summary { width: fit-content; color: var(--brand); font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
+.editor-template-manage[open] { display: grid; gap: 12px; }
+.editor-template-delete { width: fit-content; padding: 0; border: 0; background: none; color: var(--danger); font-size: var(--fs-xs); font-weight: 650; cursor: pointer; }
 .editor-import { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-sm); background: #fff; }
 .editor-import h3 { color: var(--ink); font-size: var(--fs-sm); }
 .editor-import > .help-text { margin: 10px 0 14px; line-height: 1.5; }
@@ -274,6 +315,7 @@ button.admin-badge:hover { filter: brightness(0.96); }
   .admin-inventory-mobile { display: grid; }
 }
 @media (max-width: 860px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
   .editor-template-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .editor-template-controls .admin-field { grid-column: 1 / -1; max-width: none; }
   .editor-template-controls .button { width: 100%; }
@@ -287,6 +329,11 @@ button.admin-badge:hover { filter: brightness(0.96); }
   .logo-drop { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
+  .dashboard-metrics { grid-template-columns: 1fr 1fr; }
+  .dashboard-metric { min-height: 120px; padding: 15px; }
+  .dashboard-metric:first-child { grid-column: 1 / -1; }
+  .dashboard-vehicle-list li > a { flex-wrap: wrap; }
+  .dashboard-issues { order: 3; justify-content: flex-start; width: 100%; margin-left: 0; }
   .editor-side { grid-template-columns: 1fr; }
   .admin-form-grid .span-2 { grid-column: 1 / -1; }
   .admin-form-section { padding: 16px; }

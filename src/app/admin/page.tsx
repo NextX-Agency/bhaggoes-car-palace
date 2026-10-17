@@ -1,26 +1,53 @@
 import Link from "next/link";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, ClipboardList, Plus, Settings2 } from "lucide-react";
 import { AdminFrame } from "@/components/admin-frame";
-import { getAdminInquiries, getAdminStats } from "@/lib/data";
+import { getAdminInquiries, getAdminVehicles } from "@/lib/data";
 import { websiteInquiriesEnabled } from "@/lib/features";
 import { requireAdmin } from "@/lib/admin-auth";
+import type { Vehicle } from "@/lib/domain";
 
-const inquiryLabels: Record<string, string> = { new: "New", contacted: "Contacted", closed: "Closed" };
+const statusLabels: Record<string, string> = { available: "Beschikbaar", on_the_way: "Onderweg", reserved: "Gereserveerd", sold: "Verkocht", rental: "Verhuur" };
+
+function needsAttention(vehicle: Vehicle) {
+  const issues: string[] = [];
+  if (!vehicle.published) issues.push("Nog niet gepubliceerd");
+  if (!vehicle.images.length) issues.push("Foto’s ontbreken");
+  if (vehicle.price == null) issues.push("Interne prijs ontbreekt");
+  if (vehicle.cash_price == null) issues.push("Cashprijs ontbreekt");
+  if (!vehicle.year || !vehicle.fuel_type || !vehicle.transmission || !vehicle.body_type || !vehicle.seats) issues.push("Specificaties aanvullen");
+  return issues;
+}
 
 export default async function AdminDashboardPage() {
   const { user } = await requireAdmin();
-  const [stats, inquiries] = await Promise.all([getAdminStats(), websiteInquiriesEnabled ? getAdminInquiries() : Promise.resolve([])]);
-  const tiles = [["All listings", stats?.total ?? 0, "/admin/inventory"], ["Visible on website", stats?.visible ?? 0, "/admin/inventory"], ...(websiteInquiriesEnabled ? [["New inquiries", stats?.newInquiries ?? 0, "/admin/inquiries"] as const] : [])] as const;
-  return <AdminFrame active="/admin" email={user.email ?? "Administrator"} actions={<Link className="button button-primary" href="/admin/inventory/new"><Plus size={17} /> Add car</Link>}>
-    <div className="admin-stats">
-      {tiles.map(([label, value, href]) => <Link className="admin-stat" href={href} key={label}><span>{label}</span><strong>{value}</strong></Link>)}
+  const [allVehicles, inquiries] = await Promise.all([getAdminVehicles(), websiteInquiriesEnabled ? getAdminInquiries() : Promise.resolve([])]);
+  const vehicles = allVehicles.filter((vehicle) => !vehicle.archived_at);
+  const active = vehicles.filter((vehicle) => vehicle.published && vehicle.availability !== "sold");
+  const queue = vehicles.filter((vehicle) => vehicle.availability !== "sold").map((vehicle) => ({ vehicle, issues: needsAttention(vehicle) })).filter((item) => item.issues.length);
+  const recent = vehicles.slice(0, 5);
+
+  return <AdminFrame active="/admin" email={user.email ?? "Administrator"} actions={<Link className="button button-primary" href="/admin/inventory/new"><Plus size={17} /> Nieuwe auto</Link>}>
+    <div className="dashboard-intro"><p>Hier zie je wat er op de website staat en welke auto’s nog aandacht nodig hebben.</p></div>
+    <div className="dashboard-metrics" aria-label="Voorraadoverzicht">
+      <Link href="/admin/inventory" className="dashboard-metric"><span>Auto’s in voorraad</span><strong>{vehicles.length}</strong><small>Open voorraad <ArrowRight size={14} /></small></Link>
+      <Link href="/admin/inventory" className="dashboard-metric"><span>Actief op website</span><strong>{active.length}</strong><small>Gepubliceerde auto’s beschikbaar, onderweg of gereserveerd</small></Link>
+      <a href="#dashboard-attention" className="dashboard-metric dashboard-metric-attention"><span>Aandacht nodig</span><strong>{queue.length}</strong><small>Controleer ontbrekende gegevens <ArrowRight size={14} /></small></a>
     </div>
-    {!websiteInquiriesEnabled ? <p className="admin-whatsapp-note">Customer questions go to the dealership&apos;s WhatsApp account. WhatsApp chats do not appear in this dashboard.</p> : null}
-    {websiteInquiriesEnabled ? <section className="admin-section">
-      <div className="admin-section-head"><h2>Recent inquiries</h2>{inquiries.length ? <Link className="text-link" href="/admin/inquiries">View all <ArrowRight size={15} /></Link> : null}</div>
-      {inquiries.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Customer</th><th>About</th><th>Received</th><th>Status</th></tr></thead><tbody>
-        {inquiries.slice(0, 6).map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td className="inquiry-message" title={item.message}>{item.vehicles?.title ?? "General question"}</td><td>{new Date(item.submitted_at).toLocaleDateString()}</td><td><span className={`admin-badge inquiry-${item.status}`}>{inquiryLabels[item.status] ?? item.status}</span></td></tr>)}
-      </tbody></table></div> : <p className="table-empty">No inquiries yet.</p>}
-    </section> : null}
+    <div className="dashboard-grid">
+      <section className="admin-section dashboard-panel" id="dashboard-attention">
+        <div className="admin-section-head"><div><h2>Nu afmaken</h2><p>Open een auto om de ontbrekende gegevens aan te vullen.</p></div></div>
+        {queue.length ? <ul className="dashboard-vehicle-list">{queue.slice(0, 6).map(({ vehicle, issues }) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong><small>{vehicle.stock_number || "Stocknummer volgt bij opslaan"}</small></span><span className="dashboard-issues">{issues.map((issue) => <span key={issue}>{issue}</span>)}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Alles is bijgewerkt. Er zijn momenteel geen auto’s met ontbrekende gegevens.</p>}
+        {queue.length > 6 ? <Link className="text-link dashboard-more" href="/admin/inventory">Bekijk alle auto’s <ArrowRight size={15} /></Link> : null}
+      </section>
+      <section className="admin-section dashboard-panel dashboard-shortcuts"><div className="admin-section-head"><div><h2>Snelle acties</h2><p>De taken die je het vaakst uitvoert.</p></div></div>
+        <Link href="/admin/inventory/new"><Plus size={19} /><span><strong>Nieuwe auto plaatsen</strong><small>Voeg foto’s, prijzen en specificaties toe</small></span><ArrowRight size={17} /></Link>
+        <Link href="/admin/inventory"><ClipboardList size={19} /><span><strong>Voorraad beheren</strong><small>Wijzig status, prijs of bestaande auto’s</small></span><ArrowRight size={17} /></Link>
+        <Link href="/admin/settings"><Settings2 size={19} /><span><strong>Vaste verkoopinformatie</strong><small>Financiering, voordelen en contactgegevens voor alle auto’s</small></span><ArrowRight size={17} /></Link>
+      </section>
+    </div>
+    <section className="admin-section dashboard-panel"><div className="admin-section-head"><div><h2>Recent gewijzigd</h2><p>Ga direct verder met een auto.</p></div><Link className="text-link" href="/admin/inventory">Alle auto’s <ArrowRight size={15} /></Link></div>
+      {recent.length ? <ul className="dashboard-vehicle-list dashboard-recent-list">{recent.map((vehicle) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong><small>{vehicle.stock_number || "Stocknummer volgt bij opslaan"}</small></span><span className="dashboard-publication">{vehicle.published ? statusLabels[vehicle.availability] ?? vehicle.availability : "Concept"}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Nog geen auto’s toegevoegd. <Link href="/admin/inventory/new">Plaats de eerste auto</Link>.</p>}
+    </section>
+    {websiteInquiriesEnabled && inquiries.length ? <section className="admin-section dashboard-panel"><div className="admin-section-head"><div><h2>Nieuwe aanvragen</h2><p>{inquiries.filter((item) => item.status === "new").length} wachten op opvolging.</p></div><Link className="text-link" href="/admin/inquiries">Bekijk aanvragen <ArrowRight size={15} /></Link></div></section> : null}
   </AdminFrame>;
 }
