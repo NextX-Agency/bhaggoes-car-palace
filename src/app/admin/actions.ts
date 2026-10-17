@@ -43,15 +43,15 @@ export async function signOutAction() {
 
 const vehicleSchema = z.object({
   title: z.string().trim().min(2).max(180), make: z.string().trim().min(1).max(80), model: z.string().trim().min(1).max(100),
-  variant: z.string().max(120), year: z.number().int().min(1886).max(2200).nullable(), price: z.number().min(0).nullable(), currency: z.string().max(8), mileage: z.number().min(0).nullable(),
+  variant: z.string().max(120), year: z.number().int().min(1886).max(2200).nullable(), price: z.number().min(0).nullable(), cash_price: z.number().min(0).nullable(), currency: z.string().max(8), mileage: z.number().min(0).nullable(),
   engine_capacity: z.string().max(50), fuel_type: z.string().max(50), transmission: z.string().max(50), drive_type: z.string().max(50), body_type: z.string().max(50), exterior_color: z.string().max(50), interior_color: z.string().max(50), seats: z.number().int().min(1).max(100).nullable(), doors: z.number().int().min(1).max(20).nullable(), description: z.string().max(10000), condition: z.enum(["new", "used"]), availability: z.enum(["available", "on_the_way", "reserved", "sold", "rental"]), featured: z.boolean(), published: z.boolean(), stock_number: z.string().max(80), vin: z.string().max(80), admin_notes: z.string().max(5000), features: z.array(z.string().max(80)).max(60),
-}).refine((value) => value.price === null || Boolean(value.currency.trim()), { path: ["currency"], message: "Choose a currency when entering a price." });
+}).refine((value) => (value.price === null && value.cash_price === null) || Boolean(value.currency.trim()), { path: ["currency"], message: "Choose a currency when entering a price." });
 
 export async function saveVehicleAction(_previous: ActionState & { id?: string; slug?: string }, form: FormData): Promise<ActionState & { id?: string; slug?: string }> {
   try {
     const supabase = await verifyAdmin();
     const fields = {
-      title: text(form, "title"), make: text(form, "make"), model: text(form, "model"), variant: text(form, "variant"), year: optionalNumber(text(form, "year")), price: optionalNumber(text(form, "price")), currency: text(form, "currency"), mileage: optionalNumber(text(form, "mileage")),
+      title: text(form, "title"), make: text(form, "make"), model: text(form, "model"), variant: text(form, "variant"), year: optionalNumber(text(form, "year")), price: optionalNumber(text(form, "price")), cash_price: optionalNumber(text(form, "cash_price")), currency: text(form, "currency"), mileage: optionalNumber(text(form, "mileage")),
       engine_capacity: text(form, "engine_capacity"), fuel_type: text(form, "fuel_type"), transmission: text(form, "transmission"), drive_type: text(form, "drive_type"), body_type: text(form, "body_type"), exterior_color: text(form, "exterior_color"), interior_color: text(form, "interior_color"), seats: optionalNumber(text(form, "seats")), doors: optionalNumber(text(form, "doors")), description: text(form, "description"), condition: text(form, "condition"), availability: text(form, "availability"), featured: text(form, "featured") === "on", published: text(form, "published") === "on", stock_number: text(form, "stock_number"), vin: text(form, "vin"), admin_notes: text(form, "admin_notes"), features: text(form, "features").split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
     };
     const parsed = vehicleSchema.safeParse(fields);
@@ -69,7 +69,7 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
     }
     const vehiclePayload = {
       slug,
-      title: value.title, make: value.make, model: value.model, variant: nullable(value.variant), year: value.year, price: value.price, currency: nullable(value.currency), mileage: value.mileage,
+      title: value.title, make: value.make, model: value.model, variant: nullable(value.variant), year: value.year, price: value.price, cash_price: value.cash_price, currency: nullable(value.currency), mileage: value.mileage,
       engine_capacity: nullable(value.engine_capacity), fuel_type: nullable(value.fuel_type), transmission: nullable(value.transmission), drive_type: nullable(value.drive_type), body_type: nullable(value.body_type), exterior_color: nullable(value.exterior_color), interior_color: nullable(value.interior_color), seats: value.seats, doors: value.doors, description: nullable(value.description), condition: value.condition, availability: value.availability, featured: value.featured, published: archived ? false : value.published, stock_number: nullable(value.stock_number),
     };
     const result = existingId
@@ -102,7 +102,7 @@ export async function deleteVehicleAction(form: FormData): Promise<ActionState &
     if (deleteError) return { error: "The vehicle could not be deleted." };
     let warning: string | undefined;
     if (images.length) {
-      const { error: storageError } = await supabase.storage.from("vehicle-images").remove(images.map((image) => image.storage_path));
+      const { error: storageError } = await supabase.storage.from("vehicle-images").remove(images.map((image) => image.storage_path).filter((path) => !path.startsWith("/images/")));
       if (storageError) warning = "The vehicle was deleted, but its stored photo files could not be removed. Check Supabase Storage to clean up the remaining files.";
     }
     revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
@@ -119,7 +119,7 @@ export async function duplicateVehicleAction(form: FormData) {
   if (!vehicle) return;
   const payload = {
     slug: `${slugify(vehicle.title)}-${crypto.randomUUID().slice(0, 6)}`, title: vehicle.title, make: vehicle.make, model: vehicle.model,
-    variant: vehicle.variant, year: vehicle.year, price: vehicle.price, currency: vehicle.currency, mileage: vehicle.mileage,
+    variant: vehicle.variant, year: vehicle.year, price: vehicle.price, cash_price: vehicle.cash_price, currency: vehicle.currency, mileage: vehicle.mileage,
     engine_capacity: vehicle.engine_capacity, fuel_type: vehicle.fuel_type, transmission: vehicle.transmission, drive_type: vehicle.drive_type,
     body_type: vehicle.body_type, exterior_color: vehicle.exterior_color, interior_color: vehicle.interior_color, seats: vehicle.seats,
     doors: vehicle.doors, description: vehicle.description, condition: vehicle.condition, availability: vehicle.availability,

@@ -50,7 +50,9 @@ async function attachVehicleMedia(rows: Record<string, unknown>[], client: Await
       alt_text: image.alt_text,
       sort_order: image.sort_order,
       is_cover: image.is_cover,
-      url: `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}`,
+      url: image.storage_path.startsWith("/images/")
+        ? image.storage_path
+        : `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}`,
     })),
     features: byFeature.get(row.id as string) ?? [],
   })) as unknown as Vehicle[];

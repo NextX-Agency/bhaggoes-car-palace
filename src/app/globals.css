@@ -118,7 +118,7 @@ img { max-width: 100%; }
 .site-header { position: sticky; top: 0; z-index: 50; background: rgb(255 255 255 / 0.96); border-bottom: 1px solid var(--line); backdrop-filter: saturate(1.4) blur(10px); }
 .nav-row { height: var(--header-h); display: flex; align-items: center; gap: 32px; }
 .brand { display: flex; align-items: center; flex: 0 0 auto; }
-.brand img { display: block; width: 172px; height: auto; }
+.brand img { display: block; width: 190px; height: auto; }
 .desktop-nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .desktop-nav a { position: relative; padding: 10px 12px; border-radius: var(--r-sm); color: var(--ink-2); font-size: var(--fs-sm); font-weight: 500; transition: color 0.15s; }
 .desktop-nav a:hover { color: var(--ink); }
@@ -265,6 +265,10 @@ textarea { resize: vertical; }
 .vcard-specs li:not(:last-child)::after { content: "·"; margin: 0 8px; color: var(--muted-2); }
 .vcard-price { margin-top: auto; padding-top: 12px; font-family: var(--font-head); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .vcard-price.is-request { color: var(--ink-2); font-size: 1rem; font-weight: 600; }
+.vcard-prices { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: auto; padding-top: 12px; }
+.vcard-prices > span { display: grid; color: var(--muted); font-size: var(--fs-2xs); }
+.vcard-prices .vcard-price { margin: 0; padding: 0; color: var(--ink); }
+.vcard-cash-price { color: var(--brand); font-family: var(--font-head); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
 .vcard-noimage { height: 100%; display: grid; place-items: center; align-content: center; gap: 8px; color: var(--muted); font-size: var(--fs-xs); }
 .vcard-noimage svg { color: var(--muted-2); }
 
@@ -405,6 +409,12 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 .detail-head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .detail-price { font-family: var(--font-head); font-size: clamp(1.75rem, 1vw + 1.3rem, 2.125rem); font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .detail-price.is-request { font-size: 1.375rem; }
+.detail-prices { display: grid; gap: 10px; }
+.detail-prices > div { display: grid; gap: 2px; }
+.detail-prices span { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+.detail-cash-price { padding: 11px 14px; border-left: 3px solid var(--brand); background: var(--brand-soft); }
+.detail-cash-price strong { color: var(--brand); font-family: var(--font-head); font-size: clamp(1.6rem, 1vw + 1.2rem, 2rem); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.detail-social-link { justify-self: center; color: var(--brand); font-size: var(--fs-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .key-specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--line); }
 .key-specs div { display: grid; gap: 2px; padding: 12px 14px; background: #fff; }
 .key-specs dt { color: var(--muted); font-size: var(--fs-2xs); font-weight: 500; }
@@ -427,6 +437,14 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 .feature-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; margin: 0; padding: 0; list-style: none; }
 .feature-list li { display: flex; align-items: flex-start; gap: 10px; color: var(--ink-2); font-size: var(--fs-sm); }
 .feature-list li svg { flex: 0 0 auto; margin-top: 3px; color: var(--ok); }
+.dealership-terms p { margin: 0 0 8px; color: var(--ink-2); }
+.dealership-terms strong { color: var(--ink); }
+.dealership-locations > div { display: grid; gap: 10px; }
+.dealership-locations a { display: flex; align-items: flex-start; gap: 10px; width: fit-content; color: var(--ink-2); }
+.dealership-locations a:hover { color: var(--brand); }
+.dealership-locations a svg { flex: 0 0 auto; margin-top: 3px; color: var(--brand); }
+.dealership-locations a span { display: grid; }
+.dealership-locations a strong { color: var(--ink); }
 .inquiry-block { display: grid; gap: 18px; }
 .inquiry-block .contact-form { max-width: 680px; }
 .inquiry-block h2 { font-size: 1.375rem; }
@@ -595,10 +613,10 @@ dialog.image-lightbox::backdrop { background: #070d16; }
    ========================================================================== */
 .site-footer { margin-top: 0; border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-2); }
 .footer-main { display: grid; grid-template-columns: 1.4fr repeat(3, minmax(0, 1fr)); gap: 40px; padding-block: 56px 40px; }
-.footer-brand img { display: block; width: 168px; height: auto; }
+.footer-brand img { display: block; width: clamp(205px, 18vw, 260px); height: auto; }
 .footer-col { display: grid; align-content: start; gap: 10px; }
-.footer-label { margin-bottom: 4px; color: var(--ink); font-family: var(--font-head); font-size: var(--fs-sm); font-weight: 700; }
-.footer-col a, .footer-col p { color: var(--ink-2); font-size: var(--fs-sm); }
+.footer-label { margin-bottom: 4px; color: var(--ink); font-family: var(--font-head); font-size: 1rem; font-weight: 700; }
+.footer-col a, .footer-col p { color: var(--ink-2); font-size: 0.96875rem; }
 .footer-col a:hover { color: var(--brand); }
 .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; padding-block: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-xs); }
 .footer-bottom nav { display: flex; flex-wrap: wrap; gap: 20px; }

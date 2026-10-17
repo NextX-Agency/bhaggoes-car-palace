@@ -29,8 +29,8 @@ describe("dealership helpers", () => {
 
   it("keeps verified contact details when an existing settings row has empty fields", () => {
     const settings = normalizeSiteSettings({ phone: null, whatsapp: "", address: null, social_links: null });
-    expect(settings.whatsapp).toBe("+597 894-6870");
-    expect(settings.address).toBe("Kwattaweg 407, Paramaribo, Suriname");
+    expect(settings.whatsapp).toBe("+597 866-8777");
+    expect(settings.address).toBe("HK: Kwattaweg-Tomaatstraat 495, Suriname\nWanica: Indira Ghandiweg 50, Suriname");
     expect(settings.social_links?.facebook).toBe("https://www.facebook.com/100057843361600/");
     expect(normalizeSiteSettings({ phone: "+597 866-8777" }).phone).toBe("+597 866-8777");
   });
@@ -54,6 +54,7 @@ describe("dealership helpers", () => {
     ]);
     expect(locations[0].mapUrl).toContain(encodeURIComponent("Kwattaweg 1, Paramaribo"));
     expect(parseLocations(null)).toEqual([]);
-    expect(parseLocations("Kwattaweg 407, Paramaribo, Suriname")[0].mapUrl).toBe("https://maps.app.goo.gl/UgiPvc2SsBrTQYG79");
+    expect(parseLocations("HK: Kwattaweg-Tomaatstraat 495, Suriname")[0].mapUrl).toBe("https://tr.ee/BhaggoesCarPalace-Kwattaweg495");
+    expect(parseLocations("Wanica: Indira Ghandiweg 50, Suriname")[0].mapUrl).toBe("https://tr.ee/BhaggoeCarPalace-wanica50");
   });
 });

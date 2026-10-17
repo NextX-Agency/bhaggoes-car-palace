@@ -37,7 +37,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         {whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a> : null}
         {settings.phone ? <a href={`tel:${settings.phone}`}>{settings.phone}</a> : null}
         {settings.email ? <a href={`mailto:${settings.email}`}>{settings.email}</a> : null}
-        {parseLocations(settings.address).map((location) => <a key={location.address} href={location.mapUrl} target="_blank" rel="noreferrer">{location.name ?? location.address}</a>)}
+        {parseLocations(settings.address).map((location) => <a key={location.address} href={location.mapUrl} target="_blank" rel="noreferrer">{location.name ? `${location.name} · ${location.address}` : location.address}</a>)}
         {socialLinks.map(({ label, url }) => <a href={url} key={label} target="_blank" rel="noopener noreferrer">{label}</a>)}
       </div> : null}
     </div>

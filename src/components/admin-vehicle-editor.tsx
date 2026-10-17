@@ -93,8 +93,10 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
     const client = createClient();
     const { error } = await client.from("vehicle_images").delete().eq("id", image.id);
     if (error) { setMessage("Could not remove the photo record."); return; }
-    const storage = await client.storage.from("vehicle-images").remove([image.storage_path]);
-    if (storage.error) setMessage("Photo removed from the listing, but its stored file could not be deleted. Ask an administrator to clean up storage.");
+    if (!image.storage_path.startsWith("/images/")) {
+      const storage = await client.storage.from("vehicle-images").remove([image.storage_path]);
+      if (storage.error) setMessage("Photo removed from the listing, but its stored file could not be deleted. Ask an administrator to clean up storage.");
+    }
     const remaining = photos.filter((item) => item.id !== image.id);
     if (savedId && remaining.length) {
       const { error: orderError } = await client.rpc("reorder_vehicle_images", { p_vehicle_id: savedId, p_image_ids: remaining.map((item) => item.id) });
@@ -115,7 +117,7 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
     await reorderPhoto(index, index + direction);
   }
   const privateInfo = vehicle as (Vehicle & { vin?: string | null; admin_notes?: string | null }) | null | undefined;
-  const defaults = { title: vehicle?.title ?? "", make: vehicle?.make ?? "", model: vehicle?.model ?? "", variant: vehicle?.variant ?? "", year: vehicle?.year ?? "", price: vehicle?.price ?? "", currency: vehicle?.currency ?? "", mileage: vehicle?.mileage ?? "", engine_capacity: vehicle?.engine_capacity ?? "", fuel_type: vehicle?.fuel_type ?? "", transmission: vehicle?.transmission ?? "", drive_type: vehicle?.drive_type ?? "", body_type: vehicle?.body_type ?? "", exterior_color: vehicle?.exterior_color ?? "", interior_color: vehicle?.interior_color ?? "", seats: vehicle?.seats ?? "", doors: vehicle?.doors ?? "", description: vehicle?.description ?? "", stock_number: vehicle?.stock_number ?? "", vin: privateInfo?.vin ?? "", admin_notes: privateInfo?.admin_notes ?? "" };
+  const defaults = { title: vehicle?.title ?? "", make: vehicle?.make ?? "", model: vehicle?.model ?? "", variant: vehicle?.variant ?? "", year: vehicle?.year ?? "", price: vehicle?.price ?? "", cash_price: vehicle?.cash_price ?? "", currency: vehicle?.currency ?? "", mileage: vehicle?.mileage ?? "", engine_capacity: vehicle?.engine_capacity ?? "", fuel_type: vehicle?.fuel_type ?? "", transmission: vehicle?.transmission ?? "", drive_type: vehicle?.drive_type ?? "", body_type: vehicle?.body_type ?? "", exterior_color: vehicle?.exterior_color ?? "", interior_color: vehicle?.interior_color ?? "", seats: vehicle?.seats ?? "", doors: vehicle?.doors ?? "", description: vehicle?.description ?? "", stock_number: vehicle?.stock_number ?? "", vin: privateInfo?.vin ?? "", admin_notes: privateInfo?.admin_notes ?? "" };
   const archived = Boolean(vehicle?.archived_at);
   const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
   const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
@@ -176,7 +178,8 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
     <div className="editor-side">
       <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
         {archived ? <p className="help-text">This car is archived and hidden. Saving edits will keep it archived. Use Restore in Inventory when you want to show it again.</p> : null}
-        <div className="price-field"><label className="admin-field">Price<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label></div>
+        <div className="price-field"><label className="admin-field">Interne prijs<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Cashprijs / giraal deal<input name="cash_price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.cash_price} placeholder="On request" /></label></div>
+        <label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label>
         <p className="help-text">If you enter a price, enter its currency too (for example USD or SRD).</p>
         <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
         <label className="admin-field">Stock number<input name="stock_number" defaultValue={defaults.stock_number} /></label>

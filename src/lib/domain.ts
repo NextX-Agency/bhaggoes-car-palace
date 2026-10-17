@@ -10,6 +10,7 @@ export interface Vehicle {
   variant: string | null;
   year: number | null;
   price: number | null;
+  cash_price?: number | null;
   currency: string | null;
   mileage: number | null;
   engine_capacity: string | null;
@@ -92,10 +93,10 @@ export interface VehicleFilters {
 export const defaultSettings: SiteSettings = {
   business_name: "Bhaggoes Car Palace",
   slogan: "WE BEAT ANYBODY'S PRICES",
-  phone: "+597 894-6870",
-  whatsapp: "+597 894-6870",
+  phone: "+597 866-8777",
+  whatsapp: "+597 866-8777",
   email: null,
-  address: "Kwattaweg 407, Paramaribo, Suriname",
+  address: "HK: Kwattaweg-Tomaatstraat 495, Suriname\nWanica: Indira Ghandiweg 50, Suriname",
   business_hours: null,
   social_links: { facebook: "https://www.facebook.com/100057843361600/" },
   homepage_title: "Browse Our Cars",
@@ -103,8 +104,8 @@ export const defaultSettings: SiteSettings = {
   seo_title: "Bhaggoes Car Palace | Vehicle Inventory",
   seo_description: "Browse the Bhaggoes Car Palace vehicle inventory and contact the dealership about a car.",
   about_text: null,
-  financing_enabled: false,
-  financing_notes: null,
+  financing_enabled: true,
+  financing_notes: "Interne financiering: 70% aanbetaling, maximaal 6 maanden. Bankfinanciering: vanaf 25% aanbetaling. Inruil mogelijk.",
   currency: null,
   show_sold: false,
   logo_path: null,
@@ -173,10 +174,10 @@ export function sortedImages(images: VehicleImage[]) {
 
 export function vehicleSpecifications(vehicle: Vehicle): [string, string][] {
   const rows: [string, string | null][] = [
-    ["Year", vehicle.year?.toString() ?? null], ["Condition", vehicle.condition === "new" ? "New" : "Used"], ["Mileage", formatMileage(vehicle.mileage)],
-    ["Engine", vehicle.engine_capacity], ["Fuel", vehicle.fuel_type], ["Transmission", vehicle.transmission], ["Drive type", vehicle.drive_type],
-    ["Body type", vehicle.body_type], ["Exterior", vehicle.exterior_color], ["Interior", vehicle.interior_color],
-    ["Seats", vehicle.seats?.toString() ?? null], ["Doors", vehicle.doors?.toString() ?? null], ["Stock no.", isDemoVehicle(vehicle) ? null : vehicle.stock_number ?? null],
+    ["Bouwjaar", vehicle.year?.toString() ?? null], ["Brandstof", vehicle.fuel_type],
+    ["Stocknummer", isDemoVehicle(vehicle) ? null : vehicle.stock_number ?? null],
+    ["Zitplaatsen", vehicle.seats?.toString() ?? null], ["Transmissie", vehicle.transmission],
+    ["Carrosserie", vehicle.body_type],
   ];
   return rows.filter((row): row is [string, string] => Boolean(row[1]));
 }
@@ -199,9 +200,11 @@ export function parseLocations(value: string | null | undefined): DealershipLoca
     const split = line.indexOf(": ");
     const name = split > 0 ? line.slice(0, split).trim() : null;
     const address = split > 0 ? line.slice(split + 2).trim() : line;
-    const mapUrl = address.toLowerCase() === "kwattaweg 407, paramaribo, suriname"
-      ? "https://maps.app.goo.gl/UgiPvc2SsBrTQYG79"
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    const mapUrl = address.toLowerCase().includes("kwattaweg-tomaatstraat 495")
+      ? "https://tr.ee/BhaggoesCarPalace-Kwattaweg495"
+      : address.toLowerCase().includes("indira ghandiweg 50")
+        ? "https://tr.ee/BhaggoeCarPalace-wanica50"
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     return { name, address, mapUrl };
   }).filter((location) => location.address);
 }
