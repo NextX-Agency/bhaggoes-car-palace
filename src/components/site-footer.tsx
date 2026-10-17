@@ -3,13 +3,14 @@ import Link from "next/link";
 import type { SiteSettings } from "@/lib/domain";
 import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
+import { SocialIcon, type SocialPlatform } from "@/components/social-icon";
 
 export function SiteFooter({ settings }: { settings: SiteSettings }) {
   const copyrightYear = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "America/Paramaribo" }).format(new Date());
   const socialPlatforms = [["instagram", "Instagram"], ["facebook", "Facebook"], ["youtube", "YouTube"], ["tiktok", "TikTok"]] as const;
   const socialLinks = socialPlatforms.flatMap(([platform, label]) => {
     const url = safeExternalUrl(settings.social_links?.[platform]);
-    return url ? [{ label, url }] : [];
+    return url ? [{ platform: platform as SocialPlatform, label, url }] : [];
   });
   const whatsapp = buildWhatsAppLink(settings.whatsapp, `Hello ${settings.business_name}, I have a question.`);
   const hasContact = Boolean(settings.phone || settings.email || settings.address || whatsapp || socialLinks.length);
@@ -34,11 +35,11 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       </nav>
       {hasContact ? <div className="footer-col">
         <p className="footer-label">Contact</p>
-        {whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a> : null}
+        {whatsapp ? <a className="footer-social-link" href={whatsapp} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" />WhatsApp</a> : null}
         {settings.phone ? <a href={`tel:${settings.phone}`}>{settings.phone}</a> : null}
         {settings.email ? <a href={`mailto:${settings.email}`}>{settings.email}</a> : null}
         {parseLocations(settings.address).map((location) => <a key={location.address} href={location.mapUrl} target="_blank" rel="noreferrer">{location.name ? `${location.name} · ${location.address}` : location.address}</a>)}
-        {socialLinks.map(({ label, url }) => <a href={url} key={label} target="_blank" rel="noopener noreferrer">{label}</a>)}
+        {socialLinks.map(({ platform, label, url }) => <a className="footer-social-link" href={url} key={label} target="_blank" rel="noopener noreferrer"><SocialIcon platform={platform} />{label}</a>)}
       </div> : null}
     </div>
     <div className="container footer-bottom">

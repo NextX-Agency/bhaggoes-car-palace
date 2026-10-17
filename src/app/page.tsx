@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, MessageCircle, Phone } from "lucide-react";
+import { ArrowRight, Phone } from "lucide-react";
+import { SocialIcon } from "@/components/social-icon";
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { HeroSearch } from "@/components/hero-search";
@@ -32,7 +33,7 @@ export default async function HomePage() {
         {settings.homepage_subtitle ? <p className="hero-copy">{settings.homepage_subtitle}</p> : null}
         <div className="hero-actions">
           <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
-          {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Ask us on WhatsApp</a> : null}
+          {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask us on WhatsApp</a> : null}
         </div>
         {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available</p> : null}
       </div>
@@ -66,7 +67,7 @@ export default async function HomePage() {
         <div>
           <h2 id="home-visit">Visit {settings.business_name}</h2>
           <div className="visit-actions">
-            {whatsappHref ? <a className="button button-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">Message on WhatsApp</a> : null}
+            {whatsappHref ? <a className="button button-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Message on WhatsApp</a> : null}
             {settings.phone ? <a className="button button-outline" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> Call us</a> : <Link className="button button-outline" href="/contact">Send a message</Link>}
           </div>
         </div>

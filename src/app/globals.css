@@ -414,7 +414,7 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 .detail-prices span { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
 .detail-cash-price { padding: 11px 14px; border-left: 3px solid var(--brand); background: var(--brand-soft); }
 .detail-cash-price strong { color: var(--brand); font-family: var(--font-head); font-size: clamp(1.6rem, 1vw + 1.2rem, 2rem); font-variant-numeric: tabular-nums; line-height: 1.1; }
-.detail-social-link { justify-self: center; color: var(--brand); font-size: var(--fs-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.detail-social-link { display: inline-flex; align-items: center; gap: 7px; justify-self: center; color: var(--brand); font-size: var(--fs-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .key-specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--line); }
 .key-specs div { display: grid; gap: 2px; padding: 12px 14px; background: #fff; }
 .key-specs dt { color: var(--muted); font-size: var(--fs-2xs); font-weight: 500; }
@@ -565,6 +565,7 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 .contact-details a:hover { color: var(--brand); }
 .contact-social h2 { margin-bottom: 8px; font-size: 1rem; }
 .contact-social > div { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.contact-social .social-link, .footer-social-link { display: inline-flex; align-items: center; gap: 8px; }
 .financing-contact { margin-top: 24px; }
 .contact-section { max-width: 920px; margin-top: clamp(40px, 5vw, 56px); }
 .contact-section > h2 { margin-bottom: 16px; font-size: 1.25rem; }

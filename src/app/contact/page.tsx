@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MessageCircle } from "lucide-react";
+import { SocialIcon } from "@/components/social-icon";
 import { getSettings } from "@/lib/data";
 import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
 
@@ -20,7 +20,7 @@ export default async function ContactPage() {
 
     <section className="contact-direct" aria-label="Contact options">
       {whatsapp ? <a className="contact-whatsapp" href={whatsapp} target="_blank" rel="noreferrer">
-        <MessageCircle size={26} aria-hidden="true" />
+        <SocialIcon platform="whatsapp" size={26} />
         <span><strong>WhatsApp</strong>{settings.whatsapp}</span>
         <span className="button button-whatsapp">Start chat</span>
       </a> : null}
@@ -28,7 +28,7 @@ export default async function ContactPage() {
         {settings.phone ? <div><dt>Phone</dt><dd><a href={`tel:${settings.phone}`}>{settings.phone}</a></dd></div> : null}
         {settings.email ? <div><dt>Email</dt><dd><a href={`mailto:${settings.email}`}>{settings.email}</a></dd></div> : null}
       </dl> : null}
-      {socialLinks.length ? <div className="contact-social"><h2>Social media</h2><div>{socialLinks.map(({ platform, url }) => <a className="text-link" href={url} key={platform} target="_blank" rel="noopener noreferrer">{platform[0].toUpperCase() + platform.slice(1)}</a>)}</div></div> : null}
+      {socialLinks.length ? <div className="contact-social"><h2>Social media</h2><div>{socialLinks.map(({ platform, url }) => <a className="text-link social-link" href={url} key={platform} target="_blank" rel="noopener noreferrer"><SocialIcon platform={platform} />{platform[0].toUpperCase() + platform.slice(1)}</a>)}</div></div> : null}
     </section>
 
     {locations.length ? <section className="contact-section" aria-labelledby="locations-heading">

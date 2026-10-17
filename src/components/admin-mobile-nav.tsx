@@ -45,9 +45,9 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
           {adminNavItems.map(([label, href, Icon]) => <Link className={active === href ? "active" : ""} aria-current={active === href ? "page" : undefined} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</Link>)}
         </nav>
         <footer className="admin-drawer-foot">
-          <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> View website</Link>
-          <p className="admin-drawer-user"><span className="admin-user-label">Signed in as</span><span className="admin-email" title={email}>{email}</span></p>
-          <form action={signOutAction}><button className="button button-outline button-block" type="submit"><LogOut size={17} aria-hidden="true" /> Sign out</button></form>
+          <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>
+          <p className="admin-drawer-user"><span className="admin-user-label">Ingelogd als</span><span className="admin-email" title={email}>{email}</span></p>
+          <form action={signOutAction}><button className="button button-outline button-block" type="submit"><LogOut size={17} aria-hidden="true" /> Uitloggen</button></form>
         </footer>
       </Dialog.Content>
     </Dialog.Portal>

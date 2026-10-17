@@ -1,4 +1,5 @@
-import { Check, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Check, MapPin, Phone } from "lucide-react";
+import { SocialIcon } from "@/components/social-icon";
 import { AvailabilityBadge } from "@/components/availability-badge";
 import { VehicleActions } from "@/components/vehicle-actions";
 import { VehicleGallery } from "@/components/vehicle-gallery";
@@ -47,10 +48,10 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           </div>
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
-            {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> Vraag via WhatsApp</a> : null}
+            {whatsApp ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Vraag via WhatsApp</a> : null}
             {!whatsApp ? <a className="button button-primary" href="/contact">Contact the dealership</a> : null}
             {settings.phone ? <a className="button button-ghost" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> {settings.phone}</a> : null}
-            {facebook ? <a className="detail-social-link" href={facebook} target="_blank" rel="noreferrer">Stuur ons een bericht via Facebook</a> : null}
+            {facebook ? <a className="detail-social-link" href={facebook} target="_blank" rel="noreferrer"><SocialIcon platform="facebook" /> Stuur ons een bericht via Facebook</a> : null}
           </div> : null}
           {!preview ? <div className="detail-tools"><VehicleActions vehicleId={vehicle.id} /><VehicleShareButton title={name} businessName={settings.business_name} /></div> : null}
         </div>
@@ -84,7 +85,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
 
     {!preview ? <div className="mobile-cta">
       <div className="mobile-cta-price"><span>{heading}</span><strong>{cashPrice ?? price}</strong></div>
-      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><MessageCircle size={18} aria-hidden="true" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
+      {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;
 }

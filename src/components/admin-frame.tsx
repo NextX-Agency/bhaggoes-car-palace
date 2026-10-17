@@ -17,12 +17,12 @@ export function AdminFrame({ active, email, title, actions, children }: { active
           {items.map(([label, href, Icon]) => <Link className={active === href ? "active" : ""} aria-current={active === href ? "page" : undefined} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</Link>)}
         </nav>
         <div className="admin-sidebar-foot">
-          <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> View website</Link>
+          <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>
           <div className="admin-user">
             <span className="admin-avatar" aria-hidden="true">{email.slice(0, 1).toUpperCase()}</span>
-            <div className="admin-user-details"><span className="admin-user-label">Signed in as</span><span className="admin-email" title={email}>{email}</span></div>
+            <div className="admin-user-details"><span className="admin-user-label">Ingelogd als</span><span className="admin-email" title={email}>{email}</span></div>
           </div>
-          <form action={signOutAction}><button className="admin-signout-button" type="submit"><LogOut size={16} aria-hidden="true" /> Sign out</button></form>
+          <form action={signOutAction}><button className="admin-signout-button" type="submit"><LogOut size={16} aria-hidden="true" /> Uitloggen</button></form>
         </div>
       </aside>
       <section className="admin-content">

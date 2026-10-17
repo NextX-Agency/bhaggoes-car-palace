@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardList, Plus, Settings2 } from "lucide-react";
+import { ArrowRight, CircleAlert, ClipboardList, Files, Globe2, Plus, Settings2, CarFront } from "lucide-react";
 import { AdminFrame } from "@/components/admin-frame";
 import { getAdminInquiries, getAdminVehicles } from "@/lib/data";
 import { websiteInquiriesEnabled } from "@/lib/features";
@@ -27,27 +27,26 @@ export default async function AdminDashboardPage() {
   const recent = vehicles.slice(0, 5);
 
   return <AdminFrame active="/admin" email={user.email ?? "Administrator"} actions={<Link className="button button-primary" href="/admin/inventory/new"><Plus size={17} /> Nieuwe auto</Link>}>
-    <div className="dashboard-intro"><p>Hier zie je wat er op de website staat en welke auto’s nog aandacht nodig hebben.</p></div>
     <div className="dashboard-metrics" aria-label="Voorraadoverzicht">
-      <Link href="/admin/inventory" className="dashboard-metric"><span>Auto’s in voorraad</span><strong>{vehicles.length}</strong><small>Open voorraad <ArrowRight size={14} /></small></Link>
-      <Link href="/admin/inventory" className="dashboard-metric"><span>Actief op website</span><strong>{active.length}</strong><small>Gepubliceerde auto’s beschikbaar, onderweg of gereserveerd</small></Link>
-      <a href="#dashboard-attention" className="dashboard-metric dashboard-metric-attention"><span>Aandacht nodig</span><strong>{queue.length}</strong><small>Controleer ontbrekende gegevens <ArrowRight size={14} /></small></a>
+      <Link href="/admin/inventory" className="dashboard-metric"><span><CarFront size={18} aria-hidden="true" /> Voorraad</span><strong>{vehicles.length}</strong></Link>
+      <Link href="/admin/inventory" className="dashboard-metric"><span><Globe2 size={18} aria-hidden="true" /> Online</span><strong>{active.length}</strong></Link>
+      <a href="#dashboard-attention" className="dashboard-metric dashboard-metric-attention"><span><CircleAlert size={18} aria-hidden="true" /> Aandacht nodig</span><strong>{queue.length}</strong></a>
     </div>
     <div className="dashboard-grid">
       <section className="admin-section dashboard-panel" id="dashboard-attention">
-        <div className="admin-section-head"><div><h2>Nu afmaken</h2><p>Open een auto om de ontbrekende gegevens aan te vullen.</p></div></div>
-        {queue.length ? <ul className="dashboard-vehicle-list">{queue.slice(0, 6).map(({ vehicle, issues }) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong><small>{vehicle.stock_number || "Stocknummer volgt bij opslaan"}</small></span><span className="dashboard-issues">{issues.map((issue) => <span key={issue}>{issue}</span>)}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Alles is bijgewerkt. Er zijn momenteel geen auto’s met ontbrekende gegevens.</p>}
+        <div className="admin-section-head"><h2>Nu afmaken</h2></div>
+        {queue.length ? <ul className="dashboard-vehicle-list">{queue.slice(0, 6).map(({ vehicle, issues }) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong></span><span className="dashboard-issues">{issues.map((issue) => <span key={issue}>{issue}</span>)}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Geen openstaande punten.</p>}
         {queue.length > 6 ? <Link className="text-link dashboard-more" href="/admin/inventory">Bekijk alle auto’s <ArrowRight size={15} /></Link> : null}
       </section>
-      <section className="admin-section dashboard-panel dashboard-shortcuts"><div className="admin-section-head"><div><h2>Snelle acties</h2><p>De taken die je het vaakst uitvoert.</p></div></div>
-        <Link href="/admin/inventory/new"><Plus size={19} /><span><strong>Nieuwe auto plaatsen</strong><small>Voeg foto’s, prijzen en specificaties toe</small></span><ArrowRight size={17} /></Link>
-        <Link href="/admin/inventory"><ClipboardList size={19} /><span><strong>Voorraad beheren</strong><small>Wijzig status, prijs of bestaande auto’s</small></span><ArrowRight size={17} /></Link>
-        <Link href="/admin/settings"><Settings2 size={19} /><span><strong>Vaste verkoopinformatie</strong><small>Financiering, voordelen en contactgegevens voor alle auto’s</small></span><ArrowRight size={17} /></Link>
+      <section className="admin-section dashboard-panel dashboard-shortcuts"><div className="admin-section-head"><h2>Snelle acties</h2></div>
+        <Link href="/admin/inventory"><ClipboardList size={19} /><strong>Voorraad beheren</strong><ArrowRight size={17} /></Link>
+        <Link href="/admin/settings"><Settings2 size={19} /><strong>Verkoopinformatie</strong><ArrowRight size={17} /></Link>
+        <Link href="/admin/content"><Files size={19} /><strong>Pagina’s & FAQ</strong><ArrowRight size={17} /></Link>
       </section>
     </div>
-    <section className="admin-section dashboard-panel"><div className="admin-section-head"><div><h2>Recent gewijzigd</h2><p>Ga direct verder met een auto.</p></div><Link className="text-link" href="/admin/inventory">Alle auto’s <ArrowRight size={15} /></Link></div>
-      {recent.length ? <ul className="dashboard-vehicle-list dashboard-recent-list">{recent.map((vehicle) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong><small>{vehicle.stock_number || "Stocknummer volgt bij opslaan"}</small></span><span className="dashboard-publication">{vehicle.published ? statusLabels[vehicle.availability] ?? vehicle.availability : "Concept"}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Nog geen auto’s toegevoegd. <Link href="/admin/inventory/new">Plaats de eerste auto</Link>.</p>}
+    <section className="admin-section dashboard-panel"><div className="admin-section-head"><h2>Recent gewijzigd</h2><Link className="text-link" href="/admin/inventory">Alle auto’s <ArrowRight size={15} /></Link></div>
+      {recent.length ? <ul className="dashboard-vehicle-list dashboard-recent-list">{recent.map((vehicle) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong></span><span className="dashboard-publication">{vehicle.published ? statusLabels[vehicle.availability] ?? vehicle.availability : "Concept"}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Nog geen auto’s toegevoegd. <Link href="/admin/inventory/new">Plaats de eerste auto</Link>.</p>}
     </section>
-    {websiteInquiriesEnabled && inquiries.length ? <section className="admin-section dashboard-panel"><div className="admin-section-head"><div><h2>Nieuwe aanvragen</h2><p>{inquiries.filter((item) => item.status === "new").length} wachten op opvolging.</p></div><Link className="text-link" href="/admin/inquiries">Bekijk aanvragen <ArrowRight size={15} /></Link></div></section> : null}
+    {websiteInquiriesEnabled && inquiries.length ? <section className="admin-section dashboard-panel"><div className="admin-section-head"><h2>Nieuwe aanvragen ({inquiries.filter((item) => item.status === "new").length})</h2><Link className="text-link" href="/admin/inquiries">Bekijk aanvragen <ArrowRight size={15} /></Link></div></section> : null}
   </AdminFrame>;
 }
