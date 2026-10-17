@@ -2,8 +2,16 @@ import { cache } from "react";
 import { defaultSettings, normalizeSiteSettings, type SiteSettings, type Vehicle, type VehicleFilters } from "@/lib/domain";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import type { VehicleTemplate } from "@/lib/vehicle-templates";
 
 const PAGE_SIZE = 12;
+
+export async function getAdminVehicleTemplates(): Promise<VehicleTemplate[]> {
+  const client = await clientOrNull();
+  if (!client) return [];
+  const { data, error } = await client.from("vehicle_templates").select("id, name, fields").order("name");
+  return error ? [] : (data ?? []) as VehicleTemplate[];
+}
 
 async function clientOrNull() {
   if (!hasSupabaseEnv()) return null;

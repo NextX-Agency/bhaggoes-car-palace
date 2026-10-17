@@ -21,6 +21,50 @@ const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim()
 const nullable = (value: string) => value || null;
 const optionalNumber = (value: string) => value === "" ? null : Number(value);
 
+const templateFieldsSchema = z.object({
+  make: z.string().max(80).optional(),
+  model: z.string().max(100).optional(),
+  variant: z.string().max(120).optional(),
+  engine_capacity: z.string().max(50).optional(),
+  fuel_type: z.string().max(50).optional(),
+  transmission: z.string().max(50).optional(),
+  drive_type: z.string().max(50).optional(),
+  body_type: z.string().max(50).optional(),
+  exterior_color: z.string().max(50).optional(),
+  interior_color: z.string().max(50).optional(),
+  seats: z.string().regex(/^(|[1-9][0-9]?)$/).optional(),
+  doors: z.string().regex(/^(|[1-9][0-9]?)$/).optional(),
+  condition: z.enum(["new", "used"]).optional(),
+  features: z.array(z.string().trim().min(1).max(80)).max(60),
+});
+
+export async function saveVehicleTemplateAction(form: FormData): Promise<ActionState & { id?: string }> {
+  try {
+    const supabase = await verifyAdmin();
+    const name = z.string().trim().min(2).max(80).safeParse(text(form, "name"));
+    let raw: unknown;
+    try { raw = JSON.parse(text(form, "fields")); } catch { return { error: "Templategegevens kunnen niet worden gelezen." }; }
+    const fields = templateFieldsSchema.safeParse(raw);
+    if (!name.success || !fields.success) return { error: "Controleer de templatenaam en voertuiggegevens." };
+    const { data, error } = await supabase.from("vehicle_templates").insert({ name: name.data, fields: fields.data }).select("id").single();
+    if (error || !data) return { error: error?.code === "23505" ? "Er bestaat al een template met deze naam." : "Template kon niet worden opgeslagen." };
+    revalidatePath("/admin/inventory/new");
+    return { ok: true, id: data.id };
+  } catch (error) { return { error: error instanceof Error ? error.message : "Template kon niet worden opgeslagen." }; }
+}
+
+export async function deleteVehicleTemplateAction(form: FormData): Promise<ActionState> {
+  try {
+    const id = z.string().uuid().safeParse(text(form, "id"));
+    if (!id.success) return { error: "Kies een geldige template." };
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.from("vehicle_templates").delete().eq("id", id.data);
+    if (error) return { error: "Template kon niet worden verwijderd." };
+    revalidatePath("/admin/inventory/new");
+    return { ok: true };
+  } catch (error) { return { error: error instanceof Error ? error.message : "Template kon niet worden verwijderd." }; }
+}
+
 export async function signInAction(_previous: ActionState, form: FormData): Promise<ActionState> {
   const parsed = z.object({ email: z.string().email(), password: z.string().min(1) }).safeParse({ email: text(form, "email"), password: String(form.get("password") ?? "") });
   if (!parsed.success) return { error: "Enter a valid email and password." };

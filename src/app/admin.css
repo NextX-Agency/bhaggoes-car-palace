@@ -168,6 +168,15 @@ button.admin-badge:hover { filter: brightness(0.96); }
 
 /* Vehicle editor layout */
 .vehicle-editor { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+.editor-template-panel { grid-column: 1 / -1; display: grid; gap: 14px; border-color: #b9d5e9; background: #f5faff; }
+.editor-template-panel h2 { margin-bottom: 5px; font-size: 1.0625rem; }
+.editor-template-panel .muted { max-width: 850px; font-size: var(--fs-sm); line-height: 1.5; }
+.editor-template-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
+.editor-template-controls .admin-field { flex: 1 1 250px; max-width: 440px; }
+.editor-template-controls .button { min-height: 40px; }
+.editor-advanced summary { color: var(--ink); font-weight: 700; cursor: pointer; }
+.editor-advanced > .help-text { margin: 12px 0 18px; }
+.editor-advanced > .admin-form-grid { margin-top: 18px; }
 .editor-main, .editor-side { display: grid; gap: 20px; min-width: 0; }
 .editor-side { position: sticky; top: 20px; }
 .vehicle-editor .admin-form-footer { grid-column: 1 / -1; }
@@ -254,6 +263,7 @@ button.admin-badge:hover { filter: brightness(0.96); }
   .logo-drop { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
+  .editor-template-controls .admin-field { flex-basis: 100%; max-width: none; }
   .editor-side { grid-template-columns: 1fr; }
   .admin-form-grid .span-2 { grid-column: 1 / -1; }
   .admin-form-section { padding: 16px; }

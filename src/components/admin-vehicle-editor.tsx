@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
-import { deleteVehicleAction, saveVehicleAction } from "@/app/admin/actions";
+import { deleteVehicleAction, deleteVehicleTemplateAction, saveVehicleAction, saveVehicleTemplateAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
+import { listingTitle, templateFieldNames, type VehicleTemplate, type VehicleTemplateFields } from "@/lib/vehicle-templates";
 
 const commonFeatures = ["Air conditioning", "Backup camera", "Bluetooth", "Apple CarPlay", "Android Auto", "Leather seats", "Keyless entry", "Alloy wheels", "Cruise control", "Sunroof", "Parking sensors"];
 const maxPhotoBytes = 15 * 1024 * 1024;
@@ -36,20 +37,77 @@ async function optimizePhoto(file: File): Promise<File> {
   }
 }
 
-export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
+export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehicle | null; templates?: VehicleTemplate[] }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const generatedTitle = useRef("");
   const [state, setState] = useState<{ error?: string; ok?: boolean }>({}); const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const [savedId, setSavedId] = useState(vehicle?.id ?? "");
   const [photos, setPhotos] = useState(vehicle?.images ?? []); const [featureText, setFeatureText] = useState((vehicle?.features ?? []).join("\n")); const [uploading, setUploading] = useState(false); const [message, setMessage] = useState("");
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
   const [draggingPhoto, setDraggingPhoto] = useState<number | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [templateName, setTemplateName] = useState("");
   const previewUrls = useRef(new Set<string>());
   useEffect(() => () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
   const toggledFeature = (feature: string, checked: boolean) => {
     const selected = new Set(featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean));
     if (checked) selected.add(feature); else selected.delete(feature);
     setFeatureText([...selected].join("\n"));
+  };
+  const field = (form: HTMLFormElement, name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+  const refreshTitle = (form: HTMLFormElement) => {
+    if (vehicle) return;
+    const title = field(form, "title");
+    if (!title || (title.value && title.value !== generatedTitle.current)) return;
+    const next = listingTitle(field(form, "year")?.value ?? "", field(form, "make")?.value ?? "", field(form, "model")?.value ?? "", field(form, "variant")?.value ?? "");
+    title.value = next;
+    generatedTitle.current = next;
+  };
+  const applyTemplate = () => {
+    const template = templates.find((item) => item.id === selectedTemplate);
+    const form = formRef.current;
+    if (!template || !form) return;
+    for (const name of templateFieldNames) {
+      const input = field(form, name);
+      if (input) input.value = template.fields[name] ?? (name === "condition" ? "used" : "");
+    }
+    setFeatureText(template.fields.features.join("\n"));
+    refreshTitle(form);
+    setMessage(`Template “${template.name}” toegepast. Controleer de gegevens voor u opslaat.`);
+  };
+  const saveTemplate = () => {
+    const form = formRef.current;
+    if (!form || !templateName.trim()) { setMessage("Geef de template eerst een naam."); return; }
+    const fields = {
+      ...Object.fromEntries(templateFieldNames.map((name) => [name, field(form, name)?.value ?? ""])),
+      features: featureText.split(/[\n,]/).map((value) => value.trim()).filter(Boolean),
+    } as VehicleTemplateFields;
+    const data = new FormData();
+    data.set("name", templateName.trim());
+    data.set("fields", JSON.stringify(fields));
+    startTransition(async () => {
+      const result = await saveVehicleTemplateAction(data);
+      if (result.error) { setMessage(result.error); return; }
+      setTemplateName("");
+      setSelectedTemplate(result.id ?? "");
+      setMessage("Template opgeslagen. Alle beheerders kunnen hem gebruiken.");
+      router.refresh();
+    });
+  };
+  const deleteTemplate = () => {
+    const template = templates.find((item) => item.id === selectedTemplate);
+    if (!template || !window.confirm(`Template “${template.name}” verwijderen?`)) return;
+    const data = new FormData();
+    data.set("id", template.id);
+    startTransition(async () => {
+      const result = await deleteVehicleTemplateAction(data);
+      if (result.error) { setMessage(result.error); return; }
+      setSelectedTemplate("");
+      setMessage("Template verwijderd.");
+      router.refresh();
+    });
   };
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const formData = new FormData(form); formData.set("features", featureText);
@@ -121,34 +179,49 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
   const archived = Boolean(vehicle?.archived_at);
   const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
   const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
-  return <form className="admin-form vehicle-editor" onSubmit={handleSubmit}>
+  return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit}>
     <input type="hidden" name="id" value={savedId} />
+    <section className="admin-form-section editor-template-panel" aria-labelledby="template-heading">
+      <div><h2 id="template-heading">Sneller een auto plaatsen</h2><p className="muted">Gebruik een template voor merk, model, specificaties en opties. Prijzen, stocknummer en foto’s vult u per auto in. Contact, locaties, aankoopvoordelen en financiering verschijnen automatisch op de website.</p></div>
+      <div className="editor-template-controls">
+        <label className="admin-field">Voertuigtemplate<select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)}><option value="">Kies een template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+        <button className="button button-primary" type="button" onClick={applyTemplate} disabled={!selectedTemplate || pending}>Gebruik template</button>
+        <button className="button button-ghost" type="button" onClick={deleteTemplate} disabled={!selectedTemplate || pending}>Verwijder</button>
+      </div>
+      <div className="editor-template-controls">
+        <label className="admin-field">Bewaar huidige gegevens als template<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} maxLength={80} placeholder="Bijv. Toyota Harrier Premium" /></label>
+        <button className="button button-ghost" type="button" onClick={saveTemplate} disabled={pending}>Bewaar template</button>
+      </div>
+    </section>
     <div className="editor-main">
       <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basic details</h2><div className="admin-form-grid">
-        <label className="admin-field span-all">Listing title<input name="title" defaultValue={defaults.title} required maxLength={180} placeholder="e.g. 2021 Toyota RAV4 Limited" /></label>
-        <label className="admin-field">Make<input name="make" defaultValue={defaults.make} required placeholder="Toyota" /></label>
-        <label className="admin-field">Model<input name="model" defaultValue={defaults.model} required placeholder="RAV4" /></label>
-        <label className="admin-field">Variant / trim<input name="variant" defaultValue={defaults.variant} placeholder="Limited" /></label>
-        <label className="admin-field">Year<input name="year" type="number" inputMode="numeric" min="1886" max="2200" defaultValue={defaults.year} /></label>
+        <label className="admin-field span-all">Listing title<input name="title" defaultValue={defaults.title} required maxLength={180} placeholder="Wordt automatisch ingevuld" /></label>
+        <label className="admin-field">Make<input name="make" defaultValue={defaults.make} required placeholder="Toyota" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
+        <label className="admin-field">Model<input name="model" defaultValue={defaults.model} required placeholder="RAV4" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
+        <label className="admin-field">Variant / trim<input name="variant" defaultValue={defaults.variant} placeholder="Limited" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
+        <label className="admin-field">Year<input name="year" type="number" inputMode="numeric" min="1886" max="2200" defaultValue={defaults.year} onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
         <label className="admin-field">Condition<select name="condition" defaultValue={vehicle?.condition ?? "used"}><option value="new">New</option><option value="used">Used</option></select></label>
-        <label className="admin-field">Mileage (km)<input name="mileage" type="number" inputMode="numeric" min="0" step="1" defaultValue={defaults.mileage} /></label>
-        <label className="admin-field span-all">Description<textarea name="description" defaultValue={defaults.description} maxLength={10000} rows={6} /></label>
       </div></section>
 
       <section className="admin-form-section" aria-labelledby="specs-heading"><h2 id="specs-heading">Specifications</h2><div className="admin-form-grid">
-        <label className="admin-field">Engine<input name="engine_capacity" defaultValue={defaults.engine_capacity} placeholder="2.5L" /></label>
         <label className="admin-field">Fuel type<input name="fuel_type" defaultValue={defaults.fuel_type} placeholder="Gasoline" list="fuel-options" /></label>
         <label className="admin-field">Transmission<input name="transmission" defaultValue={defaults.transmission} placeholder="Automatic" list="transmission-options" /></label>
-        <label className="admin-field">Drive type<input name="drive_type" defaultValue={defaults.drive_type} placeholder="AWD" /></label>
         <label className="admin-field">Body type<input name="body_type" defaultValue={defaults.body_type} placeholder="SUV" list="body-options" /></label>
-        <label className="admin-field">Exterior color<input name="exterior_color" defaultValue={defaults.exterior_color} /></label>
-        <label className="admin-field">Interior color<input name="interior_color" defaultValue={defaults.interior_color} /></label>
         <label className="admin-field">Seats<input name="seats" type="number" inputMode="numeric" min="1" max="100" defaultValue={defaults.seats} /></label>
-        <label className="admin-field">Doors<input name="doors" type="number" inputMode="numeric" min="1" max="20" defaultValue={defaults.doors} /></label>
       </div>
       <datalist id="fuel-options"><option value="Gasoline" /><option value="Diesel" /><option value="Hybrid" /><option value="Electric" /></datalist>
       <datalist id="transmission-options"><option value="Automatic" /><option value="Manual" /><option value="CVT" /></datalist>
       <datalist id="body-options"><option value="SUV" /><option value="Sedan" /><option value="Hatchback" /><option value="Pickup" /><option value="Van" /><option value="Coupe" /></datalist></section>
+
+      <details className="admin-form-section editor-advanced"><summary>Extra gegevens (optioneel)</summary><p className="help-text">Een aparte omschrijving is niet nodig: vaste verkoopinformatie verschijnt automatisch op elke voertuigpagina.</p><div className="admin-form-grid">
+        <label className="admin-field">Mileage (km)<input name="mileage" type="number" inputMode="numeric" min="0" step="1" defaultValue={defaults.mileage} /></label>
+        <label className="admin-field">Engine<input name="engine_capacity" defaultValue={defaults.engine_capacity} placeholder="2.5L" /></label>
+        <label className="admin-field">Drive type<input name="drive_type" defaultValue={defaults.drive_type} placeholder="AWD" /></label>
+        <label className="admin-field">Exterior color<input name="exterior_color" defaultValue={defaults.exterior_color} /></label>
+        <label className="admin-field">Interior color<input name="interior_color" defaultValue={defaults.interior_color} /></label>
+        <label className="admin-field">Doors<input name="doors" type="number" inputMode="numeric" min="1" max="20" defaultValue={defaults.doors} /></label>
+        <label className="admin-field span-all">Description<textarea name="description" defaultValue={defaults.description} maxLength={10000} rows={6} /></label>
+      </div></details>
 
       <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><div><h2 id="photos-heading">Vehicle photos</h2><p className="muted">Add up to 15 views: front, sides, rear, interior and details. Drag to reorder; the first photo is the cover.</p></div><span className="muted">{photos.length} / 15</span></div>
         {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Vehicle photos">{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}`} key={photo.id} role="listitem" draggable onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData("text/plain")); void reorderPhoto(from, index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Photo ${index + 1}${index === 0 ? ", cover photo" : ""}`}>
@@ -179,7 +252,7 @@ export function AdminVehicleEditor({ vehicle }: { vehicle?: Vehicle | null }) {
       <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
         {archived ? <p className="help-text">This car is archived and hidden. Saving edits will keep it archived. Use Restore in Inventory when you want to show it again.</p> : null}
         <div className="price-field"><label className="admin-field">Interne prijs<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Cashprijs / giraal deal<input name="cash_price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.cash_price} placeholder="On request" /></label></div>
-        <label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency} placeholder="USD" maxLength={8} /></label>
+        <label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency || "USD"} placeholder="USD" maxLength={8} /></label>
         <p className="help-text">If you enter a price, enter its currency too (for example USD or SRD).</p>
         <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
         <label className="admin-field">Stock number<input name="stock_number" defaultValue={defaults.stock_number} /></label>
