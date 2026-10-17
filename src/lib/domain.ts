@@ -173,13 +173,12 @@ export function sortedImages(images: VehicleImage[]) {
 }
 
 export function vehicleSpecifications(vehicle: Vehicle): [string, string][] {
-  const rows: [string, string | null][] = [
-    ["Bouwjaar", vehicle.year?.toString() ?? null], ["Brandstof", vehicle.fuel_type],
-    ["Stocknummer", isDemoVehicle(vehicle) ? null : vehicle.stock_number ?? null],
-    ["Zitplaatsen", vehicle.seats?.toString() ?? null], ["Transmissie", vehicle.transmission],
-    ["Carrosserie", vehicle.body_type],
+  return [
+    ["Bouwjaar", vehicle.year?.toString() ?? "—"], ["Brandstof", vehicle.fuel_type ?? "—"],
+    ["Stocknummer", isDemoVehicle(vehicle) ? "—" : vehicle.stock_number ?? "—"],
+    ["Zitplaatsen", vehicle.seats?.toString() ?? "—"], ["Transmissie", vehicle.transmission ?? "—"],
+    ["Carrosserie", vehicle.body_type ?? "—"],
   ];
-  return rows.filter((row): row is [string, string] => Boolean(row[1]));
 }
 
 export function slugify(input: string) {

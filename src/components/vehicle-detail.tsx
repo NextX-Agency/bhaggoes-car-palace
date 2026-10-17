@@ -22,7 +22,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
   const message = `Hello ${settings.business_name}, I saw the ${name} on your website. Can you confirm its current availability and price? ${siteUrl()}/cars/${vehicle.slug}`;
   const whatsApp = preview ? null : buildWhatsAppLink(settings.whatsapp, message);
   const specifications = vehicleSpecifications(vehicle);
-  const keySpecs = specifications.slice(0, 4);
+  const keySpecs = specifications.filter(([, value]) => value !== "—").slice(0, 4);
   const locations = parseLocations(settings.address);
   const facebook = safeExternalUrl(settings.social_links?.facebook);
   const Title = preview ? "h2" : "h1";
