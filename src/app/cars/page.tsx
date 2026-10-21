@@ -51,9 +51,8 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
   return <div className="container page-wrap inventory-page">
     <div className="inventory-head">
       <div>
-        <p className="section-kicker">Find your next car</p>
         <h1>Browse cars</h1>
-        <p><strong>{total}</strong> {total === 1 ? "car" : "cars"}{active.length ? " match your filters" : " listed"}. Explore the details, then get in touch with us.</p>
+        <p><strong>{total}</strong> {total === 1 ? "car" : "cars"}{active.length ? " match your filters" : " listed"}</p>
       </div>
       {compareCarsEnabled ? <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link> : null}
     </div>

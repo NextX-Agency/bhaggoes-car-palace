@@ -18,7 +18,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
   return <footer className="site-footer">
     <div className="container footer-main">
       <div className="footer-brand">
-        <Link href="/" aria-label={`${settings.business_name} home`}><Image src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={316} height={108} sizes="170px" /></Link>
+        <Link href="/" aria-label={`${settings.business_name} home`}><Image src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={316} height={108} loading="eager" unoptimized={!settings.logo_url} sizes="220px" /></Link>
       </div>
       <nav className="footer-col" aria-label="Cars">
         <p className="footer-label">Cars</p>
