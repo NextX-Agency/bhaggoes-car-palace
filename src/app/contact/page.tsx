@@ -16,7 +16,7 @@ export default async function ContactPage() {
   });
 
   return <div className="container page-wrap">
-    <div className="page-intro"><h1>Contact</h1></div>
+    <div className="page-intro"><p className="section-kicker">Talk to Bhaggoes</p><h1>Let’s talk cars.</h1><p>Have a vehicle in mind or want to visit? Reach us directly on WhatsApp, by phone, or at one of our locations.</p></div>
 
     <section className="contact-direct" aria-label="Contact options">
       {whatsapp ? <a className="contact-whatsapp" href={whatsapp} target="_blank" rel="noreferrer">

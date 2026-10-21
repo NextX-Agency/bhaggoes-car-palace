@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bhaggoes Car Palace");
-  await expect(page.getByText("Welcome to", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("The car you want.A price hard to beat.");
+  await expect(page.getByText("Welcome to Bhaggoes Car Palace", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "No cars are listed right now" })).toBeVisible();
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Inventory" }).click();
   await expect(page).toHaveURL(/\/cars$/);

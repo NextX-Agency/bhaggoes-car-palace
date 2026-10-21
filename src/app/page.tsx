@@ -8,7 +8,7 @@ import { HeroSearch } from "@/components/hero-search";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { BrandLogo } from "@/components/brand-logo";
 import { getAvailableCount, getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
-import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
+import { buildWhatsAppLink, coverImage, parseLocations } from "@/lib/domain";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -22,20 +22,20 @@ export default async function HomePage() {
   const locations = parseLocations(settings.address);
   const hasVisitDetails = Boolean(settings.address || settings.phone || settings.email || hours.length);
   const makes = filterOptions.makes.filter((make) => filterOptions.makeCounts[make]);
+  const heroVehicle = vehicles.find((vehicle) => coverImage(vehicle.images)?.url);
+  const heroImage = heroVehicle ? coverImage(heroVehicle.images) : null;
 
   return <>
     <section className="hero home-hero" aria-labelledby="hero-title">
-      <div className="hero-visual"><Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Illustrative black pickup outside a dealership" fill preload sizes="(max-width: 960px) 100vw, 60vw" /></div>
-      <div className="hero-shade" />
+      <div className="hero-visual"><Image className="hero-photo" src={heroImage?.url || "/images/harrier-2018/front-three-quarter.webp"} alt={heroImage?.alt_text || "Toyota Harrier photographed at Bhaggoes Car Palace"} fill preload sizes="(max-width: 960px) 100vw, 58vw" /></div>
       <div className="container hero-content">
-        <p className="hero-kicker">Welcome to</p>
-        <h1 id="hero-title">{settings.business_name}</h1>
-        <p className="hero-heading-tagline">{settings.homepage_title}</p>
-        <p className="hero-copy">{settings.homepage_subtitle || "Find your next car in our current selection. View the details and speak with our team directly."}</p>
-        {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
+        <p className="hero-kicker">Welcome to {settings.business_name}</p>
+        <Image className="hero-brandmark" src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={500} height={171} sizes="(max-width: 960px) 72vw, 430px" loading="eager" />
+        <h1 id="hero-title">{settings.homepage_title === "Browse Our Cars" ? <>The car you want.<br /><span>A price hard to beat.</span></> : settings.homepage_title}</h1>
+        <p className="hero-copy">{settings.homepage_subtitle || "Explore the cars we have available, see the details, and speak directly with our team in Suriname."}</p>
         <div className="hero-actions">
-          <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
-          {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask us on WhatsApp</a> : null}
+          <Link className="button button-primary" href="/cars">See available cars <ArrowRight size={18} aria-hidden="true" /></Link>
+          {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Talk to our team</a> : null}
         </div>
         {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available now</p> : null}
       </div>
@@ -43,10 +43,18 @@ export default async function HomePage() {
 
     <div className="container hero-search-dock"><HeroSearch makes={filterOptions.makes} /></div>
 
+    <section className="shopping-steps" aria-label="How to shop with Bhaggoes">
+      <div className="container shopping-steps-grid">
+        <div><span>01 / Explore</span><p>Browse the current selection.</p></div>
+        <div><span>02 / Discover</span><p>See the details behind each car.</p></div>
+        <div><span>03 / Connect</span><p>Ask us directly or come by.</p></div>
+      </div>
+    </section>
+
     <section className="section home-inventory" aria-labelledby="home-cars">
       <div className="container">
         <div className="section-heading">
-          <div><p className="section-kicker">Explore our inventory</p><h2 id="home-cars">{vehicles === featured ? "Featured cars" : "Latest cars"}</h2></div>
+          <div><p className="section-kicker">The Bhaggoes collection</p><h2 id="home-cars">{vehicles === featured ? "Featured cars" : "Latest cars"}</h2></div>
           {vehicles.length ? <Link className="text-link" href="/cars">View all cars <ArrowRight size={16} /></Link> : null}
         </div>
         {vehicles.length

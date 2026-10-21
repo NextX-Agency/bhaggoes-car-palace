@@ -8,6 +8,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, Heart, Menu, X } from "lucide-react";
 import type { SiteSettings } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
+import { buildWhatsAppLink } from "@/lib/domain";
+import { SocialIcon } from "@/components/social-icon";
 import { emptyBrowserSnapshot, FAVORITES_KEY, parseStoredIds, readBrowserSnapshot, subscribeToBrowserStore } from "@/lib/browser-store";
 
 const links = [
@@ -25,7 +27,8 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
   const setOpen = (next: boolean) => setOpenPath(next ? pathname : null);
   const favoritesSnapshot = useSyncExternalStore(subscribeToBrowserStore, () => readBrowserSnapshot(FAVORITES_KEY), emptyBrowserSnapshot);
   const savedCount = parseStoredIds(favoritesSnapshot, 100).length;
-  const visibleLinks = links.filter(([label]) => (label !== "Financing" || settings.financing_enabled) && (label !== "About" || settings.about_text));
+  const visibleLinks = links.filter(([label]) => label !== "Financing" || settings.financing_enabled);
+  const whatsappHref = buildWhatsAppLink(settings.whatsapp, `Hello ${settings.business_name}, I have a question about a car.`);
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
@@ -54,6 +57,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
             {visibleLinks.map(([label, href]) => <Link href={href} key={href} aria-current={isActive(href) ? "page" : undefined}>{label}</Link>)}
           </nav>
           <div className="nav-actions">
+            {whatsappHref ? <a className="header-contact" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask Bhaggoes</a> : null}
             {favoritesLink}
             <Dialog.Trigger asChild>
               <button className="icon-button menu-toggle" type="button" aria-label="Open menu"><Menu size={22} /></button>

@@ -29,7 +29,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       </nav>
       <nav className="footer-col" aria-label="Dealership">
         <p className="footer-label">Dealership</p>
-        {settings.about_text ? <Link href="/about">About</Link> : null}
+        <Link href="/about">About</Link>
         <Link href="/faq">FAQ</Link>
         <Link href="/contact">Contact</Link>
       </nav>

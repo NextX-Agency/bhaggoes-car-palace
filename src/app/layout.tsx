@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { getSettings } from "@/lib/data";
 import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
+import "./brand.css";
 import "./admin.css";
 
 export const dynamic = "force-dynamic";

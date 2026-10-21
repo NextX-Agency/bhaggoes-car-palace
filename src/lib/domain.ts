@@ -132,7 +132,7 @@ export const defaultSettings: SiteSettings = {
   email: null,
   address: "HK: Kwattaweg-Tomaatstraat 495, Suriname\nWanica: Indira Ghandiweg 50, Suriname",
   business_hours: null,
-  social_links: { facebook: "https://www.facebook.com/100057843361600/" },
+  social_links: { facebook: "https://www.facebook.com/100057843361600/", tiktok: "https://www.tiktok.com/@bhaggoes.car.palace" },
   homepage_title: "Browse Our Cars",
   homepage_subtitle: "",
   seo_title: "Bhaggoes Car Palace | Vehicle Inventory",

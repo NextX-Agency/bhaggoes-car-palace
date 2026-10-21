@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Frequently Asked Questions", descrip
 export default async function FAQPage() {
   const faqs = await getFaqs();
   return <div className="container page-wrap">
-    <div className="page-intro"><h1>Frequently asked questions</h1></div>
+    <div className="page-intro"><p className="section-kicker">Good to know</p><h1>Frequently asked questions</h1><p>Answers to questions about shopping with Bhaggoes Car Palace.</p></div>
     {faqs.length
       ? <div className="faq-list">{faqs.map((item) => <details className="faq-item" key={item.id}><summary>{item.question}<Plus size={20} aria-hidden="true" /></summary><p>{item.answer}</p></details>)}</div>
       : <EmptyState title="No questions published yet" href="/contact" action="Contact us" />}
