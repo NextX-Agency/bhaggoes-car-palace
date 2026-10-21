@@ -24,18 +24,20 @@ export default async function HomePage() {
   const makes = filterOptions.makes.filter((make) => filterOptions.makeCounts[make]);
 
   return <>
-    <section className="hero" aria-labelledby="hero-title">
-      <Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Black pickup at a dealership" fill loading="eager" fetchPriority="high" sizes="100vw" />
+    <section className="hero home-hero" aria-labelledby="hero-title">
+      <div className="hero-visual"><Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Illustrative black pickup outside a dealership" fill preload sizes="(max-width: 960px) 100vw, 60vw" /></div>
       <div className="hero-shade" />
       <div className="container hero-content">
-        <h1 id="hero-title">{settings.homepage_title}</h1>
+        <p className="hero-kicker">Welcome to</p>
+        <h1 id="hero-title">{settings.business_name}</h1>
+        <p className="hero-heading-tagline">{settings.homepage_title}</p>
+        <p className="hero-copy">{settings.homepage_subtitle || "Find your next car in our current selection. View the details and speak with our team directly."}</p>
         {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
-        {settings.homepage_subtitle ? <p className="hero-copy">{settings.homepage_subtitle}</p> : null}
         <div className="hero-actions">
           <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
           {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask us on WhatsApp</a> : null}
         </div>
-        {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available</p> : null}
+        {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available now</p> : null}
       </div>
     </section>
 
@@ -44,7 +46,7 @@ export default async function HomePage() {
     <section className="section home-inventory" aria-labelledby="home-cars">
       <div className="container">
         <div className="section-heading">
-          <h2 id="home-cars">{vehicles === featured ? "Featured cars" : "Latest cars"}</h2>
+          <div><p className="section-kicker">Explore our inventory</p><h2 id="home-cars">{vehicles === featured ? "Featured cars" : "Latest cars"}</h2></div>
           {vehicles.length ? <Link className="text-link" href="/cars">View all cars <ArrowRight size={16} /></Link> : null}
         </div>
         {vehicles.length
@@ -62,10 +64,12 @@ export default async function HomePage() {
       </div>
     </section> : null}
 
-    {hasVisitDetails || whatsappHref ? <section className="section section-muted" aria-labelledby="home-visit">
+    {hasVisitDetails || whatsappHref ? <section className="section section-muted home-visit" aria-labelledby="home-visit">
       <div className="container visit">
         <div>
+          <p className="section-kicker">Here to help</p>
           <h2 id="home-visit">Visit {settings.business_name}</h2>
+          <p className="visit-intro">Have a car in mind? Ask about availability or come see us in person.</p>
           <div className="visit-actions">
             {whatsappHref ? <a className="button button-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Message on WhatsApp</a> : null}
             {settings.phone ? <a className="button button-outline" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> Call us</a> : <Link className="button button-outline" href="/contact">Send a message</Link>}

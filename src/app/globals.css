@@ -5,9 +5,9 @@
    ========================================================================== */
 :root {
   /* Surfaces */
-  --bg: #ffffff;
-  --surface: #f5f6f8;
-  --surface-2: #eceff3;
+  --bg: #f7faff;
+  --surface: #eef4fd;
+  --surface-2: #e3ebf7;
   --line: #e2e6eb;
   --line-strong: #cbd2db;
 
@@ -115,10 +115,11 @@ img { max-width: 100%; }
 /* ==========================================================================
    Header
    ========================================================================== */
-.site-header { position: sticky; top: 0; z-index: 50; background: rgb(255 255 255 / 0.96); border-bottom: 1px solid var(--line); backdrop-filter: saturate(1.4) blur(10px); }
+.site-header { position: sticky; top: 0; z-index: 50; background: rgb(255 255 255 / 0.96); border-bottom: 1px solid #dbe6f5; border-top: 4px solid var(--brand); backdrop-filter: saturate(1.4) blur(10px); }
 .nav-row { height: var(--header-h); display: flex; align-items: center; gap: 32px; }
 .brand { display: flex; align-items: center; flex: 0 0 auto; }
 .brand img { display: block; width: 190px; height: auto; }
+.brand { position: relative; z-index: 1; }
 .desktop-nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .desktop-nav a { position: relative; padding: 10px 12px; border-radius: var(--r-sm); color: var(--ink-2); font-size: var(--fs-sm); font-weight: 500; transition: color 0.15s; }
 .desktop-nav a:hover { color: var(--ink); }
@@ -166,6 +167,24 @@ img { max-width: 100%; }
 .hero-actions .button { min-height: 50px; padding-inline: 22px; }
 .button-hero-outline { border: 1px solid rgb(255 255 255 / 0.75); background: rgb(8 18 33 / 0.18); color: #fff; }
 .button-hero-outline:hover { border-color: #fff; background: rgb(255 255 255 / 0.12); }
+.home-hero { min-height: clamp(510px, 64vh, 650px); background: #e9f2ff; color: var(--ink); }
+.home-hero::before { content: ""; position: absolute; inset: 0; z-index: 1; background: var(--brand); clip-path: polygon(0 0, 56% 0, 68% 100%, 0 100%); }
+.home-hero::after { content: ""; position: absolute; inset: 0; z-index: 2; background: radial-gradient(circle at 9% 82%, rgb(22 82 200 / 0.14), transparent 30%), linear-gradient(120deg, #fff 0%, #f3f8ff 58%, #dbeafe 100%); clip-path: polygon(0 0, 55% 0, 67% 100%, 0 100%); }
+.home-hero .hero-visual { position: absolute; inset: 0 0 0 42%; }
+.home-hero .hero-photo { z-index: 0; object-position: 52% 56%; }
+.home-hero .hero-shade { z-index: 0; background: linear-gradient(0deg, rgb(6 25 58 / 0.24), transparent 42%); }
+.home-hero .hero-content { position: relative; z-index: 3; padding-block: 70px 120px; }
+.home-hero .hero-content > * { max-width: 51%; }
+.hero-kicker { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 16px; color: var(--brand); font-size: 0.875rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
+.hero-kicker::before { content: ""; width: 28px; height: 3px; background: var(--accent); }
+.home-hero h1 { max-width: 13ch; color: var(--navy); font-size: clamp(3.1rem, 4.5vw, 5rem); }
+.hero-heading-tagline { margin-top: 18px; color: var(--brand); font-family: var(--font-head); font-size: clamp(1.125rem, 1.6vw, 1.5rem); font-weight: 750; letter-spacing: -0.02em; }
+.home-hero .hero-copy { max-width: 39ch; color: var(--ink-2); font-size: clamp(1rem, 1.3vw, 1.125rem); line-height: 1.65; }
+.home-hero .hero-slogan { margin-top: 16px; color: var(--brand); font-size: 0.75rem; letter-spacing: 0.1em; }
+.home-hero .hero-stock { margin-top: 18px; color: var(--ink-2); }
+.home-hero .button-hero-outline { border-color: #a9bfe5; background: #fff; color: var(--navy); }
+.home-hero .button-hero-outline:hover { border-color: var(--brand); background: var(--brand-soft); }
+.home-hero .hero-actions { max-width: none; }
 .brand-logo { display: inline-block; width: 20px; height: 20px; flex: 0 0 20px; color: currentColor; vertical-align: middle; }
 .detail-brand { display: flex; align-items: center; gap: 8px; }
 
@@ -181,12 +200,27 @@ img { max-width: 100%; }
   .hero-content { padding-block: 120px 108px; }
   .hero-photo { object-position: 66% 50%; }
   .hero-shade { background: linear-gradient(0deg, rgb(8 18 33 / 0.94) 0%, rgb(8 18 33 / 0.66) 45%, rgb(8 18 33 / 0.2) 100%); }
+  .home-hero { display: block; padding-top: 260px; }
+  .home-hero .hero-visual { inset: 0 0 auto; height: 310px; }
+  .home-hero::before, .home-hero::after { inset: 250px 0 0; clip-path: none; }
+  .home-hero::before { inset: 244px 0 0; }
+  .home-hero .hero-shade { display: none; }
+  .home-hero .hero-content { padding-block: 42px 110px; }
+  .home-hero .hero-content > * { max-width: 620px; }
   .hero-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-search .button { grid-column: 1 / -1; }
 }
 @media (max-width: 520px) {
   .hero-content { padding-block: 88px 82px; }
   .hero h1 { font-size: clamp(2.375rem, 11vw, 3rem); }
+  .home-hero { padding-top: 220px; }
+  .home-hero .hero-visual { height: 270px; }
+  .home-hero::before { inset-block-start: 214px; }
+  .home-hero::after { inset-block-start: 220px; }
+  .home-hero .hero-content { padding-block: 34px 88px; }
+  .home-hero h1 { font-size: clamp(2.8rem, 11vw, 4rem); }
+  .home-hero .hero-actions .button { width: 100%; }
+  .home-hero .hero-actions .button-hero-outline { min-height: 46px; padding-inline: 16px; border: 1px solid #a9bfe5; color: var(--navy); text-decoration: none; }
   .hero-copy { font-size: 1rem; }
   .hero-actions { gap: 12px; }
   .hero-actions .button-hero-outline { min-height: 32px; padding: 0; border: 0; background: transparent; color: #fff; text-decoration: underline; text-underline-offset: 4px; }
@@ -220,18 +254,30 @@ textarea { resize: vertical; }
 .section-muted { background: var(--surface); }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .section-heading h2 { font-size: var(--fs-h2); }
-.home-inventory { padding-top: clamp(56px, 5vw, 80px); }
+.section-kicker { margin-bottom: 8px; color: var(--brand); font-size: var(--fs-xs); font-weight: 750; letter-spacing: 0.09em; text-transform: uppercase; }
+.home-inventory { padding-top: clamp(56px, 5vw, 80px); background: radial-gradient(circle at 100% 0, rgb(22 82 200 / 0.07), transparent 36%), var(--bg); }
 .home-inventory + .section-tight { padding-top: 0; padding-bottom: var(--section); }
 
 /* Browse by make */
 .make-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .make-links a { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font-size: var(--fs-sm); font-weight: 500; transition: border-color 0.15s, color 0.15s; }
 .make-links a:hover { border-color: var(--ink); }
+.make-links a { border-color: #c9d9f0; background: #fff; }
 .make-links a span { color: var(--muted); font-size: var(--fs-xs); }
 
 /* Dealership contact band */
 .visit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
 .visit h2 { font-size: var(--fs-h2); }
+.visit-intro { max-width: 38ch; margin-top: 12px; color: var(--ink-2); }
+.home-visit { position: relative; overflow: hidden; background: var(--brand); color: #fff; }
+.home-visit::before { content: ""; position: absolute; width: 48vw; aspect-ratio: 1; right: -13vw; top: -31vw; border: 1px solid rgb(255 255 255 / 0.13); border-radius: 50%; box-shadow: 0 0 0 6vw rgb(255 255 255 / 0.035), 0 0 0 13vw rgb(255 255 255 / 0.025); pointer-events: none; }
+.home-visit .visit { position: relative; }
+.home-visit h2, .home-visit .section-kicker, .home-visit .visit-details h3, .home-visit .visit-details p, .home-visit .visit-details a, .home-visit .visit-intro, .home-visit .hours span:first-child { color: #fff; }
+.home-visit .section-kicker, .home-visit .visit-details h3 { color: #cbdcff; }
+.home-visit .visit-details a { text-decoration: underline; text-decoration-color: rgb(255 255 255 / 0.4); text-underline-offset: 3px; }
+.home-visit .visit-details a:hover { color: #e2eeff; }
+.home-visit .button-whatsapp { background: var(--navy); }
+.home-visit .button-whatsapp:hover { background: var(--navy-2); }
 .visit-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .visit-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; }
 .visit-details h3 { margin-bottom: 6px; color: var(--muted); font-family: var(--font-sans); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0; }

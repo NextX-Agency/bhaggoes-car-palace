@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Browse Our Cars");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bhaggoes Car Palace");
+  await expect(page.getByText("Welcome to", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "No cars are listed right now" })).toBeVisible();
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Inventory" }).click();
   await expect(page).toHaveURL(/\/cars$/);
@@ -76,16 +77,16 @@ test("comparison is hidden from the public offer", async ({ page }) => {
 test("contact is WhatsApp-first without a customer inquiry form", async ({ page }) => {
   await page.goto("/contact");
   await expect(page.locator("main form")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /WhatsApp.*Start chat/i })).toHaveAttribute("href", /wa\.me\/5978946870/);
+  await expect(page.getByRole("link", { name: /WhatsApp.*Start chat/i })).toHaveAttribute("href", /wa\.me\/5978668777/);
   await expect(page.getByRole("link", { name: "Facebook" }).first()).toHaveAttribute("href", "https://www.facebook.com/100057843361600/");
-  await expect(page.getByText("Kwattaweg 407, Paramaribo, Suriname").first()).toBeVisible();
+  await expect(page.getByText("Kwattaweg-Tomaatstraat 495, Suriname").first()).toBeVisible();
 });
 
-test("financing stays unpublished until the dealership enables it", async ({ page }) => {
+test("published financing details are reachable from the navigation", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Financing" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Financing" })).toBeVisible();
   await page.goto("/financing");
-  await expect(page.getByText(/financing details are not published/i)).toBeVisible();
+  await expect(page.getByText("70% aanbetaling · maximaal 6 maanden")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Estimate your monthly payment" })).toHaveCount(0);
 });
 
