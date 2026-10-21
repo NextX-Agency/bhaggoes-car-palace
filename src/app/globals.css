@@ -670,7 +670,7 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 .finance-next h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); }
 .finance-next p { margin-top: 5px; color: var(--ink-2); }
 @media (max-width: 800px) { .finance-hero { grid-template-columns: 1fr; } .finance-hero-image { min-height: 260px; } .finance-options { grid-template-columns: 1fr; } .finance-options-intro h2, .finance-options-intro > p:last-child { max-width: none; } }
-@media (max-width: 540px) {
+@media (max-width: 640px) {
   .financing-page { padding-top: 0; }
   .finance-hero { position: relative; display: block; min-height: 660px; margin-inline: calc(-1 * var(--gutter)); background: var(--navy); }
   .finance-hero::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgb(6 20 43 / 0.95), rgb(6 20 43 / 0.78) 43%, rgb(6 20 43 / 0.08) 72%, rgb(6 20 43 / 0.18)); }
