@@ -290,6 +290,7 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .policy-admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .legal-page-editor { display: grid; align-content: start; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
 .legal-page-editor h3 { font-size: 1rem; }
+.legal-page-hint { color: var(--muted); font-size: var(--fs-xs); line-height: 1.5; }
 .legal-page-editor .button { justify-self: start; }
 .inquiry-table td:nth-child(2) { white-space: normal; }
 .inquiry-related { display: grid; gap: 4px; min-width: 200px; white-space: normal; }

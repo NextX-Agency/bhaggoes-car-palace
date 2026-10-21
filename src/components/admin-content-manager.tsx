@@ -32,5 +32,15 @@ function FaqRow({ faq }: { faq: Faq }) {
 
 function PageEditor({ slug, page }: { slug: "privacy" | "terms"; page?: Page }) {
   const [state, action, pending] = useActionState(saveContentPageAction, {});
-  return <form action={action} className="legal-page-editor"><input type="hidden" name="slug" value={slug} /><h3>{slug === "privacy" ? "Privacy policy" : "Terms and conditions"}</h3><label className="admin-field">Page title<input name="title" defaultValue={page?.title ?? (slug === "privacy" ? "Privacy policy" : "Terms and conditions")} /></label><label className="admin-field">Page content<textarea name="body" rows={8} defaultValue={page?.body ?? ""} /></label><label className="admin-field">Search description<input name="seo_description" defaultValue={page?.seo_description ?? ""} maxLength={350} /></label><label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={page?.published ?? false} />Publish this page content</label>{state.error ? <p className="admin-error">{state.error}</p> : state.ok ? <p className="admin-feedback"><Check size={14} /> Saved</p> : null}<button className="button button-outline" disabled={pending}>{pending ? "Saving…" : "Save page"}</button></form>;
+  return <form action={action} className="legal-page-editor">
+    <input type="hidden" name="slug" value={slug} />
+    <h3>{slug === "privacy" ? "Privacy policy" : "Terms and conditions"}</h3>
+    <label className="admin-field">Page title<input name="title" defaultValue={page?.title ?? (slug === "privacy" ? "Privacy policy" : "Terms and conditions")} /></label>
+    <label className="admin-field">Page content<textarea name="body" rows={8} defaultValue={page?.body ?? ""} /></label>
+    <p className="legal-page-hint">Separate paragraphs with a blank line. Start a heading with ## followed by a space.</p>
+    <label className="admin-field">Search description<input name="seo_description" defaultValue={page?.seo_description ?? ""} maxLength={350} /></label>
+    <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={page?.published ?? false} />Publish this page content</label>
+    {state.error ? <p className="admin-error">{state.error}</p> : state.ok ? <p className="admin-feedback"><Check size={14} /> Saved</p> : null}
+    <button className="button button-outline" disabled={pending}>{pending ? "Saving…" : "Save page"}</button>
+  </form>;
 }

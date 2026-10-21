@@ -1,5 +1,21 @@
 import type { Metadata } from "next";
+import { PolicyBody } from "@/components/policy-body";
 import { getPublishedPage } from "@/lib/data";
+import { termsPolicyDefault } from "@/lib/policy-defaults";
 
-export async function generateMetadata(): Promise<Metadata> { const page = await getPublishedPage("terms"); return { title: page?.seo_title || page?.title || "Terms and Conditions", description: page?.seo_description || "Read the terms for using the Bhaggoes Car Palace website.", alternates: { canonical: "/terms" } }; }
-export default async function TermsPage() { const page = await getPublishedPage("terms"); return <div className="container page-wrap"><div className="page-intro"><h1>{page?.title ?? "Terms and conditions"}</h1></div><article className="policy-copy">{page?.body ? <p>{page.body}</p> : <><h2>Vehicle information</h2><p>Vehicle details and availability are provided for browsing and may change. Contact the dealership to confirm current price, specifications, condition, and availability before making a decision.</p><h2>Estimates</h2><p>Payment calculator results are estimates for general planning. They are not a financing offer, approval, or commitment. Confirm any financing terms directly with the relevant provider.</p><h2>Contact</h2><p>WhatsApp and external social links open third-party services. Confirm vehicle details with the dealership before making a purchase decision.</p><h2>Website use</h2><p>Please use this site lawfully and do not attempt to disrupt its operation or access restricted areas.</p><p className="callout">These general terms should be reviewed by the dealership for its specific legal requirements.</p></>}</article></div>; }
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPublishedPage("terms");
+  return {
+    title: page?.seo_title || page?.title || "Terms and Conditions",
+    description: page?.seo_description || "Website terms for browsing vehicles at Bhaggoes Car Palace.",
+    alternates: { canonical: "/terms" },
+  };
+}
+
+export default async function TermsPage() {
+  const page = await getPublishedPage("terms");
+  return <div className="container page-wrap">
+    <div className="page-intro"><h1>{page?.title ?? "Terms and conditions"}</h1></div>
+    <article className="policy-copy"><PolicyBody body={page?.body || termsPolicyDefault} /></article>
+  </div>;
+}
