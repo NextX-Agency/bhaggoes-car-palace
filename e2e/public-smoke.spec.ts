@@ -93,8 +93,26 @@ test("published financing details are reachable from the navigation", async ({ p
   await page.goto("/");
   await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Financing" })).toBeVisible();
   await page.goto("/financing");
-  await expect(page.getByText("70% aanbetaling · maximaal 6 maanden")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "In-house financing" })).toBeVisible();
+  await expect(page.getByText("70%")).toBeVisible();
+  await expect(page.getByText("down payment · up to 6 months")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Estimate your monthly payment" })).toHaveCount(0);
+});
+
+test("FAQ answers common questions when no custom questions are published", async ({ page }) => {
+  await page.goto("/faq");
+  await page.getByText("Why do some cars show two prices?").click();
+  await expect(page.getByText(/separate in-house and cash prices/i)).toBeVisible();
+  await expect(page.getByText("No questions published yet")).toHaveCount(0);
+});
+
+test("financing and FAQ fit a narrow phone screen", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  for (const route of ["/financing", "/faq"]) {
+    await page.goto(route);
+    await expect(page.locator("main h1")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  }
 });
 
 test("admin sends an unconfigured project to setup guidance", async ({ page }) => {

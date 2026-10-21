@@ -6,7 +6,7 @@ import { MobileFilterDrawer } from "@/components/mobile-filter-drawer";
 import { SortSelect } from "@/components/sort-select";
 import { VehicleFilterForm, sortLabels } from "@/components/vehicle-filter-form";
 import { VehicleGrid } from "@/components/vehicle-grid";
-import { getVehicles, getVehicleFilterOptions } from "@/lib/data";
+import { getSettings, getVehicles, getVehicleFilterOptions } from "@/lib/data";
 import type { Availability, VehicleCondition, VehicleFilters } from "@/lib/domain";
 import { availabilityLabels, formatMileage } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
@@ -28,7 +28,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
     condition: (one(params.condition) || undefined) as VehicleCondition | undefined, availability: (one(params.availability) || undefined) as Availability | undefined,
     sort: sort && sort in sortLabels ? sort as VehicleFilters["sort"] : "newest", page: numberValue(params.page) ?? 1,
   };
-  const [{ vehicles, total, page, pageSize }, options] = await Promise.all([getVehicles(filters), getVehicleFilterOptions()]);
+  const [{ vehicles, total, page, pageSize }, options, settings] = await Promise.all([getVehicles(filters), getVehicleFilterOptions(), getSettings()]);
 
   const active = filterKeys.flatMap((key) => filters[key] ? [[key, String(filters[key])] as [string, string]] : []);
   const query = (entries: [string, string][]) => { const search = new URLSearchParams(entries); return search.size ? `/cars?${search}` : "/cars"; };
@@ -71,7 +71,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
           <Link className="chip chip-clear" href={query(sortEntry)}>Clear all</Link>
         </div> : null}
         {vehicles.length
-          ? <VehicleGrid vehicles={vehicles} priorityCount={3} />
+          ? <VehicleGrid vehicles={vehicles} priorityCount={3} defaultCurrency={settings.currency} />
           : active.length
             ? <EmptyState title="No cars match your filters" href={query(sortEntry)} action="Clear filters" />
             : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}

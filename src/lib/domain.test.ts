@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bankFinancingText, buildWhatsAppLink, calculateFinance, formatAmount, internalFinancingText, normalizeSiteSettings, parseLocations, safeExternalUrl, slugify } from "./domain";
+import { bankFinancingText, buildWhatsAppLink, calculateFinance, formatAmount, internalFinancingText, normalizeSiteSettings, parseLocations, safeExternalUrl, slugify, vehicleSpecifications, type Vehicle } from "./domain";
 
 describe("dealership helpers", () => {
   it("calculates a zero-interest loan without adding interest", () => {
@@ -55,6 +55,20 @@ describe("dealership helpers", () => {
   it("formats missing prices without inventing a value", () => {
     expect(formatAmount(null)).toBe("Price on request");
     expect(formatAmount(1234, "SRD")).toBe(`SRD ${new Intl.NumberFormat().format(1234)}`);
+  });
+
+  it("shows populated vehicle details without empty placeholders or demo stock numbers", () => {
+    const vehicle = {
+      year: 2018, mileage: 62_000, transmission: "Automatic", fuel_type: "Gasoline",
+      body_type: "Hatchback", engine_capacity: null, drive_type: null,
+      seats: 5, doors: 5, exterior_color: "White", interior_color: null,
+      stock_number: "DEMO-FIT",
+    } as Vehicle;
+    expect(vehicleSpecifications(vehicle)).toEqual([
+      ["Year", "2018"], ["Mileage", "62,000 km"], ["Transmission", "Automatic"],
+      ["Fuel", "Gasoline"], ["Body style", "Hatchback"], ["Seats", "5"],
+      ["Doors", "5"], ["Exterior", "White"],
+    ]);
   });
 
   it("reads one dealership location per line with an optional name", () => {

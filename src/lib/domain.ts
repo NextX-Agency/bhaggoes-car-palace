@@ -216,12 +216,16 @@ export function sortedImages(images: VehicleImage[]) {
 }
 
 export function vehicleSpecifications(vehicle: Vehicle): [string, string][] {
-  return [
-    ["Bouwjaar", vehicle.year?.toString() ?? "—"], ["Brandstof", vehicle.fuel_type ?? "—"],
-    ["Stocknummer", isDemoVehicle(vehicle) ? "—" : vehicle.stock_number ?? "—"],
-    ["Zitplaatsen", vehicle.seats?.toString() ?? "—"], ["Transmissie", vehicle.transmission ?? "—"],
-    ["Carrosserie", vehicle.body_type ?? "—"],
+  const entries: [string, string | number | null | undefined][] = [
+    ["Year", vehicle.year], ["Mileage", formatMileage(vehicle.mileage)],
+    ["Transmission", vehicle.transmission], ["Fuel", vehicle.fuel_type],
+    ["Body style", vehicle.body_type], ["Engine", vehicle.engine_capacity],
+    ["Drivetrain", vehicle.drive_type], ["Seats", vehicle.seats],
+    ["Doors", vehicle.doors], ["Exterior", vehicle.exterior_color],
+    ["Interior", vehicle.interior_color],
+    ["Stock number", isDemoVehicle(vehicle) ? null : vehicle.stock_number],
   ];
+  return entries.flatMap(([label, value]) => value == null || value === "" ? [] : [[label, String(value)]]);
 }
 
 export function slugify(input: string) {

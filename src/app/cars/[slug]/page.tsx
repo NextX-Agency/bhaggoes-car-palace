@@ -28,7 +28,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
   return <div className="container page-wrap detail-page">
     <nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/cars"><ChevronLeft size={15} /> All cars</Link><span aria-hidden="true">/</span><Link href={`/cars?make=${encodeURIComponent(vehicle.make)}`}>{vehicle.make}</Link><span aria-hidden="true">/</span><span aria-current="page">{vehicle.model}</span></nav>
     <VehicleDetail vehicle={vehicle} settings={settings} />
-    {related.length ? <section className="related-section" aria-labelledby="related-heading"><div className="section-heading"><h2 id="related-heading">More {vehicle.make} cars</h2><Link className="text-link" href={`/cars?make=${encodeURIComponent(vehicle.make)}`}>View all <ArrowRight size={16} /></Link></div><VehicleGrid vehicles={related} /></section> : null}
+    {related.length ? <section className="related-section" aria-labelledby="related-heading"><div className="section-heading"><h2 id="related-heading">More {vehicle.make} cars</h2><Link className="text-link" href={`/cars?make=${encodeURIComponent(vehicle.make)}`}>View all <ArrowRight size={16} /></Link></div><VehicleGrid vehicles={related} defaultCurrency={settings.currency} /></section> : null}
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
   </div>;
 }

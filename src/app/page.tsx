@@ -50,7 +50,7 @@ export default async function HomePage() {
           {vehicles.length ? <Link className="text-link" href="/cars">View all cars <ArrowRight size={16} /></Link> : null}
         </div>
         {vehicles.length
-          ? <VehicleGrid vehicles={vehicles} />
+          ? <VehicleGrid vehicles={vehicles} defaultCurrency={settings.currency} />
           : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
       </div>
     </section>
