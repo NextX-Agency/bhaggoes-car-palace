@@ -56,11 +56,17 @@ test("mobile inventory filters open in an accessible drawer and apply to the URL
 });
 
 test("supporting public pages render on direct visits", async ({ page }) => {
-  for (const route of ["/about", "/contact", "/financing", "/faq", "/privacy", "/terms", "/favorites"]) {
+  for (const route of ["/contact", "/financing", "/faq", "/privacy", "/terms", "/favorites"]) {
     const response = await page.goto(route);
     expect(response?.status(), `${route} should respond successfully`).toBe(200);
     await expect(page.locator("main")).toBeVisible();
   }
+});
+
+test("old About links lead to the location-focused contact page", async ({ page }) => {
+  await page.goto("/about");
+  await expect(page).toHaveURL(/\/contact$/);
+  await expect(page.getByRole("heading", { name: "Find us on the map" })).toBeVisible();
 });
 
 test("comparison is hidden from the public offer", async ({ page }) => {
@@ -77,9 +83,10 @@ test("comparison is hidden from the public offer", async ({ page }) => {
 test("contact is WhatsApp-first without a customer inquiry form", async ({ page }) => {
   await page.goto("/contact");
   await expect(page.locator("main form")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /WhatsApp.*Start chat/i })).toHaveAttribute("href", /wa\.me\/5978668777/);
+  await expect(page.getByRole("link", { name: "Message on WhatsApp" })).toHaveAttribute("href", /wa\.me\/5978668777/);
   await expect(page.getByRole("link", { name: "Facebook" }).first()).toHaveAttribute("href", "https://www.facebook.com/100057843361600/");
   await expect(page.getByText("Kwattaweg-Tomaatstraat 495, Suriname").first()).toBeVisible();
+  await expect(page.locator('iframe[title^="Google Maps:"]')).toHaveCount(2);
 });
 
 test("published financing details are reachable from the navigation", async ({ page }) => {

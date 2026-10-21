@@ -11,7 +11,7 @@ import { compareCarsEnabled } from "@/lib/features";
 import { emptyBrowserSnapshot, FAVORITES_KEY, parseStoredIds, readBrowserSnapshot, subscribeToBrowserStore } from "@/lib/browser-store";
 
 const links = [
-  ["Inventory", "/cars"], ["Financing", "/financing"], ["About", "/about"], ["FAQ", "/faq"], ["Contact", "/contact"],
+  ["Inventory", "/cars"], ["Financing", "/financing"], ["FAQ", "/faq"], ["Contact", "/contact"],
 ] as const;
 
 // Keep in sync with the 960px breakpoint in globals.css where the desktop navigation takes over.
