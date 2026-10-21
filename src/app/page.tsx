@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
 import { SocialIcon } from "@/components/social-icon";
@@ -13,6 +13,9 @@ import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function HomePage() {
+  const imageProps = { alt: "Illustrative Toyota Hilux scene inspired by a Surinamese dealership forecourt", sizes: "100vw", loading: "eager" as const, fetchPriority: "high" as const };
+  const { props: { srcSet: desktopHero } } = getImageProps({ ...imageProps, src: "/images/hero-hilux-suriname-illustrative.webp", width: 1672, height: 941 });
+  const { props: { srcSet: mobileHero, ...heroImgProps } } = getImageProps({ ...imageProps, src: "/images/hero-mobile-illustrative.webp", width: 1122, height: 1402 });
   const [settings, featured, recent, filterOptions, availableCount] = await Promise.all([
     getSettings(), getFeaturedVehicles(6), getRecentVehicles(6), getVehicleFilterOptions(), getAvailableCount(),
   ]);
@@ -25,7 +28,7 @@ export default async function HomePage() {
 
   return <>
     <section className="hero home-hero" aria-labelledby="hero-title">
-      <div className="hero-visual"><Image className="hero-photo" src="/images/hero-hilux-illustrative.webp" alt="Illustrative black pickup outside a dealership" fill preload sizes="(max-width: 960px) 100vw, 60vw" /></div>
+      <div className="hero-visual"><picture><source media="(min-width: 641px)" srcSet={desktopHero} /><img {...heroImgProps} alt={imageProps.alt} srcSet={mobileHero} className="hero-photo" /></picture></div>
       <div className="hero-shade" />
       <div className="container hero-content">
         <p className="hero-kicker">Welcome to</p>

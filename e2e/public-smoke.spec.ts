@@ -99,11 +99,10 @@ test("published financing details are reachable from the navigation", async ({ p
   await expect(page.getByRole("heading", { name: "Estimate your monthly payment" })).toHaveCount(0);
 });
 
-test("FAQ answers common questions when no custom questions are published", async ({ page }) => {
+test("FAQ offers contact when no dashboard questions are published", async ({ page }) => {
   await page.goto("/faq");
-  await page.getByText("Why do some cars show two prices?").click();
-  await expect(page.getByText(/separate in-house and cash prices/i)).toBeVisible();
-  await expect(page.getByText("No questions published yet")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Questions? We’re here to help." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Contact the team" }).first()).toHaveAttribute("href", "/contact");
 });
 
 test("financing and FAQ fit a narrow phone screen", async ({ page }) => {
