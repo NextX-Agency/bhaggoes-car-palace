@@ -44,7 +44,9 @@ export function ComboField({ name, label, options, defaultValue = "", placeholde
   const [active, setActive] = useState(-1);
   const [placement, setPlacement] = useState<Placement>(defaultPlacement);
 
-  const visible = filtering ? filterComboOptions(options, current) : [...options];
+  const matching = filtering ? filterComboOptions(options, current) : options;
+  // Keep long catalogs responsive while letting typing search the complete list.
+  const visible = matching.slice(0, 100);
   const currentKey = comboKey(current);
 
   const measure = useCallback(() => {
@@ -192,6 +194,7 @@ export function ComboField({ name, label, options, defaultValue = "", placeholde
           >{renderOption ? <span className="combo-option-lead">{renderOption(option)}</span> : null}<span className="combo-option-text">{option}</span>{selected ? <Check size={16} aria-hidden="true" /> : null}</li>;
         })}
       </ul>
+      {matching.length > visible.length ? <p className="combo-empty" role="status">{matching.length - visible.length} extra opties. Typ om de lijst te verfijnen.</p> : null}
       {!visible.length ? <p className="combo-empty" role="status">{hasOptions ? "Geen overeenkomst. Je tekst wordt gebruikt zoals je hem typt." : emptyText}</p> : null}
     </div> : null}
   </div>;

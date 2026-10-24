@@ -1,8 +1,9 @@
 import { comboKey } from "./combo-options";
+import vpicSnapshot from "./vehicle-models-vpic.json";
 
 // Suggestions only: the editor accepts any model, so new, regional and rare vehicles remain listable.
 // Focused on what is common on the Surinamese used-import market (Japanese imports especially).
-export const vehicleModels: Record<string, readonly string[]> = {
+const curatedVehicleModels: Record<string, readonly string[]> = {
   Toyota: [
     "4Runner", "86", "Allion", "Alphard", "Aqua", "Auris", "Avanza", "Axio", "Belta", "Blade", "bB", "Camry", "C-HR", "Corolla", "Corolla Cross",
     "Corolla Fielder", "Corolla Rumion", "Corona", "Coaster", "Crown", "Dyna", "Estima", "Fielder", "Fortuner", "FJ Cruiser", "Harrier", "Hiace",
@@ -185,6 +186,73 @@ export const vehicleModels: Record<string, readonly string[]> = {
     "Almaz", "Confero", "Hongguang Mini EV",
   ],
 };
+
+// Regional and newer brands are often absent from the US focused vPIC endpoint.
+// These are editorial suggestions; unfamiliar models can always be typed in.
+const additionalModels: Record<string, readonly string[]> = {
+  Abarth: ["500", "595", "695", "124 Spider", "Punto", "Pulse"],
+  Aion: ["Aion S", "Aion V", "Aion Y", "Hyper GT", "Hyper HT", "Hyper SSR"],
+  "Ashok Leyland": ["Dost", "Partner", "Bada Dost", "Boss", "Ecomet", "Viking"],
+  BAIC: ["BJ20", "BJ30", "BJ40", "BJ60", "EU5", "X35", "X55", "X7"],
+  Bestune: ["B70", "B90", "T55", "T77", "T90"],
+  Changan: ["Alsvin", "CS15", "CS35", "CS55", "CS75", "CS95", "Hunter", "Uni-K", "Uni-T", "Uni-V"],
+  Chery: ["Arrizo 5", "Arrizo 8", "Tiggo 3", "Tiggo 5", "Tiggo 9"],
+  "Citroën": ["Ami", "C1", "C2", "C3 Aircross", "C4 Cactus", "C4 Picasso", "C5 Aircross", "C6", "Jumper", "SpaceTourer"],
+  Cupra: ["Ateca", "Born", "Formentor", "Leon", "Tavascan", "Terramar"],
+  DAF: ["CF", "LF", "XB", "XD", "XF", "XG", "XG+"],
+  Dacia: ["Bigster", "Dokker", "Jogger", "Lodgy", "Spring"],
+  Deepal: ["G318", "S05", "S07", "SL03"],
+  Denza: ["D9", "N7", "N8", "Z9"],
+  "DS Automobiles": ["DS 3", "DS 4", "DS 5", "DS 7", "DS 9"],
+  Exeed: ["LX", "RX", "TX", "TXL", "VX"],
+  FAW: ["Besturn B50", "J6", "J7", "Oley", "V2", "Xiali"],
+  Fuso: ["Canter", "eCanter", "Fighter", "Rosa", "Super Great"],
+  GAC: ["Aion Y", "Emkoo", "Empow", "GS3", "GS4", "GS8", "M8"],
+  "Great Wall": ["Cannon", "Haval H5", "M4", "Safe", "Tank 300", "Tank 500"],
+  Haval: ["Dargo", "H1", "H5", "H8", "M6"],
+  Honda: ["BR-V", "Crosstour", "CR-Z", "Element", "Elysion", "Integra", "Legend", "N-Van", "Prelude", "S2000", "WR-V"],
+  Hongqi: ["E-HS9", "H5", "H9", "HS3", "HS5", "HS7"],
+  Jetour: ["Dashing", "T1", "T2", "X70", "X90"],
+  Lada: ["Granta", "Kalina", "Largus", "Niva", "Vesta", "XRAY"],
+  Leapmotor: ["B10", "C01", "C10", "C11", "C16", "T03"],
+  "Li Auto": ["L6", "L7", "L8", "L9", "MEGA"],
+  "Lynk & Co": ["01", "02", "03", "05", "06", "08", "09", "Z10"],
+  MAN: ["TGE", "TGL", "TGM", "TGS", "TGX"],
+  NIO: ["EC6", "EC7", "EL6", "ES6", "ES8", "ET5", "ET7", "ET9"],
+  Omoda: ["C5", "C7", "E5", "Omoda 5", "Omoda 7", "Omoda 9"],
+  Ora: ["03", "07", "Black Cat", "Funky Cat", "Good Cat", "Lightning Cat"],
+  Perodua: ["Alza", "Aruz", "Ativa", "Axia", "Bezza", "Kancil", "Kelisa", "Myvi", "Viva"],
+  Proton: ["Exora", "Iriz", "S70", "X90"],
+  "Renault Trucks": ["C", "D", "K", "T", "T High"],
+  Scion: ["FR-S", "iA", "iM", "iQ", "tC", "xA", "xB", "xD"],
+  Seres: ["3", "5", "7", "SF5"],
+  Škoda: ["Citigo", "Enyaq", "Kamiq", "Karoq", "Scala"],
+  SsangYong: ["Actyon", "Chairman", "Kyron", "Stavic", "Torres"],
+  Tank: ["300", "400", "500", "700"],
+  Tata: ["Altroz", "Curvv", "Nexon EV", "Punch", "Sierra", "Tigor"],
+  "UD Trucks": ["Condor", "Croner", "Kazet", "Quester", "Quon"],
+  Vauxhall: ["Adam", "Astra", "Corsa", "Crossland", "Grandland", "Insignia", "Mokka", "Vivaro", "Zafira"],
+  Xpeng: ["G3", "G6", "G9", "Mona M03", "P5", "P7", "P7+", "X9"],
+};
+
+// The dated vPIC snapshot broadens suggestions for every catalog make. The local list
+// comes first because it includes regional/Japanese import names absent from vPIC.
+// Both the admin editor and public filters still accept custom model text.
+const vpicModels: Record<string, string[]> = vpicSnapshot.models;
+export const vehicleModels: Record<string, readonly string[]> = Object.fromEntries(
+  Object.keys(vpicModels).map((make) => {
+    const seen = new Set<string>();
+    const merged = [...(curatedVehicleModels[make] ?? []), ...(additionalModels[make] ?? []), ...vpicModels[make]]
+      .filter((model) => !(make === "Toyota" && /^Scion\b/i.test(model)))
+      .filter((model) => {
+        const key = comboKey(model);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    return [make, merged];
+  }),
+);
 
 // Typed shorthand -> catalog name, so "Benz", "VW" or "Chevy" still offers the right models.
 const makeAliases: Record<string, string> = {

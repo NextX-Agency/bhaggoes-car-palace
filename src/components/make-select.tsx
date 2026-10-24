@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type R
 import { ChevronDown, Search } from "lucide-react";
 
 // `logos` is rendered on the server (see brandLogoMap) so the brand icon set never ships in the client bundle.
-export function MakeSelect({ makes, name, value = "", placeholder = "All makes", label = "Make", labelledBy, logos = {} }: { makes: string[]; name: string; value?: string; placeholder?: string; label?: string; labelledBy: string; logos?: Record<string, ReactNode> }) {
+export function MakeSelect({ makes, name, value = "", placeholder = "All makes", label = "Make", labelledBy, logos = {}, onChange }: { makes: string[]; name: string; value?: string; placeholder?: string; label?: string; labelledBy: string; logos?: Record<string, ReactNode>; onChange?: (value: string) => void }) {
   const [selected, setSelected] = useState(value);
   const [search, setSearch] = useState("");
   const listId = useId();
@@ -40,8 +40,8 @@ export function MakeSelect({ makes, name, value = "", placeholder = "All makes",
     <div className="make-select-popover" id={listId}>
       <div className="make-select-search"><Search size={16} aria-hidden="true" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search makes" aria-label="Search makes" /></div>
       <div className="make-select-options" role="group" aria-labelledby={labelledBy}>
-        <button type="button" aria-pressed={!selected} className={!selected ? "is-selected" : ""} onClick={() => { setSelected(""); close(); }}>{placeholder}</button>
-        {filteredMakes.map((make) => <button type="button" aria-pressed={selected === make} className={selected === make ? "is-selected" : ""} key={make} onClick={() => { setSelected(make); close(); }}>{logos[make]}{make}</button>)}
+        <button type="button" aria-pressed={!selected} className={!selected ? "is-selected" : ""} onClick={() => { setSelected(""); onChange?.(""); close(); }}>{placeholder}</button>
+        {filteredMakes.map((make) => <button type="button" aria-pressed={selected === make} className={selected === make ? "is-selected" : ""} key={make} onClick={() => { setSelected(make); onChange?.(make); close(); }}>{logos[make]}{make}</button>)}
         {filteredMakes.length === 0 ? <p className="make-select-empty">No makes found.</p> : null}
       </div>
     </div>

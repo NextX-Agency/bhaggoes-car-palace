@@ -17,6 +17,10 @@ describe("vehicleModels", () => {
     for (const make of Object.keys(vehicleModels)) expect(catalog.has(comboKey(make)), make).toBe(true);
   });
 
+  it("offers at least one model suggestion for every make", () => {
+    expect(vehicleMakes.filter((make) => modelsForMake(make).length === 0)).toEqual([]);
+  });
+
   it("looks up makes case-insensitively and through common aliases", () => {
     expect(modelsForMake("toyota")).toContain("Coaster");
     expect(modelsForMake("  TOYOTA ")).toContain("Passo Moda");

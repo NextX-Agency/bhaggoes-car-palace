@@ -1,14 +1,13 @@
 // Suggestions only: the editor accepts any make or specification so new and regional vehicles remain listable.
 export const vehicleMakes = [
-  "Acura", "Alfa Romeo", "Aston Martin", "Audi", "BAIC", "Bentley", "BMW", "Buick", "BYD",
-  "Cadillac", "Changan", "Chery", "Chevrolet", "Chrysler", "Citroën", "Dacia", "Daewoo",
-  "Daihatsu", "Dodge", "Dongfeng", "DS Automobiles", "FAW", "Ferrari", "Fiat", "Ford",
-  "Foton", "GAC", "Geely", "Genesis", "GMC", "Great Wall", "Haval", "Hino", "Honda", "Hyundai",
-  "Infiniti", "Isuzu", "JAC", "Jaguar", "Jeep", "Jetour", "Kia", "Lada", "Land Rover",
-  "Lexus", "Lincoln", "Lotus", "Mahindra", "Maserati", "Mazda", "Mercedes-Benz", "MG",
-  "MINI", "Mitsubishi", "Nissan", "Opel", "Peugeot", "Polestar", "Porsche", "Proton",
-  "RAM", "Renault", "Rivian", "SEAT", "Škoda", "Smart", "SsangYong", "Subaru", "Suzuki",
-  "Tata", "Tesla", "Toyota", "Volkswagen", "Volvo", "Wuling",
+  "Abarth", "Acura", "Aion", "Alfa Romeo", "Ashok Leyland", "Aston Martin", "Audi", "BAIC", "Bentley", "Bestune", "BMW", "Bugatti", "Buick", "BYD",
+  "Cadillac", "Changan", "Chery", "Chevrolet", "Chrysler", "Citroën", "Cupra", "Dacia", "Daewoo", "DAF", "Daihatsu", "Datsun", "Deepal", "Denza", "Dodge", "Dongfeng", "DS Automobiles",
+  "Exeed", "FAW", "Ferrari", "Fiat", "Fisker", "Ford", "Foton", "Freightliner", "Fuso", "GAC", "Geely", "Genesis", "GMC", "Great Wall",
+  "Haval", "Hino", "Holden", "Honda", "Hongqi", "Hummer", "Hyundai", "Infiniti", "International", "Isuzu", "Iveco", "JAC", "Jaguar", "Jeep", "Jetour",
+  "Kenworth", "Kia", "Lada", "Lamborghini", "Lancia", "Land Rover", "Leapmotor", "Lexus", "Li Auto", "Lincoln", "Lotus", "Lucid", "Lynk & Co",
+  "Mack", "Mahindra", "MAN", "Maserati", "Maybach", "Mazda", "McLaren", "Mercedes-Benz", "MG", "MINI", "Mitsubishi", "NIO", "Nissan", "Oldsmobile", "Omoda", "Opel", "Ora",
+  "Perodua", "Peterbilt", "Peugeot", "Polestar", "Pontiac", "Porsche", "Proton", "RAM", "Renault", "Renault Trucks", "Rivian", "Rolls-Royce", "Saab", "Saturn", "Scania", "Scion", "SEAT", "Seres", "Škoda", "Smart", "SsangYong", "Subaru", "Suzuki",
+  "Tank", "Tata", "Tesla", "Toyota", "UD Trucks", "Vauxhall", "Volkswagen", "Volvo", "Wuling", "Xpeng", "Zeekr",
 ] as const;
 
 export const fuelTypes = ["Gasoline", "Diesel", "Hybrid", "Plug-in hybrid", "Mild hybrid", "Electric", "LPG", "CNG", "Hydrogen", "Flex fuel"] as const;
