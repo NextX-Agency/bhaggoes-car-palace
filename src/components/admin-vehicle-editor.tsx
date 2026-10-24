@@ -9,6 +9,8 @@ import type { Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, deleteVehicleTemplateAction, saveVehicleAction, saveVehicleTemplateAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
+import { bodyTypes, currencies, driveTypes, fuelTypes, transmissionTypes, vehicleColors, vehicleMakes } from "@/lib/vehicle-catalog";
+import { BrandLogo } from "@/components/brand-logo";
 import { listingTitle, templateFieldNames, type VehicleTemplate, type VehicleTemplateFields } from "@/lib/vehicle-templates";
 
 const commonFeatures = ["Air conditioning", "Backup camera", "Bluetooth", "Apple CarPlay", "Android Auto", "Leather seats", "Keyless entry", "Alloy wheels", "Cruise control", "Sunroof", "Parking sensors"];
@@ -52,6 +54,7 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [importText, setImportText] = useState("");
+  const [makePreview, setMakePreview] = useState(vehicle?.make ?? "");
   const [startMode, setStartMode] = useState<"paste" | "template">(vehicle ? "template" : "paste");
   const imported = parseListingText(importText);
   const previewUrls = useRef(new Set<string>());
@@ -79,6 +82,7 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
       if (input) input.value = template.fields[name] ?? (name === "condition" ? "used" : "");
     }
     setFeatureText(template.fields.features.join("\n"));
+    setMakePreview(field(form, "make")?.value ?? "");
     refreshTitle(form);
     setMessage(`Template “${template.name}” toegepast. Controleer de gegevens voor u opslaat.`);
   };
@@ -92,6 +96,7 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
       if (input && value) input.value = value;
     }
     if (imported.features.length) setFeatureText((current) => [...new Set([...current.split(/[\n,]/).map((value) => value.trim()).filter(Boolean), ...imported.features])].join("\n"));
+    setMakePreview(field(form, "make")?.value ?? "");
     refreshTitle(form);
     setMessage("Advertentiegegevens ingevuld. Controleer de specificaties en prijzen voordat u opslaat.");
   };
@@ -220,32 +225,32 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
     <div className="editor-main">
       <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basic details</h2><div className="admin-form-grid">
         <label className="admin-field span-all">Listing title<input name="title" defaultValue={defaults.title} required maxLength={180} placeholder="Wordt automatisch ingevuld" /></label>
-        <label className="admin-field">Make<input name="make" defaultValue={defaults.make} required placeholder="Toyota" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
-        <label className="admin-field">Model<input name="model" defaultValue={defaults.model} required placeholder="RAV4" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
-        <label className="admin-field">Variant / trim<input name="variant" defaultValue={defaults.variant} placeholder="Limited" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
+        <label className="admin-field">Make<input name="make" defaultValue={defaults.make} required maxLength={80} list="make-options" placeholder="Toyota" onInput={(event) => { setMakePreview(event.currentTarget.value); refreshTitle(event.currentTarget.form!); }} /><span className="help-text">Choose a suggestion or type any make.</span>{makePreview.trim() ? <span className="admin-make-preview"><BrandLogo make={makePreview} />{makePreview.trim()}</span> : null}</label>
+        <label className="admin-field">Model<input name="model" defaultValue={defaults.model} required maxLength={100} placeholder="RAV4" onInput={(event) => refreshTitle(event.currentTarget.form!)} /><span className="help-text">Type the exact model; every model is accepted.</span></label>
+        <label className="admin-field">Variant / trim<input name="variant" defaultValue={defaults.variant} maxLength={120} placeholder="Limited" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
         <label className="admin-field">Year<input name="year" type="number" inputMode="numeric" min="1886" max="2200" defaultValue={defaults.year} onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
         <label className="admin-field">Condition<select name="condition" defaultValue={vehicle?.condition ?? "used"}><option value="new">New</option><option value="used">Used</option></select></label>
-      </div></section>
+      </div><datalist id="make-options">{vehicleMakes.map((make) => <option key={make} value={make} />)}</datalist></section>
 
       <section className="admin-form-section" aria-labelledby="specs-heading"><h2 id="specs-heading">Specifications</h2><div className="admin-form-grid">
-        <label className="admin-field">Fuel type<input name="fuel_type" defaultValue={defaults.fuel_type} placeholder="Gasoline" list="fuel-options" /></label>
-        <label className="admin-field">Transmission<input name="transmission" defaultValue={defaults.transmission} placeholder="Automatic" list="transmission-options" /></label>
-        <label className="admin-field">Body type<input name="body_type" defaultValue={defaults.body_type} placeholder="SUV" list="body-options" /></label>
+        <label className="admin-field">Fuel type<input name="fuel_type" defaultValue={defaults.fuel_type} maxLength={50} placeholder="Gasoline" list="fuel-options" /></label>
+        <label className="admin-field">Transmission<input name="transmission" defaultValue={defaults.transmission} maxLength={50} placeholder="Automatic" list="transmission-options" /></label>
+        <label className="admin-field">Body type<input name="body_type" defaultValue={defaults.body_type} maxLength={50} placeholder="SUV" list="body-options" /></label>
         <label className="admin-field">Seats<input name="seats" type="number" inputMode="numeric" min="1" max="100" defaultValue={defaults.seats} /></label>
       </div>
-      <datalist id="fuel-options"><option value="Gasoline" /><option value="Diesel" /><option value="Hybrid" /><option value="Electric" /></datalist>
-      <datalist id="transmission-options"><option value="Automatic" /><option value="Manual" /><option value="CVT" /></datalist>
-      <datalist id="body-options"><option value="SUV" /><option value="Sedan" /><option value="Hatchback" /><option value="Pickup" /><option value="Van" /><option value="Coupe" /></datalist></section>
+      <datalist id="fuel-options">{fuelTypes.map((item) => <option key={item} value={item} />)}</datalist>
+      <datalist id="transmission-options">{transmissionTypes.map((item) => <option key={item} value={item} />)}</datalist>
+      <datalist id="body-options">{bodyTypes.map((item) => <option key={item} value={item} />)}</datalist></section>
 
       <details className="admin-form-section editor-advanced"><summary>Extra gegevens (optioneel)</summary><p className="help-text">Een aparte omschrijving is niet nodig: vaste verkoopinformatie verschijnt automatisch op elke voertuigpagina.</p><div className="admin-form-grid">
         <label className="admin-field">Mileage (km)<input name="mileage" type="number" inputMode="numeric" min="0" step="1" defaultValue={defaults.mileage} /></label>
-        <label className="admin-field">Engine<input name="engine_capacity" defaultValue={defaults.engine_capacity} placeholder="2.5L" /></label>
-        <label className="admin-field">Drive type<input name="drive_type" defaultValue={defaults.drive_type} placeholder="AWD" /></label>
-        <label className="admin-field">Exterior color<input name="exterior_color" defaultValue={defaults.exterior_color} /></label>
-        <label className="admin-field">Interior color<input name="interior_color" defaultValue={defaults.interior_color} /></label>
+        <label className="admin-field">Engine<input name="engine_capacity" defaultValue={defaults.engine_capacity} maxLength={50} placeholder="2.5L" /></label>
+        <label className="admin-field">Drive type<input name="drive_type" defaultValue={defaults.drive_type} maxLength={50} list="drive-options" placeholder="AWD" /></label>
+        <label className="admin-field">Exterior color<input name="exterior_color" defaultValue={defaults.exterior_color} maxLength={50} list="color-options" /></label>
+        <label className="admin-field">Interior color<input name="interior_color" defaultValue={defaults.interior_color} maxLength={50} list="color-options" /></label>
         <label className="admin-field">Doors<input name="doors" type="number" inputMode="numeric" min="1" max="20" defaultValue={defaults.doors} /></label>
         <label className="admin-field span-all">Description<textarea name="description" defaultValue={defaults.description} maxLength={10000} rows={6} /></label>
-      </div></details>
+      </div><datalist id="drive-options">{driveTypes.map((item) => <option key={item} value={item} />)}</datalist><datalist id="color-options">{vehicleColors.map((item) => <option key={item} value={item} />)}</datalist></details>
 
       <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><div><h2 id="photos-heading">Vehicle photos</h2><p className="muted">Add up to 15 views: front, sides, rear, interior and details. Drag to reorder; the first photo is the cover.</p></div><span className="muted">{photos.length} / 15</span></div>
         {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Vehicle photos">{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}`} key={photo.id} role="listitem" draggable onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData("text/plain")); void reorderPhoto(from, index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Photo ${index + 1}${index === 0 ? ", cover photo" : ""}`}>
@@ -276,18 +281,18 @@ export function AdminVehicleEditor({ vehicle, templates = [] }: { vehicle?: Vehi
       <section className="admin-form-section" aria-labelledby="pricing-heading"><h2 id="pricing-heading">Price & status</h2><div className="admin-form-grid single">
         {archived ? <p className="help-text">This car is archived and hidden. Saving edits will keep it archived. Use Restore in Inventory when you want to show it again.</p> : null}
         <div className="price-field"><label className="admin-field">Interne prijs<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="On request" /></label><label className="admin-field">Cashprijs / giraal deal<input name="cash_price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.cash_price} placeholder="On request" /></label></div>
-        <label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency || "USD"} placeholder="USD" maxLength={8} /></label>
+        <label className="admin-field">Currency<input name="currency" defaultValue={defaults.currency || "USD"} placeholder="USD" maxLength={8} list="currency-options" /></label><datalist id="currency-options">{currencies.map((item) => <option key={item} value={item} />)}</datalist>
         <p className="help-text">If you enter a price, enter its currency too (for example USD or SRD).</p>
         <label className="admin-field">Availability<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Available</option><option value="on_the_way">On the way</option><option value="reserved">Reserved</option><option value="sold">Sold</option><option value="rental">Rental</option></select></label>
-        <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} placeholder="Automatisch bij opslaan" /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer uw eigen nummer in.</span></label>
+        <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} maxLength={80} placeholder="Automatisch bij opslaan" /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer uw eigen nummer in.</span></label>
         <div className="admin-switches">
           <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} disabled={archived} /><span><strong>Show on website</strong><small>{archived ? "Restore this car in Inventory first" : "Visitors can open this listing"}</small></span></label>
           <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Show on homepage</strong><small>Appears in the homepage car section</small></span></label>
         </div>
       </div></section>
       <section className="admin-form-section" aria-labelledby="private-heading"><h2 id="private-heading">Private</h2><div className="admin-form-grid single">
-        <label className="admin-field">VIN<input name="vin" defaultValue={defaults.vin} autoComplete="off" /></label>
-        <label className="admin-field">Staff notes<textarea name="admin_notes" defaultValue={defaults.admin_notes} rows={4} /></label>
+        <label className="admin-field">VIN<input name="vin" defaultValue={defaults.vin} maxLength={80} autoComplete="off" /></label>
+        <label className="admin-field">Staff notes<textarea name="admin_notes" defaultValue={defaults.admin_notes} maxLength={5000} rows={4} /></label>
         <p className="help-text">Only staff can see these fields.</p>
       </div></section>
     </div>

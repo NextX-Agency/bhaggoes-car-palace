@@ -238,6 +238,7 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .shared-sales-settings > .help-text { margin: -7px 0 18px; line-height: 1.5; }
 .shared-sales-settings > .admin-checkbox-row { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
 .editor-main, .editor-side { display: grid; gap: 20px; min-width: 0; }
+.admin-make-preview { display: inline-flex; align-items: center; gap: 7px; width: fit-content; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 600; }
 .editor-side { position: sticky; top: 20px; }
 .vehicle-editor .admin-form-footer { grid-column: 1 / -1; }
 .feature-chips { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -1,14 +1,20 @@
+import { vehicleMakes } from "./vehicle-catalog";
+
 export interface ImportedListing {
   fields: Partial<Record<"year" | "make" | "model" | "fuel_type" | "transmission" | "body_type" | "seats" | "stock_number" | "price" | "cash_price", string>>;
   features: string[];
 }
 
-const knownMakes = [
-  "Mercedes-Benz", "Land Rover", "Great Wall", "Alfa Romeo",
-  "Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi", "Mazda",
-  "Hyundai", "Kia", "Ford", "Isuzu", "BMW", "Audi", "Lexus",
-  "Volkswagen", "Subaru", "Chevrolet", "Jeep",
-];
+const knownMakes = vehicleMakes;
+const makeAliases = [
+  ["Mercedes Benz", "Mercedes-Benz"], ["Mercedes", "Mercedes-Benz"],
+  ["Land-Rover", "Land Rover"], ["Greatwall", "Great Wall"],
+  ["Citroen", "Citroën"], ["Skoda", "Škoda"], ["VW", "Volkswagen"],
+] as const;
+const makeMatches = [
+  ...makeAliases.map(([alias, canonical]) => ({ prefix: alias, make: canonical })),
+  ...knownMakes.map((candidate) => ({ prefix: candidate, make: candidate })),
+].sort((a, b) => b.prefix.length - a.prefix.length);
 
 function amount(raw: string) {
   const digits = raw.replace(/[^\d]/g, "");
@@ -27,10 +33,16 @@ export function parseListingText(input: string): ImportedListing {
     if (vehiclePart) {
       fields.year = vehiclePart[1];
       const name = vehiclePart[2].trim();
-      const make = knownMakes.find((candidate) => name.toLowerCase().startsWith(candidate.toLowerCase() + " "));
-      if (make) {
-        fields.make = make;
-        fields.model = name.slice(make.length).trim();
+      const match = makeMatches.find(({ prefix }) => name.toLowerCase().startsWith(prefix.toLowerCase() + " "));
+      if (match) {
+        fields.make = match.make;
+        fields.model = name.slice(match.prefix.length).trim();
+      } else {
+        const separator = name.indexOf(" ");
+        if (separator > 0) {
+          fields.make = name.slice(0, separator);
+          fields.model = name.slice(separator + 1).trim();
+        }
       }
     }
     for (const candidate of segments.slice(1)) {

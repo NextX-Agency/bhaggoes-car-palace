@@ -16,4 +16,11 @@ Interne financiering: 70% aanbetaling`);
     expect(parseListingText("2021 - Honda Fit\nBrandstof: Gasoline\nStocknummer: H-21\nZitplaatsen: 5\nTransmissie: Automatic\nCarrosserie: Hatchback").fields)
       .toEqual({ year: "2021", make: "Honda", model: "Fit", fuel_type: "Gasoline", stock_number: "H-21", seats: "5", transmission: "Automatic", body_type: "Hatchback" });
   });
+
+  it("recognizes newer and multiword makes in pasted listings", () => {
+    expect(parseListingText("2024 - Great Wall Poer | 4x4").fields).toMatchObject({ make: "Great Wall", model: "Poer" });
+    expect(parseListingText("2025 - BYD Atto 3").fields).toMatchObject({ make: "BYD", model: "Atto 3" });
+    expect(parseListingText("2022 - Mercedes Benz C 200").fields).toMatchObject({ make: "Mercedes-Benz", model: "C 200" });
+    expect(parseListingText("2025 - Unlistedbrand Nova").fields).toMatchObject({ make: "Unlistedbrand", model: "Nova" });
+  });
 });
