@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+test("responses include baseline security headers", async ({ page }) => {
+  const response = await page.goto("/");
+  expect(response?.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response?.headers()["x-frame-options"]).toBe("DENY");
+  expect(response?.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+});
+
 test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bhaggoes Car Palace");

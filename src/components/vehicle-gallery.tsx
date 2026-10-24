@@ -29,6 +29,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   const [fullscreen, setFullscreen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
+  const hasSelectedThumbnail = useRef(false);
   const usable = sortedImages(images);
   const count = usable.length;
   const move = (direction: -1 | 1) => setActive((current) => (current + direction + count) % count);
@@ -41,6 +42,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   }, [fullscreen]);
 
   useEffect(() => {
+    if (!hasSelectedThumbnail.current) { hasSelectedThumbnail.current = true; return; }
     const thumb = thumbsRef.current?.children[active] as HTMLElement | undefined;
     thumb?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }, [active]);

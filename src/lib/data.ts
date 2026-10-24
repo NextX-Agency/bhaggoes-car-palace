@@ -193,6 +193,25 @@ export async function getAdminVehicles() {
   return error || !data ? [] : attachVehicleMedia(data, client);
 }
 
+export async function getAdminDashboardVehicles() {
+  const client = await clientOrNull();
+  if (!client) return [];
+  const { data, error } = await client.from("vehicles")
+    .select("id, title, published, availability, archived_at, price, cash_price, year, fuel_type, transmission, body_type, seats, updated_at, vehicle_images(id)")
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false });
+  return error || !data ? [] : data;
+}
+
+export async function getAdminDashboardNewInquiryCount() {
+  const client = await clientOrNull();
+  if (!client) return 0;
+  const { count, error } = await client.from("inquiries")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "new");
+  return error ? 0 : count ?? 0;
+}
+
 export async function getAdminVehicle(id: string) {
   const client = await clientOrNull();
   if (!client) return null;
@@ -227,4 +246,22 @@ export async function getAdminPages() {
   if (!client) return [];
   const { data, error } = await client.from("content_pages").select("slug, title, body, published, seo_title, seo_description");
   return error || !data ? [] : data;
+}
+
+export async function getPublicVehicleSitemapEntries() {
+  const client = await clientOrNull();
+  if (!client) return [];
+  const pageSize = 500;
+  const baseQuery = () => client.from("vehicles")
+    .select("slug, updated_at, stock_number", { count: "exact" })
+    .eq("published", true).is("archived_at", null)
+    .order("id", { ascending: true });
+  const first = await baseQuery().range(0, pageSize - 1);
+  if (first.error || !first.data) throw new Error("Unable to load vehicle sitemap entries");
+  const pageCount = Math.ceil((first.count ?? first.data.length) / pageSize);
+  const remaining = await Promise.all(Array.from({ length: pageCount - 1 }, (_, index) =>
+    baseQuery().range((index + 1) * pageSize, (index + 2) * pageSize - 1)));
+  if (remaining.some((result) => result.error || !result.data)) throw new Error("Unable to load all vehicle sitemap entries");
+  return [first.data, ...remaining.map((result) => result.data ?? [])]
+    .flat().filter((vehicle) => !vehicle.stock_number?.startsWith("DEMO-"));
 }

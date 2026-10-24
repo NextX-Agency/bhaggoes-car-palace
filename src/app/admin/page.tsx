@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { ArrowRight, CircleAlert, ClipboardList, Files, Globe2, Plus, Settings2, CarFront } from "lucide-react";
 import { AdminFrame } from "@/components/admin-frame";
-import { getAdminInquiries, getAdminVehicles } from "@/lib/data";
+import { getAdminDashboardNewInquiryCount, getAdminDashboardVehicles } from "@/lib/data";
 import { websiteInquiriesEnabled } from "@/lib/features";
 import { requireAdmin } from "@/lib/admin-auth";
-import type { Vehicle } from "@/lib/domain";
 
 const statusLabels: Record<string, string> = { available: "Beschikbaar", on_the_way: "Onderweg", reserved: "Gereserveerd", sold: "Verkocht", rental: "Verhuur" };
 
-function needsAttention(vehicle: Vehicle) {
+function needsAttention(vehicle: Awaited<ReturnType<typeof getAdminDashboardVehicles>>[number]) {
   const issues: string[] = [];
   if (!vehicle.published) issues.push("Nog niet gepubliceerd");
-  if (!vehicle.images.length) issues.push("Foto’s ontbreken");
+  if (!vehicle.vehicle_images.length) issues.push("Foto’s ontbreken");
   if (vehicle.price == null) issues.push("Interne prijs ontbreekt");
   if (vehicle.cash_price == null) issues.push("Cashprijs ontbreekt");
   if (!vehicle.year || !vehicle.fuel_type || !vehicle.transmission || !vehicle.body_type || !vehicle.seats) issues.push("Specificaties aanvullen");
@@ -20,8 +19,7 @@ function needsAttention(vehicle: Vehicle) {
 
 export default async function AdminDashboardPage() {
   const { user } = await requireAdmin();
-  const [allVehicles, inquiries] = await Promise.all([getAdminVehicles(), websiteInquiriesEnabled ? getAdminInquiries() : Promise.resolve([])]);
-  const vehicles = allVehicles.filter((vehicle) => !vehicle.archived_at);
+  const [vehicles, newInquiryCount] = await Promise.all([getAdminDashboardVehicles(), websiteInquiriesEnabled ? getAdminDashboardNewInquiryCount() : Promise.resolve(0)]);
   const active = vehicles.filter((vehicle) => vehicle.published && vehicle.availability !== "sold");
   const queue = vehicles.filter((vehicle) => vehicle.availability !== "sold").map((vehicle) => ({ vehicle, issues: needsAttention(vehicle) })).filter((item) => item.issues.length);
   const recent = vehicles.slice(0, 5);
@@ -47,6 +45,6 @@ export default async function AdminDashboardPage() {
     <section className="admin-section dashboard-panel"><div className="admin-section-head"><h2>Recent gewijzigd</h2><Link className="text-link" href="/admin/inventory">Alle auto’s <ArrowRight size={15} /></Link></div>
       {recent.length ? <ul className="dashboard-vehicle-list dashboard-recent-list">{recent.map((vehicle) => <li key={vehicle.id}><Link href={`/admin/inventory/${vehicle.id}`}><span className="dashboard-vehicle-main"><strong>{vehicle.title}</strong></span><span className="dashboard-publication">{vehicle.published ? statusLabels[vehicle.availability] ?? vehicle.availability : "Concept"}</span><ArrowRight size={17} aria-hidden="true" /></Link></li>)}</ul> : <p className="dashboard-empty">Nog geen auto’s toegevoegd. <Link href="/admin/inventory/new">Plaats de eerste auto</Link>.</p>}
     </section>
-    {websiteInquiriesEnabled && inquiries.length ? <section className="admin-section dashboard-panel"><div className="admin-section-head"><h2>Nieuwe aanvragen ({inquiries.filter((item) => item.status === "new").length})</h2><Link className="text-link" href="/admin/inquiries">Bekijk aanvragen <ArrowRight size={15} /></Link></div></section> : null}
+    {websiteInquiriesEnabled && newInquiryCount > 0 ? <section className="admin-section dashboard-panel"><div className="admin-section-head"><h2>Nieuwe aanvragen ({newInquiryCount})</h2><Link className="text-link" href="/admin/inquiries">Bekijk aanvragen <ArrowRight size={15} /></Link></div></section> : null}
   </AdminFrame>;
 }
