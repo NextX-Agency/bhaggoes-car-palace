@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { HeroSearch } from "@/components/hero-search";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { BrandLogo } from "@/components/brand-logo";
-import { getAvailableCount, getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
+import { getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
 import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -16,8 +16,8 @@ export default async function HomePage() {
   const imageProps = { alt: "Illustrative Toyota Hilux scene inspired by a Surinamese dealership forecourt", sizes: "100vw", loading: "eager" as const, fetchPriority: "high" as const };
   const { props: { srcSet: desktopHero } } = getImageProps({ ...imageProps, src: "/images/hero-hilux-suriname-illustrative.webp", width: 1672, height: 941 });
   const { props: { srcSet: mobileHero, ...heroImgProps } } = getImageProps({ ...imageProps, src: "/images/hero-mobile-illustrative.webp", width: 1122, height: 1402 });
-  const [settings, featured, recent, filterOptions, availableCount] = await Promise.all([
-    getSettings(), getFeaturedVehicles(6), getRecentVehicles(6), getVehicleFilterOptions(), getAvailableCount(),
+  const [settings, featured, recent, filterOptions] = await Promise.all([
+    getSettings(), getFeaturedVehicles(6), getRecentVehicles(6), getVehicleFilterOptions(),
   ]);
   const vehicles = featured.length >= 3 ? featured : recent;
   const whatsappHref = buildWhatsAppLink(settings.whatsapp, `Hello, I have a question about a car at ${settings.business_name}.`);
@@ -40,7 +40,6 @@ export default async function HomePage() {
           <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
           {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask us on WhatsApp</a> : null}
         </div>
-        {availableCount ? <p className="hero-stock"><strong>{availableCount}</strong> {availableCount === 1 ? "car" : "cars"} available now</p> : null}
       </div>
     </section>
 

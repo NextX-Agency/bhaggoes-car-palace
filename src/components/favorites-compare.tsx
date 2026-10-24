@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, X } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
-import { availabilityLabels, coverImage, formatAmount, formatMileage } from "@/lib/domain";
+import { coverImage, formatAmount, formatMileage } from "@/lib/domain";
 import { EmptyState } from "@/components/empty-state";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { COMPARE_KEY, emptyBrowserSnapshot, FAVORITES_KEY, parseStoredIds, readBrowserSnapshot, subscribeToBrowserStore, writeStoredIds } from "@/lib/browser-store";
@@ -42,7 +42,7 @@ export function SavedCars({ mode, defaultCurrency }: { mode: Mode; defaultCurren
   if (favoriteMode) return <VehicleGrid vehicles={vehicles} defaultCurrency={defaultCurrency} />;
   const rows: [string, (vehicle: Vehicle) => string][] = [
     ["In-house price", (v) => formatAmount(v.price, v.currency ?? defaultCurrency)], ["Cash price", (v) => v.cash_price == null ? "—" : formatAmount(v.cash_price, v.currency ?? defaultCurrency)], ["Year", (v) => v.year?.toString() ?? "—"], ["Mileage", (v) => formatMileage(v.mileage) ?? "—"],
-    ["Engine", (v) => v.engine_capacity ?? "—"], ["Transmission", (v) => v.transmission ?? "—"], ["Fuel", (v) => v.fuel_type ?? "—"], ["Body type", (v) => v.body_type ?? "—"], ["Condition", (v) => v.condition === "new" ? "New" : "Used"], ["Availability", (v) => availabilityLabels[v.availability]], ["Features", (v) => v.features.join(", ") || "—"],
+    ["Engine", (v) => v.engine_capacity ?? "—"], ["Transmission", (v) => v.transmission ?? "—"], ["Fuel", (v) => v.fuel_type ?? "—"], ["Body type", (v) => v.body_type ?? "—"], ["Condition", (v) => v.condition === "new" ? "New" : "Used"], ["Features", (v) => v.features.join(", ") || "—"],
   ];
   return <div className="compare-scroll"><table className="compare-table"><thead><tr><th scope="col"><span className="sr-only">Detail</span></th>{vehicles.map((vehicle) => { const image = coverImage(vehicle.images); return <th key={vehicle.id} scope="col"><button className="compare-remove" type="button" onClick={() => writeStoredIds(COMPARE_KEY, ids.filter((id) => id !== vehicle.id))} aria-label={`Remove ${vehicle.title} from comparison`}><X size={15} /></button><Link href={`/cars/${vehicle.slug}`} className="compare-car-image" tabIndex={-1} aria-hidden="true">{image?.url ? <Image src={image.url} alt="" fill sizes="280px" /> : null}</Link><strong>{[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ")}</strong><Link className="text-link" href={`/cars/${vehicle.slug}`}>View car <ArrowRight size={14} /></Link></th>; })}</tr></thead><tbody>{rows.map(([label, value]) => <tr key={label}><th scope="row">{label}</th>{vehicles.map((vehicle) => <td key={vehicle.id}>{value(vehicle)}</td>)}</tr>)}</tbody></table></div>;
 }

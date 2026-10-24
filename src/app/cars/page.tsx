@@ -7,15 +7,14 @@ import { SortSelect } from "@/components/sort-select";
 import { VehicleFilterForm, sortLabels } from "@/components/vehicle-filter-form";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getSettings, getVehicles, getVehicleFilterOptions } from "@/lib/data";
-import type { Availability, VehicleCondition, VehicleFilters } from "@/lib/domain";
-import { availabilityLabels, formatMileage } from "@/lib/domain";
+import type { VehicleFilters } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
 
-export const metadata: Metadata = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, condition, and more.", alternates: { canonical: "/cars" } };
+export const metadata: Metadata = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, and more.", alternates: { canonical: "/cars" } };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 const numberValue = (value: string | string[] | undefined) => { const parsed = Number(one(value)); return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined; };
-const filterKeys = ["search", "make", "model", "year", "minPrice", "maxPrice", "minMileage", "maxMileage", "fuel", "transmission", "bodyType", "condition", "availability"] as const;
+const filterKeys = ["search", "make", "model", "year", "minPrice", "maxPrice", "fuel", "transmission", "bodyType"] as const;
 const number = (value: number) => new Intl.NumberFormat("en-US").format(value);
 
 export default async function CarsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -23,9 +22,8 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
   const sort = one(params.sort);
   const filters: VehicleFilters = {
     search: one(params.search) || undefined, make: one(params.make) || undefined, model: one(params.model) || undefined, year: numberValue(params.year),
-    minPrice: numberValue(params.minPrice), maxPrice: numberValue(params.maxPrice), minMileage: numberValue(params.minMileage), maxMileage: numberValue(params.maxMileage),
+    minPrice: numberValue(params.minPrice), maxPrice: numberValue(params.maxPrice),
     fuel: one(params.fuel) || undefined, transmission: one(params.transmission) || undefined, bodyType: one(params.bodyType) || undefined,
-    condition: (one(params.condition) || undefined) as VehicleCondition | undefined, availability: (one(params.availability) || undefined) as Availability | undefined,
     sort: sort && sort in sortLabels ? sort as VehicleFilters["sort"] : "newest", page: numberValue(params.page) ?? 1,
   };
   const [{ vehicles, total, page, pageSize }, options, settings] = await Promise.all([getVehicles(filters), getVehicleFilterOptions(), getSettings()]);
@@ -40,10 +38,6 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
       case "search": return `“${value}”`;
       case "minPrice": return `From ${number(Number(value))}`;
       case "maxPrice": return `Up to ${number(Number(value))}`;
-      case "minMileage": return `From ${formatMileage(Number(value))}`;
-      case "maxMileage": return `Up to ${formatMileage(Number(value))}`;
-      case "availability": return availabilityLabels[value as Availability] ?? value;
-      case "condition": return value === "new" ? "New" : "Used";
       default: return value;
     }
   };

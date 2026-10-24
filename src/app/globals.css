@@ -161,8 +161,6 @@ img { max-width: 100%; }
 .hero h1 { max-width: 11ch; color: #fff; font-size: var(--fs-display); font-stretch: 112%; font-weight: 800; line-height: 0.98; letter-spacing: -0.035em; }
 .hero-slogan { margin-top: 20px; color: #fff; font-family: var(--font-head); font-size: clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem); font-weight: 700; letter-spacing: 0.04em; }
 .hero-copy { max-width: 46ch; margin-top: 16px; color: rgb(255 255 255 / 0.82); font-size: 1.0625rem; }
-.hero-stock { margin-top: 24px; color: rgb(255 255 255 / 0.9); font-size: var(--fs-sm); font-weight: 500; }
-.hero-stock strong { font-weight: 700; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .hero-actions .button { min-height: 50px; padding-inline: 22px; }
 .button-hero-outline { border: 1px solid rgb(255 255 255 / 0.75); background: rgb(8 18 33 / 0.18); color: #fff; }
@@ -182,7 +180,6 @@ img { max-width: 100%; }
 .hero-heading-tagline { margin-top: 18px; color: var(--brand); font-family: var(--font-head); font-size: clamp(1.125rem, 1.6vw, 1.5rem); font-weight: 750; letter-spacing: -0.02em; }
 .home-hero .hero-copy { max-width: 39ch; color: var(--ink-2); font-size: clamp(1rem, 1.3vw, 1.125rem); line-height: 1.65; }
 .home-hero .hero-slogan { margin-top: 20px; color: var(--brand); font-size: 0.875rem; letter-spacing: 0.08em; }
-.home-hero .hero-stock { margin-top: 18px; color: var(--ink-2); }
 .home-hero .button-hero-outline { border-color: #a9bfe5; background: #fff; color: var(--navy); }
 .home-hero .button-hero-outline:hover { border-color: var(--brand); background: var(--brand-soft); }
 .home-hero .hero-actions { max-width: none; }
@@ -214,7 +211,6 @@ img { max-width: 100%; }
   .home-hero .hero-heading-tagline, .home-hero .hero-slogan { color: #d7e5ff; }
   .home-hero .hero-copy { color: #f0f5ff; }
   .home-hero .hero-actions { margin-top: auto; }
-  .home-hero .hero-stock { color: #e3edff; }
   .home-hero .button-hero-outline { border-color: rgb(255 255 255 / 0.74); background: rgb(7 22 45 / 0.58); color: #fff; }
   .home-hero .button-hero-outline:hover { border-color: #fff; background: rgb(7 22 45 / 0.8); }
   .hero-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }

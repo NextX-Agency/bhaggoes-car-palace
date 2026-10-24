@@ -93,7 +93,7 @@ export async function getVehicles(filters: VehicleFilters = {}) {
   const orderMap = {
     newest: ["created_at", false], oldest: ["created_at", true],
     "price-asc": ["price", true], "price-desc": ["price", false],
-    "year-desc": ["year", false], "mileage-asc": ["mileage", true],
+    "year-desc": ["year", false],
   } as const;
   const [column, ascending] = orderMap[filters.sort ?? "newest"] ?? orderMap.newest;
   query = query.order(column, { ascending, nullsFirst: false }).range(start, start + pageSize - 1);
@@ -119,14 +119,6 @@ export async function getRecentVehicles(limit = 4) {
     .eq("published", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
   return error || !data ? [] : attachVehicleMedia(data, client);
-}
-
-export async function getAvailableCount() {
-  const client = await clientOrNull();
-  if (!client) return 0;
-  const { data, error } = await client.from("vehicles").select("stock_number")
-    .eq("published", true).eq("availability", "available").is("archived_at", null);
-  return error ? 0 : (data ?? []).filter((vehicle) => !vehicle.stock_number?.startsWith("DEMO-")).length;
 }
 
 export async function getVehicleBySlug(slug: string) {

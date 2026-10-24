@@ -119,7 +119,7 @@ export interface VehicleFilters {
   bodyType?: string;
   minMileage?: number;
   maxMileage?: number;
-  sort?: "newest" | "oldest" | "price-asc" | "price-desc" | "year-desc" | "mileage-asc";
+  sort?: "newest" | "oldest" | "price-asc" | "price-desc" | "year-desc";
   page?: number;
   pageSize?: number;
 }

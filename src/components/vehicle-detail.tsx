@@ -1,12 +1,11 @@
 import { Check, MapPin, Phone } from "lucide-react";
 import { SocialIcon } from "@/components/social-icon";
-import { AvailabilityBadge } from "@/components/availability-badge";
 import { VehicleActions } from "@/components/vehicle-actions";
 import { VehicleGallery } from "@/components/vehicle-gallery";
 import { VehicleShareButton } from "@/components/vehicle-share-button";
 import { BrandLogo } from "@/components/brand-logo";
 import type { SiteSettings, Vehicle } from "@/lib/domain";
-import { buildWhatsAppLink, formatAmount, isDemoVehicle, parseLocations, safeExternalUrl, vehicleSpecifications } from "@/lib/domain";
+import { buildWhatsAppLink, formatAmount, parseLocations, safeExternalUrl, vehicleSpecifications } from "@/lib/domain";
 import { siteUrl } from "@/lib/site-url";
 
 export function vehicleDisplayName(vehicle: Vehicle) {
@@ -16,7 +15,6 @@ export function vehicleDisplayName(vehicle: Vehicle) {
 export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle: Vehicle; settings: SiteSettings; preview?: boolean }) {
   const name = vehicleDisplayName(vehicle);
   const heading = [vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
-  const demo = isDemoVehicle(vehicle);
   const price = formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
   const cashPrice = vehicle.cash_price == null ? null : formatAmount(vehicle.cash_price, vehicle.currency ?? settings.currency);
   const hasPrice = vehicle.price != null;
@@ -44,7 +42,6 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
               <div><span>In-house price</span><strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong></div>
               {cashPrice ? <div className="detail-cash-price"><span>Cash price · bank transfer</span><strong>{cashPrice}</strong></div> : null}
             </div>
-            {demo ? <span className="status">Check availability</span> : <AvailabilityBadge availability={vehicle.availability} />}
           </div>
           {keySpecs.length ? <dl className="key-specs">{keySpecs.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           {!preview && inquire ? <div className="contact-actions">
