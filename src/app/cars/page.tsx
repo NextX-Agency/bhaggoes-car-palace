@@ -67,7 +67,9 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
           ? <VehicleGrid vehicles={vehicles} priorityCount={3} defaultCurrency={settings.currency} />
           : active.length
             ? <EmptyState title="No cars match your filters" href={query(sortEntry)} action="Clear filters" />
-            : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
+            : total > 0
+              ? <EmptyState title="There are no cars on this page" text="The list has changed since this link was made." href={query(sortEntry)} action="Back to the first page" />
+              : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
         {pageCount > 1 ? <nav className="pagination" aria-label="Inventory pages">
           <span>Page {page} of {pageCount}</span>
           <div>{page > 1 ? <Link href={pageHref(page - 1)} rel="prev"><ArrowLeft size={16} /> Previous</Link> : null}{page < pageCount ? <Link href={pageHref(page + 1)} rel="next">Next <ArrowRight size={16} /></Link> : null}</div>

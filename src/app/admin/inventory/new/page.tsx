@@ -8,5 +8,5 @@ import { getAdminVehicleTemplates } from "@/lib/data";
 export default async function NewVehiclePage() {
   const { user } = await requireAdmin();
   const templates = await getAdminVehicleTemplates();
-  return <AdminFrame active="/admin/inventory" email={user.email ?? "Administrator"} title="Nieuwe auto" actions={<Link className="button button-ghost button-sm" href="/admin/inventory"><ArrowLeft size={15} /> Voorraad</Link>}><AdminVehicleEditor templates={templates} /></AdminFrame>;
+  return <AdminFrame active="/admin/inventory" email={user.email ?? "Beheerder"} title="Nieuwe auto" actions={<Link className="button button-ghost button-sm" href="/admin/inventory"><ArrowLeft size={15} /> Voorraad</Link>}><AdminVehicleEditor templates={templates} /></AdminFrame>;
 }

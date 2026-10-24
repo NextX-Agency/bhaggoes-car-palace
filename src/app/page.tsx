@@ -49,11 +49,12 @@ export default async function HomePage() {
       <div className="container">
         <div className="section-heading">
           <div><p className="section-kicker">Explore our inventory</p><h2 id="home-cars">{vehicles === featured ? "Featured cars" : "Latest cars"}</h2></div>
-          {vehicles.length ? <Link className="text-link" href="/cars">View all cars <ArrowRight size={16} /></Link> : null}
+          {vehicles.length ? <Link className="button button-primary button-lg section-heading-cta" href="/cars">View all cars <ArrowRight size={20} aria-hidden="true" /></Link> : null}
         </div>
         {vehicles.length
           ? <VehicleGrid vehicles={vehicles} defaultCurrency={settings.currency} />
           : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
+        {vehicles.length ? <div className="home-more"><Link className="button button-outline button-lg" href="/cars">View all cars <ArrowRight size={20} aria-hidden="true" /></Link></div> : null}
       </div>
     </section>
 

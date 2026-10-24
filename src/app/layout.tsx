@@ -20,7 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl()),
     title: { default: settings.seo_title, template: `%s | ${settings.business_name}` },
     description: settings.seo_description,
-    openGraph: { type: "website", siteName: settings.business_name, title: settings.seo_title, description: settings.seo_description },
+    openGraph: { type: "website", siteName: settings.business_name, title: settings.seo_title, description: settings.seo_description, images: ["/images/bhaggoes-logo-approved.png"] },
+    twitter: { card: "summary" },
   };
 }
 

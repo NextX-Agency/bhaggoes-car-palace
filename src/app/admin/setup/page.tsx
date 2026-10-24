@@ -41,13 +41,13 @@ export default function StaffSetupPage() {
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password") ?? "");
     const confirm = String(form.get("confirm") ?? "");
-    if (password.length < 12) return setError("Use at least 12 characters.");
-    if (password !== confirm) return setError("Passwords do not match.");
+    if (password.length < 12) return setError("Gebruik minstens 12 tekens.");
+    if (password !== confirm) return setError("De wachtwoorden komen niet overeen.");
     setPending(true);
     setError("");
     const { error: updateError } = await createClient().auth.updateUser({ password });
     if (updateError) {
-      setError("Your password could not be saved. Try again or request a new invitation.");
+      setError("Je wachtwoord kon niet worden opgeslagen. Probeer het opnieuw of vraag een nieuwe uitnodiging aan.");
       setPending(false);
       return;
     }
@@ -56,12 +56,12 @@ export default function StaffSetupPage() {
 
   return <div className="admin-login-wrap"><section className="admin-login">
     <Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={220} height={76} loading="eager" />
-    <h1>Set your password</h1>
-    {!ready ? <p>Checking your invitation…</p> : authorized ? <form onSubmit={setPassword}>
-      <label className="admin-field">Password<input name="password" type="password" autoComplete="new-password" minLength={12} required /></label>
-      <label className="admin-field">Confirm password<input name="confirm" type="password" autoComplete="new-password" minLength={12} required /></label>
+    <h1>Wachtwoord instellen</h1>
+    {!ready ? <p role="status">Je uitnodiging wordt gecontroleerd…</p> : authorized ? <form onSubmit={setPassword}>
+      <label className="admin-field">Wachtwoord<span className="help-text">Minstens 12 tekens.</span><input name="password" type="password" autoComplete="new-password" minLength={12} required /></label>
+      <label className="admin-field">Bevestig wachtwoord<input name="confirm" type="password" autoComplete="new-password" minLength={12} required /></label>
       {error ? <p className="admin-error" role="alert">{error}</p> : null}
-      <button className="button button-primary" disabled={pending}>{pending ? "Saving…" : "Save password"}</button>
-    </form> : <p className="admin-error" role="alert">This invitation link is invalid or has expired. <Link href="/admin/login">Go to staff sign in</Link>.</p>}
+      <button className="button button-primary" type="submit" disabled={pending}>{pending ? "Opslaan…" : "Wachtwoord opslaan"}</button>
+    </form> : <p className="admin-error" role="alert">Deze uitnodigingslink is ongeldig of verlopen. <Link href="/admin/login">Ga naar inloggen</Link>.</p>}
   </section></div>;
 }

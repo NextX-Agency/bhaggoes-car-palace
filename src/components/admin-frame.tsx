@@ -4,17 +4,18 @@ import type { ReactNode } from "react";
 import { ExternalLink, LogOut } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
 import { AdminMobileNav } from "@/components/admin-mobile-nav";
+import { AdminNavLink } from "@/components/admin-nav-link";
 import { adminNavItems as items } from "@/lib/admin-nav";
 
 export function AdminFrame({ active, email, title, actions, children }: { active: string; email: string; title?: string; actions?: ReactNode; children: ReactNode }) {
-  const heading = title ?? items.find((item) => item[1] === active)?.[0] ?? "Administration";
+  const heading = title ?? items.find((item) => item[1] === active)?.[0] ?? "Beheer";
   return <div className="admin-page">
     <AdminMobileNav active={active} email={email} />
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <Link href="/admin" className="admin-sidebar-brand" aria-label="Dashboard home"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="140px" loading="eager" /></Link>
-        <nav className="admin-nav" aria-label="Admin navigation">
-          {items.map(([label, href, Icon]) => <Link className={active === href ? "active" : ""} aria-current={active === href ? "page" : undefined} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</Link>)}
+        <Link href="/admin" className="admin-sidebar-brand" aria-label="Naar het overzicht"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="140px" loading="eager" /></Link>
+        <nav className="admin-nav" aria-label="Beheernavigatie">
+          {items.map(([label, href, Icon]) => <AdminNavLink active={active === href} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</AdminNavLink>)}
         </nav>
         <div className="admin-sidebar-foot">
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExternalLink, LogOut, Menu, X } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
+import { AdminNavLink } from "@/components/admin-nav-link";
 import { adminNavItems } from "@/lib/admin-nav";
 
 // Keep in sync with the 860px breakpoint in admin.css where the sidebar takes over.
@@ -29,20 +30,20 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
 
   return <Dialog.Root open={open} onOpenChange={setOpen}>
     <div className="admin-mobile-bar">
-      <Link href="/admin" className="admin-mobile-brand" aria-label="Dashboard home"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="110px" loading="eager" /></Link>
+      <Link href="/admin" className="admin-mobile-brand" aria-label="Naar het overzicht"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="110px" loading="eager" /></Link>
       <Dialog.Trigger asChild>
-        <button className="admin-menu-button" type="button" aria-label="Open dashboard menu"><Menu size={20} aria-hidden="true" /> Menu</button>
+        <button className="admin-menu-button" type="button" aria-label="Menu openen"><Menu size={20} aria-hidden="true" /> Menu</button>
       </Dialog.Trigger>
     </div>
     <Dialog.Portal>
       <Dialog.Overlay className="filter-drawer-overlay" />
-      <Dialog.Content className="filter-drawer-content admin-drawer" aria-describedby={undefined} onClick={(event) => { if ((event.target as Element).closest("a")) setOpen(false); }}>
+      <Dialog.Content className="filter-drawer-content admin-drawer" aria-describedby={undefined} onClick={(event) => { const link = (event.target as Element).closest("a"); if (link && (link.target === "_blank" || new URL(link.href).pathname === pathname)) setOpen(false); }}>
         <header className="filter-drawer-header">
-          <Dialog.Title>Dashboard</Dialog.Title>
-          <Dialog.Close asChild><button className="filter-drawer-close" type="button" aria-label="Close dashboard menu"><X size={20} /></button></Dialog.Close>
+          <Dialog.Title>Beheer</Dialog.Title>
+          <Dialog.Close asChild><button className="filter-drawer-close" type="button" aria-label="Menu sluiten"><X size={20} /></button></Dialog.Close>
         </header>
-        <nav className="admin-drawer-nav" aria-label="Admin navigation">
-          {adminNavItems.map(([label, href, Icon]) => <Link className={active === href ? "active" : ""} aria-current={active === href ? "page" : undefined} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</Link>)}
+        <nav className="admin-drawer-nav" aria-label="Beheernavigatie">
+          {adminNavItems.map(([label, href, Icon]) => <AdminNavLink active={active === href} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</AdminNavLink>)}
         </nav>
         <footer className="admin-drawer-foot">
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>

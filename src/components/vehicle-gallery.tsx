@@ -58,6 +58,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   return <div className="vehicle-gallery" onKeyDown={onKeys}>
     <div className="gallery-stage" {...stageSwipe.handlers}>
       <button className="gallery-main" type="button" onClick={() => { if (!stageSwipe.consumeSwipe()) setFullscreen(true); }} aria-label={`Open full-screen photos of ${title}`}>
+        <Image key={`bg-${selected.id}`} className="gallery-backdrop" src={selected.url!} alt="" aria-hidden="true" fill quality={30} sizes="96px" />
         <Image key={selected.id} src={selected.url!} alt={selected.alt_text ?? title} fill loading="eager" fetchPriority="high" sizes="(max-width: 960px) 100vw, 820px" />
       </button>
       {count > 1 ? <>

@@ -34,7 +34,7 @@ test("homepage vehicle search sends all selected filters to inventory", async ({
 
 test("inventory filters persist in the URL and show a useful empty state", async ({ page }) => {
   await page.goto("/cars");
-  await page.getByLabel("Search").fill("Toyota");
+  await page.getByLabel("Search", { exact: true }).fill("Toyota");
   await page.getByRole("button", { name: /apply filters/i }).click();
   await expect(page).toHaveURL(/search=Toyota/);
   await page.waitForLoadState("networkidle");
@@ -55,7 +55,7 @@ test("mobile inventory filters open in an accessible drawer and apply to the URL
   await filterButton.click();
   const drawer = page.getByRole("dialog", { name: "Filter cars" });
   await expect(drawer).toBeVisible();
-  await drawer.getByLabel("Search").fill("Toyota");
+  await drawer.getByLabel("Search", { exact: true }).fill("Toyota");
   await drawer.getByRole("button", { name: /apply filters/i }).click();
   await expect(page).toHaveURL(/search=Toyota/);
   const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
@@ -134,7 +134,7 @@ test("mobile navigation opens and inventory fits the viewport", async ({ page })
   await page.goto("/");
   const search = page.getByRole("search", { name: "Search cars" });
   await expect(search).toBeVisible();
-  await expect(search.getByLabel("Make")).toBeVisible();
+  await expect(search.locator(".make-select-trigger")).toBeVisible();
   await expect(search.getByLabel("Model")).toBeVisible();
   await expect(search.getByLabel("Max price")).toBeHidden();
   await expect(search.getByLabel("Year")).toBeHidden();
