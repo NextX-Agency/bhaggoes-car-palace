@@ -198,6 +198,7 @@ export async function bulkUpdateVehiclesAction(_previous: ActionState, form: For
   if (!idsResult.success) return { error: "Select at least one vehicle and try again." };
   const operation = text(form, "operation");
   const status = text(form, "availability");
+  const requestedStatus = operation === "status" ? status : operation.startsWith("status:") ? operation.slice(7) : "";
   const payload: Record<string, unknown> = {};
   if (operation === "publish") payload.published = true;
   else if (operation === "unpublish") payload.published = false;
@@ -205,7 +206,7 @@ export async function bulkUpdateVehiclesAction(_previous: ActionState, form: For
   else if (operation === "unfeature") payload.featured = false;
   else if (operation === "archive") { payload.archived_at = new Date().toISOString(); payload.published = false; }
   else if (operation === "restore") payload.archived_at = null;
-  else if (operation === "status" && ["available", "on_the_way", "reserved", "sold", "rental"].includes(status)) payload.availability = status;
+  else if (requestedStatus && ["available", "on_the_way", "reserved", "sold", "rental"].includes(requestedStatus)) payload.availability = requestedStatus;
   else return { error: "Choose a valid action for the selected vehicles." };
 
   try {

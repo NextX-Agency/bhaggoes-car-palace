@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnFiltersState, type RowSelectionState, type SortingState } from "@tanstack/react-table";
-import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpDown, Camera, Pencil, Search, Star } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpDown, Camera, Eye, EyeOff, Pencil, Search, Star, StarOff, Tags, X } from "lucide-react";
 import { bulkUpdateVehiclesAction, updateVehicleAction } from "@/app/admin/actions";
 import type { VehicleImage } from "@/lib/domain";
 
@@ -40,9 +40,9 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
   const [filter, setFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [bulkOperation, setBulkOperation] = useState("");
+  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const [bulkState, bulkAction, pendingBulk] = useActionState(bulkUpdateVehiclesAction, {});
-  useEffect(() => { if (bulkState.ok) setRowSelection({}); }, [bulkState.ok]);
+  useEffect(() => { if (bulkState.ok) { setRowSelection({}); setStatusPickerOpen(false); } }, [bulkState]);
 
   const columns = useMemo(() => [
     col.display({ id: "select", enableSorting: false, header: ({ table }) => <input type="checkbox" checked={table.getIsAllPageRowsSelected()} onChange={table.getToggleAllPageRowsSelectedHandler()} aria-label="Select all vehicles on this page" />, cell: ({ row }) => <input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} aria-label={`Select ${row.original.title}`} /> }),
@@ -75,11 +75,19 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
     </div>
     {selectedIds.length ? <form action={bulkAction} className="bulk-inventory-toolbar">
       <input type="hidden" name="ids" value={JSON.stringify(selectedIds)} />
-      <span>{selectedIds.length} selected</span>
-      <label><span className="sr-only">Bulk action</span><select className="admin-input" name="operation" value={bulkOperation} onChange={(event) => setBulkOperation(event.target.value)} required><option value="">Choose an action</option><option value="publish">Show on website</option><option value="unpublish">Hide from website</option><option value="feature">Show on homepage</option><option value="unfeature">Remove from homepage</option><option value="status">Change availability</option><option value="archive">Archive and hide</option><option value="restore">Restore from archive</option></select></label>
-      {bulkOperation === "status" ? <label><span className="sr-only">New availability</span><select className="admin-input" name="availability" defaultValue="available">{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
-      <button type="submit" className="button button-primary button-sm" disabled={pendingBulk || !bulkOperation}>{pendingBulk ? "Saving…" : "Apply"}</button>
-      <button type="button" className="button button-ghost button-sm" onClick={() => setRowSelection({})}>Cancel</button>
+      <strong className="bulk-selection-count">{selectedIds.length} selected</strong>
+      <div className="bulk-action-list" role="group" aria-label="Actions for selected vehicles">
+        <button type="submit" name="operation" value="publish" className="bulk-icon-action" title="Show selected cars on website" aria-label="Show selected cars on website" disabled={pendingBulk}><Eye size={18} aria-hidden="true" /><span>Show</span></button>
+        <button type="submit" name="operation" value="unpublish" className="bulk-icon-action" title="Hide selected cars from website" aria-label="Hide selected cars from website" disabled={pendingBulk}><EyeOff size={18} aria-hidden="true" /><span>Hide</span></button>
+        <button type="submit" name="operation" value="feature" className="bulk-icon-action" title="Show selected cars on homepage" aria-label="Show selected cars on homepage" disabled={pendingBulk}><Star size={18} aria-hidden="true" /><span>Feature</span></button>
+        <button type="submit" name="operation" value="unfeature" className="bulk-icon-action" title="Remove selected cars from homepage" aria-label="Remove selected cars from homepage" disabled={pendingBulk}><StarOff size={18} aria-hidden="true" /><span>Unfeature</span></button>
+        <button type="button" className="bulk-icon-action" title="Change availability of selected cars" aria-label="Change availability of selected cars" aria-expanded={statusPickerOpen} aria-controls="bulk-status-options" onClick={() => setStatusPickerOpen((open) => !open)} disabled={pendingBulk}><Tags size={18} aria-hidden="true" /><span>Status</span></button>
+        <button type="submit" name="operation" value="archive" className="bulk-icon-action is-danger" title="Archive selected cars and hide them" aria-label="Archive selected cars and hide them" disabled={pendingBulk} onClick={(event) => { if (!window.confirm(`Archive ${selectedIds.length} selected car${selectedIds.length === 1 ? "" : "s"}? They will be hidden from the website.`)) event.preventDefault(); }}><Archive size={18} aria-hidden="true" /><span>Archive</span></button>
+        <button type="submit" name="operation" value="restore" className="bulk-icon-action" title="Restore selected cars as drafts" aria-label="Restore selected cars as drafts" disabled={pendingBulk}><ArchiveRestore size={18} aria-hidden="true" /><span>Restore</span></button>
+      </div>
+      <button type="button" className="bulk-clear-selection" onClick={() => { setRowSelection({}); setStatusPickerOpen(false); }} disabled={pendingBulk}><X size={18} aria-hidden="true" /><span>Cancel</span></button>
+      {statusPickerOpen ? <div id="bulk-status-options" className="bulk-status-options" role="group" aria-label="Set availability for selected vehicles">{Object.entries(statusLabels).map(([value, label]) => <button type="submit" key={value} name="operation" value={`status:${value}`} className="bulk-status-option" disabled={pendingBulk}><span className={`status-dot status-select-${value}`} aria-hidden="true" />{label}</button>)}</div> : null}
+      {pendingBulk ? <span className="sr-only" role="status">Saving selected vehicles…</span> : null}
     </form> : null}
     {bulkState.error ? <p className="admin-feedback admin-error" role="alert">{bulkState.error}</p> : bulkState.ok ? <p className="admin-feedback" role="status">Selected vehicles updated.</p> : null}
     <div className="admin-table-wrap admin-inventory-desktop"><table className="admin-table inventory-table"><thead>{table.getHeaderGroups().map((group) => <tr key={group.id}>{group.headers.map((header) => { const sorted = header.column.getIsSorted(); return <th key={header.id} className={`col-${header.column.id}`} aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}>{header.isPlaceholder ? null : header.column.getCanSort() ? <button type="button" className="table-sort" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp size={12} /> : sorted === "desc" ? <ArrowDown size={12} /> : <ArrowUpDown size={12} />}</button> : flexRender(header.column.columnDef.header, header.getContext())}</th>; })}</tr>)}</thead><tbody>{rows.length ? rows.map((row) => <tr key={row.id} className={`${row.original.archived_at ? "archived-row" : ""}${row.getIsSelected() ? " selected-row" : ""}`}>{row.getVisibleCells().map((cell) => <td key={cell.id} className={`col-${cell.column.id}`}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>) : <tr><td colSpan={columns.length} className="table-empty">{emptyText}{filtered ? <> <button type="button" className="link-button" onClick={() => { setFilter(""); setColumnFilters([]); }}>Clear filters</button></> : null}</td></tr>}</tbody></table></div>

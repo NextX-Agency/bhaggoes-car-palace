@@ -148,7 +148,18 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .table-filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .table-filters .admin-input, .bulk-inventory-toolbar .admin-input { min-height: 42px; width: auto; font-size: var(--fs-sm); }
 .bulk-inventory-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--brand-soft); color: var(--ink); font-size: var(--fs-sm); }
-.bulk-inventory-toolbar > span { margin-right: 6px; font-weight: 600; }
+.bulk-selection-count { margin-right: 6px; white-space: nowrap; font-weight: 700; }
+.bulk-action-list { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.bulk-icon-action, .bulk-clear-selection, .bulk-status-option { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: #fff; color: var(--ink-2); font: inherit; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.bulk-icon-action:hover, .bulk-icon-action[aria-expanded="true"], .bulk-status-option:hover { border-color: var(--brand); background: #fff; color: var(--brand); }
+.bulk-icon-action.is-danger { color: var(--danger); }
+.bulk-icon-action.is-danger:hover { border-color: var(--danger); background: var(--danger-soft); }
+.bulk-clear-selection { margin-left: auto; border-color: transparent; background: transparent; }
+.bulk-clear-selection:hover { color: var(--brand); }
+.bulk-icon-action:focus-visible, .bulk-clear-selection:focus-visible, .bulk-status-option:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.bulk-icon-action:disabled, .bulk-clear-selection:disabled, .bulk-status-option:disabled { opacity: 0.5; cursor: wait; }
+.bulk-status-options { display: flex; flex: 1 0 100%; flex-wrap: wrap; gap: 6px; padding-top: 4px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .table-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-xs); }
 .table-pagination > div { display: flex; align-items: center; gap: 10px; }
 .table-pagination button { min-height: 34px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: #fff; color: var(--ink); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
