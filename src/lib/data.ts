@@ -197,7 +197,7 @@ export async function getAdminDashboardVehicles() {
   const client = await clientOrNull();
   if (!client) return [];
   const { data, error } = await client.from("vehicles")
-    .select("id, title, published, availability, archived_at, price, cash_price, year, fuel_type, transmission, body_type, seats, updated_at, vehicle_images(id)")
+    .select("id, title, published, availability, archived_at, price, cash_price, currency, year, fuel_type, transmission, body_type, seats, updated_at, vehicle_images(id, storage_path, is_cover, sort_order)")
     .is("archived_at", null)
     .order("updated_at", { ascending: false });
   return error || !data ? [] : data;
