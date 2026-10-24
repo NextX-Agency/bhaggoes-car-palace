@@ -21,7 +21,9 @@ test("homepage and inventory show a complete empty state", async ({ page }) => {
 test("homepage vehicle search sends all selected filters to inventory", async ({ page }) => {
   await page.goto("/");
   const search = page.getByRole("search", { name: "Search cars" });
-  await search.getByLabel("Model").fill("Corolla");
+  await search.getByText("Any listed model", { exact: true }).click();
+  await search.getByRole("button", { name: "Type another model" }).click();
+  await search.getByRole("textbox", { name: "Type another model" }).fill("Corolla");
   await search.getByLabel("Year").fill("2022");
   await search.getByLabel("Max price").fill("25000");
   await search.getByRole("button", { name: /search cars/i }).click();
@@ -60,6 +62,20 @@ test("mobile inventory filters open in an accessible drawer and apply to the URL
   await expect(page).toHaveURL(/search=Toyota/);
   const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, page: document.documentElement.scrollWidth }));
   expect(widths.page).toBeLessThanOrEqual(widths.viewport);
+});
+
+test("mobile model picker opens without typing and still accepts any model", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/cars?make=Isuzu");
+  await page.getByRole("button", { name: /filters/i }).click();
+  const drawer = page.getByRole("dialog", { name: "Filter cars" });
+  await drawer.getByText("Any listed model", { exact: true }).click();
+  await expect(drawer.getByRole("button", { name: "Type another model" })).toBeVisible();
+  await drawer.getByRole("button", { name: "Type another model" }).click();
+  await drawer.getByRole("textbox", { name: "Type another model" }).fill("Elf");
+  await drawer.getByRole("button", { name: /apply filters/i }).click();
+  await expect(page).toHaveURL(/make=Isuzu/);
+  await expect(page).toHaveURL(/model=Elf/);
 });
 
 test("supporting public pages render on direct visits", async ({ page }) => {

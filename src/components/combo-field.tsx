@@ -21,6 +21,7 @@ type ComboFieldProps = {
   renderOption?: (option: string) => ReactNode;
   /** Shown when the chevron is tapped but there are no options to offer. */
   emptyText?: string;
+  browseLabel?: string;
 };
 
 type Placement = { up: boolean; maxHeight: number };
@@ -31,7 +32,7 @@ const defaultPlacement: Placement = { up: false, maxHeight: 288 };
  * Touch-friendly combobox. Tapping the field or its chevron opens a scrollable list of every option; typing filters it;
  * any typed text is still accepted, so options are suggestions rather than a closed list.
  */
-export function ComboField({ name, label, options, defaultValue = "", placeholder, required, maxLength, autoCapitalize = "words", onInput, renderOption, emptyText = "Geen suggesties. Typ zelf een waarde." }: ComboFieldProps) {
+export function ComboField({ name, label, options, defaultValue = "", placeholder, required, maxLength, autoCapitalize = "words", onInput, renderOption, emptyText = "Geen suggesties. Typ zelf een waarde.", browseLabel }: ComboFieldProps) {
   const baseId = useId();
   const listId = `${baseId}-list`;
   const optionId = (index: number) => `${baseId}-option-${index}`;
@@ -178,6 +179,7 @@ export function ComboField({ name, label, options, defaultValue = "", placeholde
       aria-haspopup="listbox"
       onClick={(event) => { event.preventDefault(); if (open) closeMenu(); else openMenu(true); }}
     ><ChevronDown size={18} aria-hidden="true" /></button>
+    {browseLabel ? <button className="combo-browse" type="button" aria-expanded={open} aria-controls={listId} onClick={() => { if (open) closeMenu(); else openMenu(true); }}>{browseLabel}</button> : null}
     {showPanel ? <div className={`combo-panel${placement.up ? " is-up" : ""}`} style={{ maxHeight: placement.maxHeight }} onMouseDown={(event) => event.preventDefault()}>
       <ul ref={listRef} id={listId} className="combo-list" role="listbox" aria-label={label} hidden={!visible.length}>
         {visible.map((option, index) => {

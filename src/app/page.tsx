@@ -46,7 +46,7 @@ export default async function HomePage() {
       </div>
     </section>
 
-    <div className="container hero-search-dock"><HeroSearch makes={filterOptions.makes} /></div>
+    <div className="container hero-search-dock"><HeroSearch makes={filterOptions.makes} modelsByMake={filterOptions.modelsByMake} /></div>
 
     <section className="section home-inventory" aria-labelledby="home-cars">
       <div className="container">

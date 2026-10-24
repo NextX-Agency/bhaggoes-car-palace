@@ -194,19 +194,31 @@ export async function getVehiclesByIds(ids: string[]) {
 
 const loadVehicleFilterOptions = unstable_cache(async () => {
   const client = publicClient();
-  const { data, error } = await client.from("vehicles")
-    .select("make, fuel_type, transmission, body_type")
-    .eq("published", true).is("archived_at", null).limit(1000);
-  if (error) throw new Error("Unable to load filter options");
+  const rows: { make: string | null; model: string | null; fuel_type: string | null; transmission: string | null; body_type: string | null }[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await client.from("vehicles")
+      .select("make, model, fuel_type, transmission, body_type")
+      .eq("published", true).is("archived_at", null)
+      .order("id").range(offset, offset + 999);
+    if (error) throw new Error("Unable to load filter options");
+    rows.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
   const distinct = (key: "make" | "fuel_type" | "transmission" | "body_type") =>
-    Array.from(new Set((data ?? []).map((row) => row[key]).filter((value): value is string => Boolean(value)))).sort();
+    Array.from(new Set(rows.map((row) => row[key]).filter((value): value is string => Boolean(value)))).sort();
   const makeCounts: Record<string, number> = {};
-  for (const row of data ?? []) if (row.make) makeCounts[row.make] = (makeCounts[row.make] ?? 0) + 1;
-  return { makes: distinct("make"), fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type"), makeCounts };
+  const modelsByMake: Record<string, string[]> = {};
+  for (const row of rows) {
+    if (!row.make) continue;
+    makeCounts[row.make] = (makeCounts[row.make] ?? 0) + 1;
+    if (row.model && !modelsByMake[row.make]?.includes(row.model)) modelsByMake[row.make] = [...(modelsByMake[row.make] ?? []), row.model];
+  }
+  for (const models of Object.values(modelsByMake)) models.sort((a, b) => a.localeCompare(b));
+  return { makes: distinct("make"), modelsByMake, fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type"), makeCounts };
 }, ["vehicle-filter-options"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getVehicleFilterOptions() {
-  if (!hasSupabaseEnv()) return { makes: [] as string[], fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], makeCounts: {} as Record<string, number> };
+  if (!hasSupabaseEnv()) return { makes: [] as string[], modelsByMake: {} as Record<string, string[]>, fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], makeCounts: {} as Record<string, number> };
   return loadVehicleFilterOptions();
 }
 

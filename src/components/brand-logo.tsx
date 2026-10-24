@@ -1,10 +1,11 @@
 import Image from "next/image";
+import importedBrandIcons from "../lib/vehicle-brand-assets.json";
 import {
   siAcura, siAstonmartin, siAudi, siBentley, siBmw, siCadillac, siChevrolet,
   siChrysler, siCitroen, siFerrari, siFiat, siFord, siHonda, siHyundai,
   siInfiniti, siJeep, siKia, siMahindra, siMazda, siMini, siMitsubishi,
   siNissan, siOpel, siPeugeot, siPolestar, siPorsche, siProton, siRam,
-  siRenault, siSeat, siSkoda, siSubaru, siSuzuki, siTata, siTesla,
+  siRenault, siScania, siSeat, siSkoda, siSubaru, siSuzuki, siTata, siTesla,
   siToyota, siVolkswagen, siVolvo, type SimpleIcon,
 } from "simple-icons";
 
@@ -38,6 +39,7 @@ const brandIcons: Record<string, SimpleIcon> = {
   proton: siProton,
   ram: siRam,
   renault: siRenault,
+  scania: siScania,
   seat: siSeat,
   skoda: siSkoda,
   subaru: siSubaru,
@@ -61,6 +63,9 @@ const localBrandIcons: Record<string, string> = {
   maserati: "/brands/maserati.svg",
   mercedesbenz: "/brands/mercedes-benz.svg",
 };
+const importedIconsByKey: Record<string, string> = Object.fromEntries(
+  Object.entries(importedBrandIcons).map(([make, src]) => [make.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, ""), src]),
+);
 
 // Server-rendered logos keyed by make, handed to client components that cannot import the icon set themselves.
 export function brandLogoMap(makes: string[]): Record<string, React.ReactNode> {
@@ -71,7 +76,7 @@ export function BrandLogo({ make }: { make: string }) {
   const normalized = make.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (!normalized) return null;
   const key = normalized.replace(/[^a-z0-9]/g, "");
-  const localIcon = localBrandIcons[key];
+  const localIcon = localBrandIcons[key] ?? importedIconsByKey[key];
   if (localIcon) return <Image className={`brand-logo${key === "isuzu" ? " brand-logo-isuzu" : ""}`} src={localIcon} alt="" aria-hidden="true" width={key === "isuzu" ? 48 : 20} height={20} unoptimized />;
   const icon = brandIcons[key];
   if (!icon) {

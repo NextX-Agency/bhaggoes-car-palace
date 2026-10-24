@@ -474,7 +474,8 @@ button.admin-badge:hover { filter: brightness(0.96); }
 /* ===== ComboField (touch-friendly combobox; src/components/combo-field.tsx) ===== */
 .combo-field { position: relative; min-width: 0; font-weight: 400; }
 .admin-field .combo-field input.combo-input:not([type="checkbox"]):not([type="file"]), .combo-field input.combo-input { padding-right: 52px; text-overflow: ellipsis; }
-.combo-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 48px; height: 100%; min-height: 46px; padding: 0; border: 0; border-radius: 0 var(--r-sm) var(--r-sm) 0; background: transparent; color: var(--muted); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.combo-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 48px; height: 46px; padding: 0; border: 0; border-radius: 0 var(--r-sm) var(--r-sm) 0; background: transparent; color: var(--muted); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.combo-browse { display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; padding: 4px 0; border: 0; background: transparent; color: var(--brand); font: inherit; font-size: var(--fs-sm); font-weight: 650; cursor: pointer; }
 .combo-toggle:hover { color: var(--ink); }
 .combo-toggle svg { transition: transform 0.15s var(--ease); }
 .combo-field.is-open .combo-toggle svg { transform: rotate(180deg); }
