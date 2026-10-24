@@ -15,7 +15,7 @@
   --ink: #0d1726;
   --ink-2: #334155;
   --muted: #64707f;
-  --muted-2: #8a94a1;
+  --muted-2: #6b7686;
 
   /* Brand (from the Bhaggoes logo) */
   --navy: #0b1a2e;
@@ -77,7 +77,7 @@ html { -webkit-text-size-adjust: 100%; }
    (the menu button, a nav link) made Chrome scroll the whole page back to the top. */
 :where([id]) { scroll-margin-top: calc(var(--header-h) + 16px); }
 body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: var(--fs-body); line-height: 1.55; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-h1, h2, h3, h4 { margin: 0; font-family: var(--font-head); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-head); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; overflow-wrap: anywhere; }
 main { flex: 1 0 auto; }
 p { margin: 0; }
 button, input, textarea, select { font: inherit; color: inherit; }
@@ -141,6 +141,7 @@ img { max-width: 100%; }
 .mobile-nav a { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 1.0625rem; font-weight: 500; }
 .mobile-nav a[aria-current="page"] { color: var(--brand); font-weight: 600; }
 .mobile-nav-actions { display: grid; gap: 10px; margin-top: 24px; }
+.mobile-nav .mobile-nav-actions a { justify-content: center; min-height: 52px; border: 1px solid var(--line-strong); font-size: var(--fs-sm); font-weight: 600; }
 
 @media (max-width: 960px) {
   :root { --header-h: 64px; }
@@ -485,6 +486,7 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 .detail-prices { display: grid; gap: 10px; }
 .detail-prices > div { display: grid; gap: 2px; }
 .detail-prices span { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+.detail-cash-price span { color: var(--ink-2); }
 .detail-cash-price { padding: 11px 14px; border-left: 3px solid var(--brand); background: var(--brand-soft); }
 .detail-cash-price strong { color: var(--brand); font-family: var(--font-head); font-size: clamp(1.6rem, 1vw + 1.2rem, 2rem); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .detail-social-link { display: inline-flex; align-items: center; gap: 7px; justify-self: center; min-height: 44px; color: var(--brand); font-size: var(--fs-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
@@ -570,6 +572,8 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 .gallery-empty { display: grid; place-items: center; align-content: center; gap: 10px; aspect-ratio: 1 / 1; border-radius: var(--r-lg); background: var(--surface); color: var(--muted); font-size: var(--fs-sm); }
 .gallery-empty svg { color: var(--muted-2); }
 @media (max-width: 960px) { .gallery-arrow { opacity: 1; width: 44px; height: 44px; } }
+/* Tablet portrait: leave room for header, breadcrumbs, the thumbnail row and the sticky contact bar so the first screen is not hidden behind it. */
+@media (min-width: 601px) and (max-width: 960px) { .vehicle-gallery { max-width: max(420px, min(100%, calc(100dvh - 340px))); } }
 @media (max-width: 600px) {
   .gallery-stage { aspect-ratio: 1 / 1; margin-inline: calc(var(--gutter) * -1); border-radius: 0; }
   .gallery-thumbs { grid-auto-columns: 22%; }
@@ -581,6 +585,8 @@ dialog.image-lightbox { position: fixed; inset: 0; z-index: 100; width: 100vw; h
 dialog.image-lightbox::backdrop { background: #070d16; }
 .lightbox-topline { position: absolute; z-index: 2; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; padding: 10px 16px 10px 22px; color: rgb(255 255 255 / 0.86); font-size: var(--fs-sm); }
 .lightbox-topline strong { overflow: hidden; color: #fff; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.lightbox-topline span { flex: 0 0 auto; margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lightbox-close { flex: 0 0 auto; }
 .lightbox-image { position: absolute; inset: 64px 72px; touch-action: pan-y; }
 .lightbox-image img { object-fit: contain; }
 .lightbox-close, .lightbox-nav { display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-radius: 50%; background: rgb(255 255 255 / 0.1); color: #fff; cursor: pointer; transition: background-color 0.15s; }
@@ -691,7 +697,7 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 .finance-next { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: clamp(54px, 7vw, 100px); padding-top: 28px; border-top: 1px solid var(--line-strong); }
 .finance-next h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); }
 .finance-next p { margin-top: 5px; color: var(--ink-2); }
-@media (max-width: 800px) { .finance-hero { grid-template-columns: 1fr; } .finance-hero-image { min-height: 260px; } .finance-options { grid-template-columns: 1fr; } .finance-options-intro h2, .finance-options-intro > p:last-child { max-width: none; } }
+@media (max-width: 800px) { .finance-hero { grid-template-columns: 1fr; } .finance-hero-image { min-height: 260px; } .finance-options { grid-template-columns: 1fr; } .finance-options-intro h2, .finance-options-intro > p:last-child { max-width: none; } .finance-note { margin-left: 0; max-width: none; } }
 @media (max-width: 640px) {
   .financing-page { padding-top: 0; }
   .finance-hero { position: relative; display: block; min-height: 660px; margin-inline: calc(-1 * var(--gutter)); background: var(--navy); }
@@ -801,6 +807,7 @@ dialog.image-lightbox::backdrop { background: #070d16; }
   .vehicle-actions.compact .action-round { width: 44px; min-height: 44px; height: 44px; }
   .home-visit .visit-details a, .visit-details a { display: inline-flex; align-items: center; min-height: 44px; }
   .footer-direct a, .footer-col a, .footer-bottom a, .footer-social-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .footer-col a.footer-location { display: grid; align-content: center; }
   .gallery-expand { min-height: 44px; }
   .chip { min-height: 44px; }
 }

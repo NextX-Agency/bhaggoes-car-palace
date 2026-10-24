@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChevronDown, Search } from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
 
-export function MakeSelect({ makes, name, value = "", placeholder = "All makes", label = "Make", labelledBy }: { makes: string[]; name: string; value?: string; placeholder?: string; label?: string; labelledBy: string }) {
+// `logos` is rendered on the server (see brandLogoMap) so the brand icon set never ships in the client bundle.
+export function MakeSelect({ makes, name, value = "", placeholder = "All makes", label = "Make", labelledBy, logos = {} }: { makes: string[]; name: string; value?: string; placeholder?: string; label?: string; labelledBy: string; logos?: Record<string, ReactNode> }) {
   const [selected, setSelected] = useState(value);
   const [search, setSearch] = useState("");
   const listId = useId();
@@ -34,14 +34,14 @@ export function MakeSelect({ makes, name, value = "", placeholder = "All makes",
 
   return <details className="make-select" ref={detailsRef} onKeyDown={handleKeyDown} onToggle={() => { if (!detailsRef.current?.open) setSearch(""); }}>
     <summary className="make-select-trigger" aria-label={`${label}: ${selected || placeholder}`} aria-controls={listId}>
-      {selected ? <><BrandLogo make={selected} /><span>{selected}</span></> : <span className="make-select-placeholder">{placeholder}</span>}
+      {selected ? <>{logos[selected]}<span>{selected}</span></> : <span className="make-select-placeholder">{placeholder}</span>}
       <ChevronDown size={16} aria-hidden="true" />
     </summary>
     <div className="make-select-popover" id={listId}>
       <div className="make-select-search"><Search size={16} aria-hidden="true" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search makes" aria-label="Search makes" /></div>
       <div className="make-select-options" role="group" aria-labelledby={labelledBy}>
         <button type="button" aria-pressed={!selected} className={!selected ? "is-selected" : ""} onClick={() => { setSelected(""); close(); }}>{placeholder}</button>
-        {filteredMakes.map((make) => <button type="button" aria-pressed={selected === make} className={selected === make ? "is-selected" : ""} key={make} onClick={() => { setSelected(make); close(); }}><BrandLogo make={make} />{make}</button>)}
+        {filteredMakes.map((make) => <button type="button" aria-pressed={selected === make} className={selected === make ? "is-selected" : ""} key={make} onClick={() => { setSelected(make); close(); }}>{logos[make]}{make}</button>)}
         {filteredMakes.length === 0 ? <p className="make-select-empty">No makes found.</p> : null}
       </div>
     </div>

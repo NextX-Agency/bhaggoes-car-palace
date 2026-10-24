@@ -1,4 +1,10 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/lib/site-url";
-export const dynamic = "force-dynamic";
-export default function robots(): MetadataRoute.Robots { return { rules: [{ userAgent: "*", allow: "/", disallow: "/admin" }], sitemap: `${siteUrl()}/sitemap.xml` }; }
+import { absoluteUrl } from "@/lib/site-url";
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    // Vehicle photos are crawled through /_next/image, so the raw API routes can stay closed.
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/admin", "/api/"] }],
+    sitemap: absoluteUrl("/sitemap.xml"),
+  };
+}

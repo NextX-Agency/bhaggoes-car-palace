@@ -7,6 +7,8 @@ import { formatAmount } from "@/lib/domain";
 import { websiteInquiriesEnabled } from "@/lib/features";
 import { requireAdmin } from "@/lib/admin-auth";
 
+export const metadata = { title: "Overzicht" };
+
 type DashboardVehicle = Awaited<ReturnType<typeof getAdminDashboardVehicles>>[number];
 const statusLabels: Record<string, string> = { available: "Beschikbaar", on_the_way: "Onderweg", reserved: "Gereserveerd", sold: "Verkocht", rental: "Verhuur" };
 const updatedFormatter = new Intl.DateTimeFormat("nl-SR", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Paramaribo" });

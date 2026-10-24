@@ -28,6 +28,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   const [active, setActive] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const openerRef = useRef<HTMLButtonElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const hasSelectedThumbnail = useRef(false);
   const usable = sortedImages(images);
@@ -57,7 +58,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
 
   return <div className="vehicle-gallery" onKeyDown={onKeys}>
     <div className="gallery-stage" {...stageSwipe.handlers}>
-      <button className="gallery-main" type="button" onClick={() => { if (!stageSwipe.consumeSwipe()) setFullscreen(true); }} aria-label={`Open full-screen photos of ${title}`}>
+      <button ref={openerRef} className="gallery-main" type="button" onClick={() => { if (!stageSwipe.consumeSwipe()) setFullscreen(true); }} aria-label={`Open full-screen photos of ${title}`}>
         <Image key={`bg-${selected.id}`} className="gallery-backdrop" src={selected.url!} alt="" aria-hidden="true" fill quality={30} sizes="96px" />
         <Image key={selected.id} src={selected.url!} alt={selected.alt_text ?? title} fill loading="eager" fetchPriority="high" sizes="(max-width: 960px) 100vw, 820px" />
       </button>
@@ -68,12 +69,12 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       </> : null}
       <button className="gallery-expand" type="button" onClick={() => setFullscreen(true)}><Expand size={14} aria-hidden="true" /> Full screen</button>
     </div>
-    {count > 1 ? <div className="gallery-thumbs" ref={thumbsRef} aria-label="Choose a photo">
+    {count > 1 ? <div className="gallery-thumbs" ref={thumbsRef} role="group" aria-label="Choose a photo">
       {usable.map((image, index) => <button type="button" className={index === active ? "selected" : ""} key={image.id} onClick={() => setActive(index)} aria-label={`Show photo ${index + 1} of ${count}`} aria-current={index === active ? "true" : undefined}>
         <Image src={image.url!} alt="" fill sizes="140px" />
       </button>)}
     </div> : null}
-    {fullscreen ? <dialog ref={dialogRef} className="image-lightbox" aria-label={`${title} photos`} onClose={() => setFullscreen(false)}>
+    {fullscreen ? <dialog ref={dialogRef} className="image-lightbox" aria-label={`${title} photos`} onClose={() => { setFullscreen(false); openerRef.current?.focus(); }}>
       <div className="lightbox-topline"><strong>{title}</strong><span aria-live="polite">{active + 1} / {count}</span><button className="lightbox-close" type="button" onClick={() => dialogRef.current?.close()} aria-label="Close photo viewer"><X size={22} /></button></div>
       <div className="lightbox-image" {...viewerSwipe.handlers}><Image key={selected.id} src={selected.url!} alt={selected.alt_text ?? title} fill sizes="100vw" /></div>
       {count > 1 ? <><button className="lightbox-nav lightbox-prev" type="button" onClick={() => move(-1)} aria-label="Previous photo"><ChevronLeft /></button><button className="lightbox-nav lightbox-next" type="button" onClick={() => move(1)} aria-label="Next photo"><ChevronRight /></button></> : null}

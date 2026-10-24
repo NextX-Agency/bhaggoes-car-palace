@@ -3,4 +3,6 @@ import { AdminContentManager } from "@/components/admin-content-manager";
 import { getAdminFaqs, getAdminPages } from "@/lib/data";
 import { requireAdmin } from "@/lib/admin-auth";
 
+export const metadata = { title: "Pagina’s & FAQ" };
+
 export default async function AdminContentPage() { const { user } = await requireAdmin(); const [faqs, pages] = await Promise.all([getAdminFaqs(), getAdminPages()]); return <AdminFrame active="/admin/content" email={user.email ?? "Beheerder"}><AdminContentManager faqs={faqs} pages={pages} /></AdminFrame>; }

@@ -3,6 +3,8 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { AdminLoginForm } from "@/components/admin-login-form";
 
+export const metadata = { title: "Inloggen" };
+
 export default async function AdminLoginPage({ searchParams }: { searchParams: Promise<{ setup?: string; unauthorized?: string }> }) {
   const params = await searchParams;
   if (hasSupabaseEnv()) {

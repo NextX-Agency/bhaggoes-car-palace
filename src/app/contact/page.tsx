@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { ArrowUpRight, Phone } from "lucide-react";
 import { SocialIcon } from "@/components/social-icon";
+import { JsonLd } from "@/components/json-ld";
 import { getSettings } from "@/lib/data";
+import { dealerJsonLd } from "@/lib/seo";
 import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
 
 export const metadata: Metadata = {
@@ -31,6 +33,7 @@ export default async function ContactPage() {
   });
 
   return <div className="container page-wrap contact-page">
+    <JsonLd data={dealerJsonLd(settings, { website: false })} />
     <header className="contact-heading">
       <div>
         <p className="contact-eyebrow">Bhaggoes Car Palace · Suriname</p>

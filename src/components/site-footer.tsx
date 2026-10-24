@@ -18,7 +18,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
   return <footer className="site-footer">
     <div className="container footer-main">
       <div className="footer-brand">
-        <Link href="/" aria-label={`${settings.business_name} home`}><Image src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={316} height={108} loading="eager" unoptimized={!settings.logo_url} sizes="220px" /></Link>
+        <Link href="/" aria-label={`${settings.business_name} home`}><Image src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={316} height={108} loading="lazy" sizes="220px" /></Link>
         <div className="footer-direct">
           {whatsapp ? <a href={whatsapp} target="_blank" rel="noopener noreferrer"><SocialIcon platform="whatsapp" /> Message us</a> : null}
           {settings.phone ? <a href={`tel:${settings.phone}`}>{settings.phone}</a> : null}

@@ -62,6 +62,11 @@ const localBrandIcons: Record<string, string> = {
   mercedesbenz: "/brands/mercedes-benz.svg",
 };
 
+// Server-rendered logos keyed by make, handed to client components that cannot import the icon set themselves.
+export function brandLogoMap(makes: string[]): Record<string, React.ReactNode> {
+  return Object.fromEntries(makes.map((make) => [make, <BrandLogo key={make} make={make} />]));
+}
+
 export function BrandLogo({ make }: { make: string }) {
   const normalized = make.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (!normalized) return null;

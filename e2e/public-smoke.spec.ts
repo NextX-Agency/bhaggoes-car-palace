@@ -124,7 +124,9 @@ test("financing and FAQ fit a narrow phone screen", async ({ page }) => {
 test("admin sends an unconfigured project to setup guidance", async ({ page }) => {
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login\?setup=1/);
-  await expect(page.getByText(/Supabase is not connected yet/i)).toBeVisible();
+  await expect(page.getByText(/Supabase is nog niet gekoppeld/i)).toBeVisible();
+  // The dashboard is Dutch while the document root says English, so the staff pages carry their own language.
+  expect(await page.locator(".admin-login-wrap").evaluate((node) => node.closest("[lang]")?.getAttribute("lang"))).toBe("nl");
   await page.goto("/admin/inventory/00000000-0000-4000-8000-000000000000/preview");
   await expect(page).toHaveURL(/\/admin\/login\?setup=1/);
 });

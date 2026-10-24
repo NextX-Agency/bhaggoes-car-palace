@@ -3,11 +3,14 @@ import { Archivo, Inter } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getSettings } from "@/lib/data";
+import { defaultShareImage } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
 import "./admin.css";
 
-export const dynamic = "force-dynamic";
+// Public pages are static/ISR: data comes from tagged caches that admin saves expire (see lib/data.ts).
+// This is the upper bound for any page that is not invalidated sooner.
+export const revalidate = 300;
 
 const display = Archivo({ subsets: ["latin"], variable: "--font-display", display: "swap", axes: ["wdth"] });
 const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
@@ -20,8 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl()),
     title: { default: settings.seo_title, template: `%s | ${settings.business_name}` },
     description: settings.seo_description,
-    openGraph: { type: "website", siteName: settings.business_name, title: settings.seo_title, description: settings.seo_description, images: ["/images/bhaggoes-logo-approved.png"] },
-    twitter: { card: "summary" },
+    openGraph: { type: "website", siteName: settings.business_name, title: settings.seo_title, description: settings.seo_description, locale: "en_US", images: [defaultShareImage] },
+    twitter: { card: "summary_large_image", title: settings.seo_title, description: settings.seo_description, images: [defaultShareImage.url] },
   };
 }
 

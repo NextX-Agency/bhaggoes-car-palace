@@ -9,6 +9,8 @@ import { VehicleGrid } from "@/components/vehicle-grid";
 import { BrandLogo } from "@/components/brand-logo";
 import { getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
 import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
+import { JsonLd } from "@/components/json-ld";
+import { dealerJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -27,6 +29,7 @@ export default async function HomePage() {
   const makes = filterOptions.makes.filter((make) => filterOptions.makeCounts[make]);
 
   return <>
+    <JsonLd data={dealerJsonLd(settings)} />
     <section className="hero home-hero" aria-labelledby="hero-title">
       <div className="hero-visual"><picture><source media="(min-width: 641px)" srcSet={desktopHero} /><img {...heroImgProps} alt={imageProps.alt} srcSet={mobileHero} className="hero-photo" /></picture></div>
       <div className="hero-shade" />

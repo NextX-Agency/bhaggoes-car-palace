@@ -10,9 +10,24 @@ import { getSettings, getVehicles, getVehicleFilterOptions } from "@/lib/data";
 import type { VehicleFilters } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
 
-export const metadata: Metadata = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, and more.", alternates: { canonical: "/cars" } };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const one = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+
+// /cars and /cars?make=X (a make that is in stock) are the indexable pages. Any other filter, search or page
+// number canonicalises to /cars and stays out of the index, so filter combinations cannot flood search results.
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const params = await searchParams;
+  const keys = Object.keys(params).filter((key) => one(params[key]));
+  const requestedMake = one(params.make)?.trim();
+  const base = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, and more.", alternates: { canonical: "/cars" } };
+  if (!keys.length) return base;
+  if (requestedMake && keys.length === 1) {
+    const { makes, makeCounts } = await getVehicleFilterOptions();
+    const make = makes.find((item) => item.toLowerCase() === requestedMake.toLowerCase() && makeCounts[item]);
+    if (make) return { title: `${make} cars for sale in Suriname`, description: `Browse ${makeCounts[make]} ${make} ${makeCounts[make] === 1 ? "car" : "cars"} at Bhaggoes Car Palace, with photos, prices and details.`, alternates: { canonical: `/cars?make=${encodeURIComponent(make)}` } };
+  }
+  return { ...base, robots: { index: false, follow: true } };
+}
 const numberValue = (value: string | string[] | undefined) => { const parsed = Number(one(value)); return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined; };
 const filterKeys = ["search", "make", "model", "year", "minPrice", "maxPrice", "fuel", "transmission", "bodyType"] as const;
 const number = (value: number) => new Intl.NumberFormat("en-US").format(value);
@@ -55,6 +70,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
         <VehicleFilterForm filters={filters} options={options} />
       </aside>
       <div className="inventory-results">
+        <h2 className="sr-only">Vehicle listings</h2>
         <div className="results-bar">
           <div className="mobile-filter-trigger"><MobileFilterDrawer activeCount={active.length} formId="mobile-filters"><VehicleFilterForm filters={filters} options={options} id="mobile-filters" /></MobileFilterDrawer></div>
           <SortSelect value={filters.sort ?? "newest"} hidden={active} labels={sortLabels} />

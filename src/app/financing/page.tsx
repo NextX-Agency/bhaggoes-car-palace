@@ -31,7 +31,7 @@ export default async function FinancingPage() {
         <p>See the options currently listed, then talk with our team about the car and terms that work for you.</p>
         {whatsapp ? <a className="button finance-hero-button" href={whatsapp} target="_blank" rel="noopener noreferrer"><SocialIcon platform="whatsapp" /> Ask us about financing</a> : <Link className="button finance-hero-button" href="/contact">Talk to our team <ArrowRight size={18} /></Link>}
       </div>
-      <div className="finance-hero-image"><Image src="/images/harrier-2018/front-three-quarter.webp" alt="Toyota Harrier photographed at Bhaggoes Car Palace" fill loading="eager" sizes="(max-width: 760px) 100vw, 42vw" /></div>
+      <div className="finance-hero-image"><Image src="/images/harrier-2018/front-three-quarter.webp" alt="Toyota Harrier photographed at Bhaggoes Car Palace" fill loading="eager" sizes="(max-width: 800px) 100vw, 42vw" /></div>
     </section>
 
     {settings.financing_enabled ? <section className="finance-options" aria-labelledby="finance-options-title">

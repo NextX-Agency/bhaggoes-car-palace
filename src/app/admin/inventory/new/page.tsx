@@ -5,6 +5,8 @@ import { AdminVehicleEditor } from "@/components/admin-vehicle-editor";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getAdminVehicleTemplates } from "@/lib/data";
 
+export const metadata = { title: "Nieuwe auto" };
+
 export default async function NewVehiclePage() {
   const { user } = await requireAdmin();
   const templates = await getAdminVehicleTemplates();

@@ -5,6 +5,7 @@ import { ExternalLink, LogOut } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
 import { AdminMobileNav } from "@/components/admin-mobile-nav";
 import { AdminNavLink } from "@/components/admin-nav-link";
+import { PendingSubmit } from "@/components/admin-pending-button";
 import { adminNavItems as items } from "@/lib/admin-nav";
 
 export function AdminFrame({ active, email, title, actions, children }: { active: string; email: string; title?: string; actions?: ReactNode; children: ReactNode }) {
@@ -23,7 +24,7 @@ export function AdminFrame({ active, email, title, actions, children }: { active
             <span className="admin-avatar" aria-hidden="true">{email.slice(0, 1).toUpperCase()}</span>
             <div className="admin-user-details"><span className="admin-user-label">Ingelogd als</span><span className="admin-email" title={email}>{email}</span></div>
           </div>
-          <form action={signOutAction}><button className="admin-signout-button" type="submit"><LogOut size={16} aria-hidden="true" /> Uitloggen</button></form>
+          <form action={signOutAction}><PendingSubmit className="admin-signout-button" pendingLabel="Uitloggen…"><LogOut size={16} aria-hidden="true" /> Uitloggen</PendingSubmit></form>
         </div>
       </aside>
       <section className="admin-content">

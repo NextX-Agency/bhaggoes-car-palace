@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { safeExternalUrl, slugify } from "@/lib/domain";
+import { clearFailures, clientAddress, isThrottled, recordFailure } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 type ActionState = { error?: string; ok?: boolean };
@@ -29,6 +30,17 @@ async function verifyAdmin() {
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profile?.role !== "admin") throw new Error("Beheerderstoegang is vereist.");
   return supabase;
+}
+
+// Expires the public caches in lib/data.ts (same tag names) so saved changes show on the site immediately.
+function expirePublicCache(...tags: ("settings" | "vehicles" | "faqs" | "pages")[]) {
+  for (const tag of tags) updateTag(tag);
+}
+
+// The photo editor writes images straight to Supabase from the browser, so it calls this once its changes are done.
+export async function refreshPublicInventoryAction(): Promise<ActionState> {
+  try { await verifyAdmin(); expirePublicCache("vehicles"); return { ok: true }; }
+  catch (error) { return { error: error instanceof Error ? error.message : "De website kon niet worden bijgewerkt." }; }
 }
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
@@ -80,12 +92,16 @@ export async function deleteVehicleTemplateAction(form: FormData): Promise<Actio
 }
 
 export async function signInAction(_previous: ActionState, form: FormData): Promise<ActionState> {
-  const parsed = z.object({ email: z.string().email(), password: z.string().min(1) }).safeParse({ email: text(form, "email"), password: String(form.get("password") ?? "") });
+  const parsed = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(256) }).safeParse({ email: text(form, "email"), password: String(form.get("password") ?? "") });
   if (!parsed.success) return { error: "Vul een geldig e-mailadres en wachtwoord in." };
+  // Throttle password guessing per account and per address (best effort, per server instance).
+  const emailKey = `login:email:${parsed.data.email.toLowerCase()}`; const addressKey = `login:ip:${await clientAddress()}`;
+  if (isThrottled(emailKey, 5) || isThrottled(addressKey, 20)) return { error: "Te veel mislukte pogingen. Wacht 15 minuten en probeer het opnieuw." };
   try {
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
-    if (error) return { error: "Deze inloggegevens kloppen niet." };
+    if (error) { recordFailure(emailKey, 15 * 60_000); recordFailure(addressKey, 15 * 60_000); return { error: "Deze inloggegevens kloppen niet." }; }
+    clearFailures(emailKey);
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user?.id ?? "").maybeSingle();
     if (profile?.role !== "admin") { await supabase.auth.signOut(); return { error: "Dit account heeft geen beheerderstoegang." }; }
@@ -117,6 +133,7 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], vehicleFieldLabels, "Controleer de gegevens van de auto en probeer het opnieuw.") };
     const value = parsed.data;
     const existingId = text(form, "id");
+    if (existingId && !z.string().uuid().safeParse(existingId).success) return { error: "Deze auto is niet gevonden. Ga terug naar de voorraad en probeer het opnieuw." };
     const slugBase = slugify([value.year, value.make, value.model, value.variant].filter(Boolean).join(" ")) || "vehicle";
     let slug = `${slugBase}-${crypto.randomUUID().slice(0, 6)}`;
     let archived = false;
@@ -145,7 +162,7 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
       const links = await supabase.from("vehicle_features").insert(featureRows.data.map((feature) => ({ vehicle_id: result.data.id, feature_id: feature.id })));
       if (links.error) return { error: "De auto is opgeslagen, maar de kenmerken niet." };
     } else await supabase.from("vehicle_features").delete().eq("vehicle_id", result.data.id);
-    revalidatePath("/"); revalidatePath("/cars"); revalidatePath(`/cars/${result.data.slug}`); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath(`/cars/${result.data.slug}`); revalidatePath("/admin"); revalidatePath("/admin/inventory");
     return { ok: true, id: result.data.id, slug: result.data.slug };
   } catch (error) { return { error: error instanceof Error ? error.message : "De auto kon niet worden opgeslagen." }; }
 }
@@ -164,7 +181,7 @@ export async function deleteVehicleAction(form: FormData): Promise<ActionState &
       const { error: storageError } = await supabase.storage.from("vehicle-images").remove(images.map((image) => image.storage_path).filter((path) => !path.startsWith("/images/")));
       if (storageError) warning = "De auto is verwijderd, maar de opgeslagen fotobestanden konden niet worden verwijderd. Controleer Supabase Storage om de resterende bestanden op te ruimen.";
     }
-    revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+    expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
     return warning ? { ok: true, warning } : { ok: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "De auto kon niet worden verwijderd." };
@@ -207,7 +224,7 @@ export async function updateVehicleAction(form: FormData) {
   const query = supabase.from("vehicles").update(payload).eq("id", id);
   const { error } = await (payload.published === true && archived !== "false" ? query.is("archived_at", null) : query);
   if (error) throw new Error("De wijziging van de auto kon niet worden opgeslagen.");
-  revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+  expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
 }
 
 export async function bulkUpdateVehiclesAction(_previous: ActionState, form: FormData): Promise<ActionState> {
@@ -232,7 +249,7 @@ export async function bulkUpdateVehiclesAction(_previous: ActionState, form: For
     const query = supabase.from("vehicles").update(payload).in("id", idsResult.data);
     const { error } = await (operation === "publish" || operation === "feature" ? query.is("archived_at", null) : query);
     if (error) return { error: "De geselecteerde auto’s konden niet worden bijgewerkt." };
-    revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
     return { ok: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "De geselecteerde auto’s konden niet worden bijgewerkt." };
@@ -267,11 +284,12 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
       promo_text: text(form, "promo_text"),
     };
     const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), seo_title: text(form, "seo_title"), seo_description: text(form, "seo_description"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), sales_terms: salesTerms, show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
-    const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).refine((value) => /^\d{7,15}$/.test(value.replace(/\D/g, "")), { message: "WhatsApp-nummer: gebruik landnummer plus nummer, bijvoorbeeld +597 866-8777." }).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(1500).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), sales_terms: z.object({ benefits: z.array(z.string().min(2).max(160)).max(15), internal_down_percent: z.number().int().min(0).max(100), internal_max_months: z.number().int().min(1).max(120), bank_down_percent: z.number().int().min(0).max(100), trade_in: z.boolean(), promo_text: z.string().max(300) }), show_sold: z.boolean(), business_hours: z.record(z.string(), z.string()), social_links: z.record(z.string(), z.string()), logo_path: z.string().max(300).nullable() }).safeParse(settings);
+    const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).refine((value) => /^\d{7,15}$/.test(value.replace(/\D/g, "")), { message: "WhatsApp-nummer: gebruik landnummer plus nummer, bijvoorbeeld +597 866-8777." }).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(1500).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), sales_terms: z.object({ benefits: z.array(z.string().min(2).max(160)).max(15), internal_down_percent: z.number().int().min(0).max(100), internal_max_months: z.number().int().min(1).max(120), bank_down_percent: z.number().int().min(0).max(100), trade_in: z.boolean(), promo_text: z.string().max(300) }), show_sold: z.boolean(), business_hours: z.record(z.string().max(60), z.string().max(120)).refine((hours) => Object.keys(hours).length <= 14, { message: "Gebruik maximaal 14 regels voor de openingstijden." }), social_links: z.record(z.string(), z.string().max(300)), logo_path: z.string().max(300).regex(/^(?!.*\.\.)([A-Za-z0-9][A-Za-z0-9._\/-]*|https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/site-assets\/[A-Za-z0-9._\/-]+)$/).nullable() }).safeParse(settings);
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], settingsFieldLabels, "Controleer de website-instellingen en probeer het opnieuw.") };
     const { error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1);
     if (error) return { error: "De website-instellingen konden niet worden opgeslagen." };
-    revalidatePath("/", "layout"); return { ok: true };
+    // show_sold changes which cars are public, so the vehicle caches expire together with the settings.
+    expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout"); return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De website-instellingen konden niet worden opgeslagen." }; }
 }
 
@@ -300,7 +318,7 @@ export async function saveFaqAction(_previous: ActionState, form: FormData): Pro
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], { question: "De vraag", answer: "Het antwoord", sort_order: "De volgorde" }, "Controleer de vraag en het antwoord.") };
     const { error } = id ? await supabase.from("faq_items").update(parsed.data).eq("id", id) : await supabase.from("faq_items").insert(parsed.data);
     if (error) return { error: "De vraag kon niet worden opgeslagen." };
-    revalidatePath("/faq"); revalidatePath("/admin/content"); return { ok: true };
+    expirePublicCache("faqs"); revalidatePath("/faq"); revalidatePath("/admin/content"); return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De vraag kon niet worden opgeslagen." }; }
 }
 
@@ -309,7 +327,7 @@ export async function deleteFaqAction(_previous: ActionState, form: FormData): P
   try {
     const supabase = await verifyAdmin(); const { error } = await supabase.from("faq_items").delete().eq("id", id);
     if (error) return { error: "De vraag kon niet worden verwijderd." };
-    revalidatePath("/faq"); revalidatePath("/admin/content"); return { ok: true };
+    expirePublicCache("faqs"); revalidatePath("/faq"); revalidatePath("/admin/content"); return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De vraag kon niet worden verwijderd." }; }
 }
 
@@ -322,6 +340,6 @@ export async function saveContentPageAction(_previous: ActionState, form: FormDa
     // The editor has no search-title field, so only touch seo_title when the form actually sends one.
     const { error } = await supabase.from("content_pages").upsert({ ...page, ...(form.has("seo_title") ? { seo_title: nullable(seoTitle ?? "") } : {}), seo_description: nullable(seoDescription ?? "") }, { onConflict: "slug" });
     if (error) return { error: "De pagina kon niet worden opgeslagen." };
-    revalidatePath(`/${parsed.data.slug}`); revalidatePath("/admin/content"); return { ok: true };
+    expirePublicCache("pages"); revalidatePath(`/${parsed.data.slug}`); revalidatePath("/admin/content"); return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De pagina kon niet worden opgeslagen." }; }
 }

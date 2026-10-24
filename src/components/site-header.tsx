@@ -39,7 +39,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
   if (pathname.startsWith("/admin")) return null;
 
   const brand = <Link href="/" className="brand" aria-label={`${settings.business_name} home`}>
-    <Image src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={316} height={108} loading="eager" unoptimized={!settings.logo_url} sizes="(max-width: 960px) 164px, 210px" />
+    <Image src={settings.logo_url || "/images/bhaggoes-logo-approved.png"} alt={settings.business_name} width={316} height={108} loading="eager" sizes="(max-width: 960px) 164px, 210px" />
   </Link>;
   const favoritesLink = <Link className="icon-button" href="/favorites" aria-label={savedCount ? `Saved cars (${savedCount})` : "Saved cars"}>
     <Heart size={20} />{savedCount ? <span className="count" aria-hidden="true">{savedCount}</span> : null}

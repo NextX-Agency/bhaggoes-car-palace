@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink, LogOut, Menu, X } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
 import { AdminNavLink } from "@/components/admin-nav-link";
+import { PendingSubmit } from "@/components/admin-pending-button";
 import { adminNavItems } from "@/lib/admin-nav";
 
 // Keep in sync with the 860px breakpoint in admin.css where the sidebar takes over.
@@ -37,7 +38,7 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
     </div>
     <Dialog.Portal>
       <Dialog.Overlay className="filter-drawer-overlay" />
-      <Dialog.Content className="filter-drawer-content admin-drawer" aria-describedby={undefined} onClick={(event) => { const link = (event.target as Element).closest("a"); if (link && (link.target === "_blank" || new URL(link.href).pathname === pathname)) setOpen(false); }}>
+      <Dialog.Content lang="nl" className="filter-drawer-content admin-drawer" aria-describedby={undefined} onClick={(event) => { const link = (event.target as Element).closest("a"); if (link && (link.target === "_blank" || new URL(link.href).pathname === pathname)) setOpen(false); }}>
         <header className="filter-drawer-header">
           <Dialog.Title>Beheer</Dialog.Title>
           <Dialog.Close asChild><button className="filter-drawer-close" type="button" aria-label="Menu sluiten"><X size={20} /></button></Dialog.Close>
@@ -48,7 +49,7 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
         <footer className="admin-drawer-foot">
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>
           <p className="admin-drawer-user"><span className="admin-user-label">Ingelogd als</span><span className="admin-email" title={email}>{email}</span></p>
-          <form action={signOutAction}><button className="button button-outline button-block" type="submit"><LogOut size={17} aria-hidden="true" /> Uitloggen</button></form>
+          <form action={signOutAction}><PendingSubmit className="button button-outline button-block" pendingLabel="Uitloggen…"><LogOut size={17} aria-hidden="true" /> Uitloggen</PendingSubmit></form>
         </footer>
       </Dialog.Content>
     </Dialog.Portal>

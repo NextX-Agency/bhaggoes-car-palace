@@ -16,7 +16,7 @@ export default async function VehiclePreviewPage({ params }: { params: Promise<{
   if (!result) notFound();
   const vehicle = result.vehicle;
 
-  return <AdminFrame active="/admin/inventory" email={user.email ?? "Administrator"} title="Voorbeeld van advertentie" actions={<Link className="button button-outline button-sm" href={`/admin/inventory/${vehicle.id}`}><ArrowLeft size={15} aria-hidden="true" /> Terug naar bewerken</Link>}>
+  return <AdminFrame active="/admin/inventory" email={user.email ?? "Beheerder"} title="Voorbeeld van advertentie" actions={<Link className="button button-outline button-sm" href={`/admin/inventory/${vehicle.id}`}><ArrowLeft size={15} aria-hidden="true" /> Terug naar bewerken</Link>}>
     <p className="callout admin-callout" role="status">{vehicle.archived_at ? "Deze auto is gearchiveerd en niet zichtbaar voor klanten." : vehicle.published ? "Zo zien klanten de opgeslagen advertentie." : "Deze advertentie is nog verborgen en niet zichtbaar voor klanten."} Niet-opgeslagen wijzigingen staan hier nog niet in.</p>
     <div className="admin-preview"><VehicleDetail vehicle={vehicle} settings={settings} preview /></div>
   </AdminFrame>;

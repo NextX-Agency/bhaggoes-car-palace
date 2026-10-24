@@ -31,7 +31,7 @@ const defaultPlacement: Placement = { up: false, maxHeight: 288 };
  * Touch-friendly combobox. Tapping the field or its chevron opens a scrollable list of every option; typing filters it;
  * any typed text is still accepted, so options are suggestions rather than a closed list.
  */
-export function ComboField({ name, label, options, defaultValue = "", placeholder, required, maxLength, autoCapitalize = "words", onInput, renderOption, emptyText = "No suggestions. Type any value." }: ComboFieldProps) {
+export function ComboField({ name, label, options, defaultValue = "", placeholder, required, maxLength, autoCapitalize = "words", onInput, renderOption, emptyText = "Geen suggesties. Typ zelf een waarde." }: ComboFieldProps) {
   const baseId = useId();
   const listId = `${baseId}-list`;
   const optionId = (index: number) => `${baseId}-option-${index}`;
@@ -170,7 +170,7 @@ export function ComboField({ name, label, options, defaultValue = "", placeholde
       className="combo-toggle"
       type="button"
       tabIndex={-1}
-      aria-label={`Show ${label.toLowerCase()} options`}
+      aria-label={`Toon opties voor ${label.toLowerCase()}`}
       aria-expanded={open}
       aria-controls={listId}
       aria-haspopup="listbox"
@@ -192,7 +192,7 @@ export function ComboField({ name, label, options, defaultValue = "", placeholde
           >{renderOption ? <span className="combo-option-lead">{renderOption(option)}</span> : null}<span className="combo-option-text">{option}</span>{selected ? <Check size={16} aria-hidden="true" /> : null}</li>;
         })}
       </ul>
-      {!visible.length ? <p className="combo-empty" role="status">{hasOptions ? "No match. Your text will be used as typed." : emptyText}</p> : null}
+      {!visible.length ? <p className="combo-empty" role="status">{hasOptions ? "Geen overeenkomst. Je tekst wordt gebruikt zoals je hem typt." : emptyText}</p> : null}
     </div> : null}
   </div>;
 }

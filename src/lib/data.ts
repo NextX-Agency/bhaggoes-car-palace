@@ -1,6 +1,9 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { defaultSettings, normalizeSiteSettings, type SiteSettings, type Vehicle, type VehicleFilters } from "@/lib/domain";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
 import type { VehicleTemplate } from "@/lib/vehicle-templates";
 
@@ -18,20 +21,35 @@ async function clientOrNull() {
   try { return await createClient(); } catch { return null; }
 }
 
-// Read by the root layout, its metadata and most pages; cache() keeps it to one query per request.
-export const getSettings = cache(async (): Promise<SiteSettings> => {
-  const client = await clientOrNull();
-  if (!client) return defaultSettings;
+// Public reads go through a cookie-free client and unstable_cache so public pages can be static/ISR.
+// Admin saves call updateTag() for these tags (see admin/actions.ts), so edits show up immediately;
+// the revalidate windows below are only a safety net for changes made outside the admin (SQL, dashboard).
+// Loaders throw on database errors so a failed refresh keeps the last good page instead of caching an empty one.
+export const CACHE_TAGS = { settings: "settings", vehicles: "vehicles", faqs: "faqs", pages: "pages" } as const;
+const REVALIDATE_SECONDS = 300;
+
+function publicClient() {
+  const client = createPublicClient();
+  if (!client) throw new Error("Supabase environment variables are not configured.");
+  return client;
+}
+
+const loadSettings = unstable_cache(async (): Promise<SiteSettings> => {
+  const client = publicClient();
   const { data, error } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
-  if (error || !data) return defaultSettings;
+  if (error) throw new Error(`Unable to load site settings: ${error.message}`);
+  if (!data) return defaultSettings;
   const settings = normalizeSiteSettings(data as Partial<SiteSettings>);
   settings.logo_url = settings.logo_path
     ? settings.logo_path.startsWith("http") ? settings.logo_path : client.storage.from("site-assets").getPublicUrl(settings.logo_path).data.publicUrl
     : null;
   return settings;
-});
+}, ["site-settings"], { tags: [CACHE_TAGS.settings], revalidate: REVALIDATE_SECONDS });
 
-async function attachVehicleMedia(rows: Record<string, unknown>[], client: Awaited<ReturnType<typeof createClient>>) {
+// Read by the root layout, its metadata and most pages; cache() also dedupes it within one render.
+export const getSettings = cache(async (): Promise<SiteSettings> => hasSupabaseEnv() ? loadSettings() : defaultSettings);
+
+async function attachVehicleMedia(rows: Record<string, unknown>[], client: SupabaseClient, strict = false) {
   if (!rows.length) return [] as Vehicle[];
   const ids = rows.map((row) => row.id as string);
   const [imageResult, featureResult] = await Promise.all([
@@ -41,6 +59,7 @@ async function attachVehicleMedia(rows: Record<string, unknown>[], client: Await
       .in("vehicle_id", ids),
   ]);
 
+  if (strict && (imageResult.error || featureResult.error)) throw new Error("Unable to load vehicle media");
   const images = imageResult.data ?? [];
   const byVehicle = new Map<string, typeof images>();
   for (const image of images) byVehicle.set(image.vehicle_id, [...(byVehicle.get(image.vehicle_id) ?? []), image]);
@@ -66,10 +85,8 @@ async function attachVehicleMedia(rows: Record<string, unknown>[], client: Await
   })) as unknown as Vehicle[];
 }
 
-export async function getVehicles(filters: VehicleFilters = {}) {
-  const client = await clientOrNull();
-  if (!client) return { vehicles: [] as Vehicle[], total: 0, page: filters.page ?? 1, pageSize: filters.pageSize ?? PAGE_SIZE };
-
+async function queryVehicles(filters: VehicleFilters) {
+  const client = publicClient();
   const pageSize = Math.min(Math.max(filters.pageSize ?? PAGE_SIZE, 1), 48);
   const page = Math.max(filters.page ?? 1, 1);
   const start = (page - 1) * pageSize;
@@ -99,36 +116,71 @@ export async function getVehicles(filters: VehicleFilters = {}) {
   query = query.order(column, { ascending, nullsFirst: false }).range(start, start + pageSize - 1);
 
   const { data, count, error } = await query;
-  if (error || !data) return { vehicles: [] as Vehicle[], total: 0, page, pageSize };
-  return { vehicles: await attachVehicleMedia(data, client), total: count ?? 0, page, pageSize };
+  if (error || !data) throw new Error("Unable to load vehicles");
+  return { vehicles: await attachVehicleMedia(data, client, true), total: count ?? 0, page, pageSize };
 }
 
-export async function getFeaturedVehicles(limit = 4) {
-  const client = await clientOrNull();
-  if (!client) return [] as Vehicle[];
+const loadVehicles = unstable_cache(queryVehicles, ["vehicle-list"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+export async function getVehicles(filters: VehicleFilters = {}) {
+  const empty = { vehicles: [] as Vehicle[], total: 0, page: filters.page ?? 1, pageSize: filters.pageSize ?? PAGE_SIZE };
+  if (!hasSupabaseEnv()) return empty;
+  try {
+    // Free-text searches are unbounded, so they are never cached (no cache-key growth); everything else is.
+    return filters.search?.trim() || filters.model?.trim() ? await queryVehicles(filters) : await loadVehicles(filters);
+  } catch { return empty; }
+}
+
+const loadFeaturedVehicles = unstable_cache(async (limit: number) => {
+  const client = publicClient();
   const { data, error } = await client.from("vehicles").select("*")
     .eq("published", true).eq("featured", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(limit);
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  if (error || !data) throw new Error("Unable to load featured vehicles");
+  return attachVehicleMedia(data, client, true);
+}, ["vehicles-featured"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+export async function getFeaturedVehicles(limit = 4) {
+  return hasSupabaseEnv() ? loadFeaturedVehicles(limit) : [] as Vehicle[];
 }
 
-export async function getRecentVehicles(limit = 4) {
-  const client = await clientOrNull();
-  if (!client) return [] as Vehicle[];
+const loadRecentVehicles = unstable_cache(async (limit: number) => {
+  const client = publicClient();
   const { data, error } = await client.from("vehicles").select("*")
     .eq("published", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  if (error || !data) throw new Error("Unable to load recent vehicles");
+  return attachVehicleMedia(data, client, true);
+}, ["vehicles-recent"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+export async function getRecentVehicles(limit = 4) {
+  return hasSupabaseEnv() ? loadRecentVehicles(limit) : [] as Vehicle[];
 }
 
-export async function getVehicleBySlug(slug: string) {
-  const client = await clientOrNull();
-  if (!client) return null;
+const loadVehicleBySlug = unstable_cache(async (slug: string) => {
+  const client = publicClient();
   const { data, error } = await client.from("vehicles").select("*").eq("slug", slug)
     .eq("published", true).is("archived_at", null).maybeSingle();
-  if (error || !data) return null;
-  const [vehicle] = await attachVehicleMedia([data], client);
+  if (error) throw new Error("Unable to load vehicle");
+  if (!data) return null;
+  const [vehicle] = await attachVehicleMedia([data], client, true);
   return vehicle;
+}, ["vehicle-by-slug"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+// Deduped within a render so generateMetadata and the page share one lookup.
+export const getVehicleBySlug = cache(async (slug: string): Promise<Vehicle | null> => hasSupabaseEnv() ? loadVehicleBySlug(slug) : null);
+
+const loadRelatedVehicles = unstable_cache(async (make: string, excludeId: string, limit: number) => {
+  const client = publicClient();
+  const { data, error } = await client.from("vehicles").select("*")
+    .eq("published", true).is("archived_at", null).ilike("make", make).neq("id", excludeId)
+    .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
+  if (error || !data) throw new Error("Unable to load related vehicles");
+  return attachVehicleMedia(data, client, true);
+}, ["vehicles-related"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+export async function getRelatedVehicles(make: string, excludeId: string, limit = 3) {
+  return hasSupabaseEnv() ? loadRelatedVehicles(make, excludeId, limit) : [] as Vehicle[];
 }
 
 export async function getVehiclesByIds(ids: string[]) {
@@ -140,32 +192,41 @@ export async function getVehiclesByIds(ids: string[]) {
   return error || !data ? [] : attachVehicleMedia(data, client);
 }
 
-export async function getVehicleFilterOptions() {
-  const client = await clientOrNull();
-  if (!client) return { makes: [] as string[], fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], makeCounts: {} as Record<string, number> };
-  const { data } = await client.from("vehicles")
+const loadVehicleFilterOptions = unstable_cache(async () => {
+  const client = publicClient();
+  const { data, error } = await client.from("vehicles")
     .select("make, fuel_type, transmission, body_type")
     .eq("published", true).is("archived_at", null).limit(1000);
+  if (error) throw new Error("Unable to load filter options");
   const distinct = (key: "make" | "fuel_type" | "transmission" | "body_type") =>
     Array.from(new Set((data ?? []).map((row) => row[key]).filter((value): value is string => Boolean(value)))).sort();
   const makeCounts: Record<string, number> = {};
   for (const row of data ?? []) if (row.make) makeCounts[row.make] = (makeCounts[row.make] ?? 0) + 1;
   return { makes: distinct("make"), fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type"), makeCounts };
+}, ["vehicle-filter-options"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+export async function getVehicleFilterOptions() {
+  if (!hasSupabaseEnv()) return { makes: [] as string[], fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], makeCounts: {} as Record<string, number> };
+  return loadVehicleFilterOptions();
 }
 
-export async function getPublishedPage(slug: string) {
-  const client = await clientOrNull();
-  if (!client) return null;
-  const { data, error } = await client.from("content_pages").select("*").eq("slug", slug).eq("published", true).maybeSingle();
-  return error ? null : data;
-}
+const loadPublishedPage = unstable_cache(async (slug: string) => {
+  const { data, error } = await publicClient().from("content_pages").select("*").eq("slug", slug).eq("published", true).maybeSingle();
+  if (error) throw new Error("Unable to load page");
+  return data;
+}, ["content-page"], { tags: [CACHE_TAGS.pages], revalidate: 3600 });
+
+export const getPublishedPage = cache(async (slug: string) => hasSupabaseEnv() ? loadPublishedPage(slug) : null);
+
+const loadFaqs = unstable_cache(async () => {
+  const { data, error } = await publicClient().from("faq_items").select("id, question, answer")
+    .eq("published", true).order("sort_order", { ascending: true });
+  if (error || !data) throw new Error("Unable to load FAQs");
+  return data;
+}, ["faq-items"], { tags: [CACHE_TAGS.faqs], revalidate: 3600 });
 
 export async function getFaqs() {
-  const client = await clientOrNull();
-  if (!client) return [];
-  const { data, error } = await client.from("faq_items").select("id, question, answer")
-    .eq("published", true).order("sort_order", { ascending: true });
-  return error || !data ? [] : data;
+  return hasSupabaseEnv() ? loadFaqs() : [];
 }
 
 export async function getAdminStats() {
@@ -248,9 +309,8 @@ export async function getAdminPages() {
   return error || !data ? [] : data;
 }
 
-export async function getPublicVehicleSitemapEntries() {
-  const client = await clientOrNull();
-  if (!client) return [];
+const loadSitemapEntries = unstable_cache(async () => {
+  const client = publicClient();
   const pageSize = 500;
   const baseQuery = () => client.from("vehicles")
     .select("slug, updated_at, stock_number", { count: "exact" })
@@ -263,5 +323,21 @@ export async function getPublicVehicleSitemapEntries() {
     baseQuery().range((index + 1) * pageSize, (index + 2) * pageSize - 1)));
   if (remaining.some((result) => result.error || !result.data)) throw new Error("Unable to load all vehicle sitemap entries");
   return [first.data, ...remaining.map((result) => result.data ?? [])]
-    .flat().filter((vehicle) => !vehicle.stock_number?.startsWith("DEMO-"));
+    .flat().filter((vehicle) => !vehicle.stock_number?.startsWith("DEMO-"))
+    .map((vehicle) => ({ slug: vehicle.slug as string, updated_at: vehicle.updated_at as string }));
+}, ["vehicle-sitemap"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
+
+export async function getPublicVehicleSitemapEntries() {
+  return hasSupabaseEnv() ? loadSitemapEntries() : [];
+}
+
+// Slugs to pre-render at build time. Never fails the build; every other car renders on its first request.
+export async function getVehicleSlugsForBuild(limit = 24) {
+  try {
+    const client = createPublicClient();
+    if (!client) return [];
+    const { data } = await client.from("vehicles").select("slug").eq("published", true).is("archived_at", null)
+      .order("created_at", { ascending: false }).limit(limit);
+    return (data ?? []).map((row) => row.slug as string);
+  } catch { return []; }
 }

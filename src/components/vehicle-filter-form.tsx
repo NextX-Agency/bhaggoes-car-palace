@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import type { VehicleFilters } from "@/lib/domain";
+import { brandLogoMap } from "@/components/brand-logo";
 import { MakeSelect } from "@/components/make-select";
 
 export type FilterOptions = { makes: string[]; fuels: string[]; transmissions: string[]; bodyTypes: string[] };
@@ -11,7 +12,7 @@ export const sortLabels: Record<NonNullable<VehicleFilters["sort"]>, string> = {
 export function VehicleFilterForm({ filters, options, id }: { filters: VehicleFilters; options: FilterOptions; id?: string }) {
   return <form className="filter-form" action="/cars" id={id}>
     <label>Search<input type="search" name="search" defaultValue={filters.search} placeholder="Make, model or keyword" /></label>
-    <div className="filter-make"><span id="filter-make-label">Make</span><MakeSelect name="make" makes={options.makes} value={filters.make ?? ""} labelledBy="filter-make-label" /></div>
+    <div className="filter-make"><span id="filter-make-label">Make</span><MakeSelect name="make" makes={options.makes} value={filters.make ?? ""} logos={brandLogoMap(filters.make ? [...options.makes, filters.make] : options.makes)} labelledBy="filter-make-label" /></div>
     <label>Model<input name="model" defaultValue={filters.model} placeholder="Any model" /></label>
     <div className="filter-group" role="group" aria-label="Price"><span>Price</span><div className="filter-two">
       <label><input name="minPrice" type="number" inputMode="numeric" min="0" defaultValue={filters.minPrice} placeholder="Min" aria-label="Price from" /></label>
