@@ -547,7 +547,7 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 }
 
 /* Gallery */
-.vehicle-gallery { min-width: 0; max-width: max(420px, min(100%, calc(100dvh - 140px))); margin-inline: auto; }
+.vehicle-gallery { min-width: 0; max-width: max(420px, min(100%, calc(100dvh - 260px))); margin-inline: auto; }
 .gallery-stage { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: var(--r-lg); background: var(--surface-2); touch-action: pan-y; user-select: none; }
 .gallery-main { position: absolute; inset: 0; display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
 /* Photos are never cropped: the whole picture is shown and any spare space is filled by a blurred copy of it. */
