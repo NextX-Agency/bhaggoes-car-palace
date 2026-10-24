@@ -54,6 +54,7 @@ const localBrandIcons: Record<string, string> = {
   dacia: "/brands/dacia.svg",
   dongfeng: "/brands/dongfeng.svg",
   gmc: "/brands/gmc.svg",
+  isuzu: "/brands/isuzu-wordmark.svg",
   jaguar: "/brands/jaguar.svg",
   landrover: "/brands/land-rover.svg",
   lexus: "/brands/lexus.svg",
@@ -66,7 +67,7 @@ export function BrandLogo({ make }: { make: string }) {
   if (!normalized) return null;
   const key = normalized.replace(/[^a-z0-9]/g, "");
   const localIcon = localBrandIcons[key];
-  if (localIcon) return <Image className="brand-logo" src={localIcon} alt="" aria-hidden="true" width={20} height={20} unoptimized />;
+  if (localIcon) return <Image className={`brand-logo${key === "isuzu" ? " brand-logo-isuzu" : ""}`} src={localIcon} alt="" aria-hidden="true" width={key === "isuzu" ? 48 : 20} height={20} unoptimized />;
   const icon = brandIcons[key];
   if (!icon) {
     const initials = make.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
