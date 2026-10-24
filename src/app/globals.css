@@ -233,7 +233,8 @@ img { max-width: 100%; }
   .hero-actions .button-hero-outline { min-height: 32px; padding: 0; border: 0; background: transparent; color: #fff; text-decoration: underline; text-underline-offset: 4px; }
   .hero-actions .button-hero-outline:hover { background: transparent; }
   .hero-search-dock { margin-top: -44px; }
-  .hero-search { gap: 10px; padding: 14px; }
+  .hero-search { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 14px; }
+  .hero-search .make-select-popover, .hero-search .model-select-popover { position: static; width: 100%; margin-top: 5px; box-shadow: none; }
   .hero-search-advanced { display: none !important; }
   .hero-search-more { display: inline-flex; align-items: center; min-height: 44px; grid-column: 1 / -1; justify-self: center; color: var(--brand); font-size: var(--fs-xs); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 }
@@ -285,6 +286,7 @@ img { max-width: 100%; }
 .model-select-custom input { min-width: 0; flex: 1; }
 .model-select-custom button { padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: #fff; color: var(--brand); font-weight: 650; }
 .filter-drawer-body .model-select-popover { position: static; width: 100%; margin-top: 5px; box-shadow: none; }
+.filter-drawer-body .make-select-popover { position: static; width: 100%; margin-top: 5px; box-shadow: none; }
 :is(.input, .field input, .field select, .field textarea, .filter-form input, .filter-form select, .calculator-controls input, .calculator-controls select, .form-grid input, .form-grid textarea, .admin-field input, .admin-field select, .admin-field textarea, .admin-input):hover { border-color: #aab4c0; }
 :is(.input, .field input, .field select, .field textarea, .filter-form input, .filter-form select, .calculator-controls input, .calculator-controls select, .form-grid input, .form-grid textarea, .admin-field input, .admin-field select, .admin-field textarea, .admin-input):focus { border-color: var(--brand); box-shadow: var(--ring); }
 ::placeholder { color: var(--muted-2); opacity: 1; }

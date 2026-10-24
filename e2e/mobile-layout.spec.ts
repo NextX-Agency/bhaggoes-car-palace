@@ -21,6 +21,34 @@ test("key pages fit a narrow phone and keep primary controls touchable", async (
   }
 });
 
+for (const width of [320, 390]) {
+  test(`home search menus stay inside the card at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    const search = page.locator(".hero-search");
+    const submit = search.getByRole("button", { name: "Search cars" });
+
+    for (const [trigger, popover] of [
+      [".make-select-trigger", ".make-select-popover"],
+      [".model-select-trigger", ".model-select-popover"],
+    ]) {
+      await search.locator(trigger).click();
+      const geometry = await page.evaluate((selector) => {
+        const menu = document.querySelector(selector)!.getBoundingClientRect();
+        const card = document.querySelector(".hero-search")!.getBoundingClientRect();
+        const button = document.querySelector(".hero-search .button")!.getBoundingClientRect();
+        return { menuLeft: menu.left, menuRight: menu.right, menuBottom: menu.bottom, cardLeft: card.left, cardRight: card.right, buttonTop: button.top, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      }, popover);
+      expect(geometry.menuLeft).toBeGreaterThanOrEqual(geometry.cardLeft);
+      expect(geometry.menuRight).toBeLessThanOrEqual(geometry.cardRight);
+      expect(geometry.buttonTop).toBeGreaterThanOrEqual(geometry.menuBottom);
+      expect(geometry.overflow).toBeLessThanOrEqual(0);
+      await expect(submit).toBeVisible();
+      await search.locator(trigger).click();
+    }
+  });
+}
+
 test.describe("touch devices (iPad / phone)", () => {
   test.use({ hasTouch: true, isMobile: true });
   for (const width of [375, 768]) {
