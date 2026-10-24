@@ -46,7 +46,6 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
     <div className="inventory-head">
       <div>
         <h1>Browse cars</h1>
-        <p><strong>{total}</strong> {total === 1 ? "car" : "cars"}{active.length ? " match your filters" : " listed"}</p>
       </div>
       {compareCarsEnabled ? <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link> : null}
     </div>

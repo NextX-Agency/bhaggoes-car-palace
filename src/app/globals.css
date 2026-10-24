@@ -266,7 +266,6 @@ textarea { resize: vertical; }
 .make-links a { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font-size: var(--fs-sm); font-weight: 500; transition: border-color 0.15s, color 0.15s; }
 .make-links a:hover { border-color: var(--ink); }
 .make-links a { border-color: #c9d9f0; background: #fff; }
-.make-links a span { color: var(--muted); font-size: var(--fs-xs); }
 
 /* Dealership contact band */
 .visit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
@@ -372,8 +371,6 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
    ========================================================================== */
 .inventory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
 .inventory-head h1 { font-size: var(--fs-h1); }
-.inventory-head p { margin-top: 6px; color: var(--muted); }
-.inventory-head p strong { color: var(--ink); font-weight: 600; }
 .inventory-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); align-items: start; gap: 40px; }
 .filter-panel { min-width: 0; }
 .filter-heading { padding-bottom: 14px; border-bottom: 1px solid var(--line); font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0; }
