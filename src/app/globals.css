@@ -139,8 +139,6 @@ img { max-width: 100%; }
    whose backdrop-filter turns the header into the containing block for fixed descendants. */
 .mobile-menu-overlay { position: fixed; inset: 0; z-index: 60; background: #fff; }
 .mobile-menu { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; height: 100dvh; background: #fff; outline: none; animation: fade-in 0.18s var(--ease); }
-/* Links cascade with opacity only: they must keep their measured position while the menu opens. */
-@media (prefers-reduced-motion: no-preference) { .mobile-nav a { animation: fade-in 0.3s var(--ease) both; } .mobile-nav a:nth-child(2) { animation-delay: 0.03s; } .mobile-nav a:nth-child(3) { animation-delay: 0.06s; } .mobile-nav a:nth-child(4) { animation-delay: 0.09s; } .mobile-nav a:nth-child(n + 5) { animation-delay: 0.12s; } }
 .mobile-menu-bar { flex: 0 0 auto; border-bottom: 1px solid var(--line); }
 .mobile-nav { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding-top: 8px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 .mobile-nav a { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 1.0625rem; font-weight: 500; }
@@ -392,11 +390,7 @@ textarea { resize: vertical; }
 .carousel-track { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - (var(--cols) - 1) * var(--cgap)) / var(--cols)); gap: var(--cgap); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px; }
 .carousel-track::-webkit-scrollbar { display: none; }
 .carousel-track:focus-visible { outline: 2px solid var(--brand); outline-offset: 6px; border-radius: var(--r-md); }
-.carousel-item { min-width: 0; scroll-snap-align: start; animation: card-rise 0.6s var(--ease) both; }
-.carousel-item:nth-child(2) { animation-delay: 0.08s; }
-.carousel-item:nth-child(3) { animation-delay: 0.16s; }
-.carousel-item:nth-child(n + 4) { animation-delay: 0.24s; }
-@keyframes card-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.carousel-item { min-width: 0; scroll-snap-align: start; }
 .carousel-arrow { position: absolute; z-index: 3; top: 40%; top: calc((100cqw - (var(--cols) - 1) * var(--cgap)) / var(--cols) / 2); display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgb(255 255 255 / 0.94); color: var(--ink); box-shadow: var(--shadow-sm); cursor: pointer; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s, background-color 0.15s; }
 .vehicle-carousel:hover .carousel-arrow, .carousel-arrow:focus-visible { opacity: 1; }
 .carousel-arrow:hover { background: #fff; }
@@ -406,7 +400,7 @@ textarea { resize: vertical; }
 @media (max-width: 1080px) { .vehicle-carousel { --cols: 2; } }
 @media (max-width: 960px) { .carousel-arrow { opacity: 1; } .vehicle-carousel:hover .carousel-arrow { opacity: 1; } }
 @media (max-width: 600px) { .vehicle-carousel { --cols: 1.12; --cgap: 16px; } }
-@media (prefers-reduced-motion: reduce) { .carousel-track { scroll-behavior: auto; } .carousel-item { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .carousel-track { scroll-behavior: auto; } }
 
 /* Status badge */
 .status { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 600; line-height: 1; white-space: nowrap; }
@@ -884,25 +878,18 @@ dialog.image-lightbox::backdrop { background: #070d16; }
    so nothing can ever stay invisible. Everything here is opt-out through
    prefers-reduced-motion.
    ========================================================================== */
-@keyframes rise-in { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
 @keyframes rise-in-sm { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes hero-settle { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-@keyframes hero-pan { from { transform: scale(1.07); } to { transform: none; } }
+@keyframes hero-settle { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @keyframes header-elevate { from { box-shadow: 0 0 0 rgb(13 23 38 / 0); } to { box-shadow: 0 10px 30px -22px rgb(13 23 38 / 0.65); } }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Hero: a short staggered entrance on load. */
-  .hero-content > * { animation: hero-settle 0.72s var(--ease) both; }
-  .hero-content > .hero-kicker { animation-delay: 0.04s; }
-  .hero-content > h1 { animation-delay: 0.1s; }
-  .hero-content > .hero-heading-tagline { animation-delay: 0.16s; }
-  .hero-content > .hero-slogan { animation-delay: 0.2s; }
-  .hero-content > .hero-copy { animation-delay: 0.26s; }
-  .hero-content > .hero-actions { animation-delay: 0.33s; }
-  .hero-search-dock { animation: hero-settle 0.72s var(--ease) 0.42s both; }
-  .hero-visual img { animation: hero-pan 1.6s var(--ease) both; }
+  /* The hero settles in three groups, not line by line. */
+  .hero-content > * { animation: hero-settle 0.5s var(--ease) both; }
+  .hero-content > h1, .hero-content > .hero-heading-tagline { animation-delay: 0.07s; }
+  .hero-content > .hero-copy, .hero-content > .hero-slogan, .hero-content > .hero-actions { animation-delay: 0.14s; }
+  .hero-search-dock { animation: hero-settle 0.5s var(--ease) 0.2s both; }
 
-  /* Interactive polish */
+  /* Interaction feedback: state changes under the pointer, not decoration. */
   .button { transition: background-color 0.16s var(--ease), border-color 0.16s var(--ease), color 0.16s var(--ease), box-shadow 0.16s var(--ease), transform 0.16s var(--ease); }
   .button-primary:hover, .button-whatsapp:hover, .button-outline:hover, .button-hero-outline:hover { transform: translateY(-1px); }
   .button:active { transform: translateY(0); }
@@ -911,35 +898,25 @@ dialog.image-lightbox::backdrop { background: #070d16; }
   .vcard-media { transition: box-shadow 0.35s var(--ease); }
   .vcard:hover .vcard-media { box-shadow: var(--shadow-md); }
   .vcard-title { transition: color 0.18s var(--ease); }
-  .make-links a { transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease), color 0.18s var(--ease), transform 0.18s var(--ease); }
-  .make-links a:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); transform: translateY(-2px); }
-  .finance-option, .contact-location, .faq-item { transition: border-color 0.2s var(--ease), box-shadow 0.25s var(--ease), transform 0.2s var(--ease); }
-  .finance-option:hover, .contact-location:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-  .gallery-thumbs button { transition: opacity 0.15s var(--ease), transform 0.2s var(--ease); }
-  .gallery-thumbs button:hover { transform: translateY(-2px); }
-  .gallery-arrow, .carousel-arrow, .lightbox-nav { transition: opacity 0.2s var(--ease), background-color 0.15s var(--ease), transform 0.15s var(--ease); }
-  .gallery-arrow:hover, .carousel-arrow:hover { transform: translateY(-50%) scale(1.06); }
+  .make-links a { transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease), color 0.18s var(--ease); }
+  .make-links a:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+  .finance-option, .contact-location, .faq-item { transition: border-color 0.2s var(--ease), box-shadow 0.25s var(--ease); }
+  .finance-option:hover, .contact-location:hover { box-shadow: var(--shadow-md); }
+  .gallery-arrow, .carousel-arrow, .lightbox-nav { transition: opacity 0.2s var(--ease), background-color 0.15s var(--ease); }
   .footer-col a, .footer-bottom a, .footer-direct a { transition: color 0.15s var(--ease); }
 }
 
+/* One quiet reveal where a new section begins — never per card, row or paragraph. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .section-heading,
-    .vehicle-grid > .vcard,
-    .detail-block,
-    .visit > *,
-    .make-links,
-    .finance-hero, .finance-options-intro, .finance-option, .finance-note, .finance-next, .finance-unpublished,
-    .faq-item, .faq-aside,
-    .contact-location, .contact-follow, .contact-hours-section, .contact-map-section > .contact-section-heading,
-    .policy-body > section {
-      animation: rise-in 1s linear both;
+    .contact-map-section > .contact-section-heading,
+    .finance-hero,
+    .visit > * {
+      animation: rise-in-sm 1s linear both;
       animation-timeline: view();
-      animation-range: entry 4% entry 46%;
+      animation-range: entry 4% entry 40%;
     }
-    .detail-block { animation-name: rise-in-sm; }
-    /* The horizontal carousel is its own scrollport; its items keep the load-in stagger instead. */
-    .carousel-item { animation-timeline: auto; }
   }
 }
 
@@ -950,5 +927,5 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-content > *, .hero-search-dock, .hero-visual img, .site-header { animation: none !important; }
+  .hero-content > *, .hero-search-dock, .site-header { animation: none !important; }
 }

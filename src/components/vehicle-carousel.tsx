@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
 import { VehicleCard } from "@/components/vehicle-card";
 
-const AUTOPLAY_MS = 4500;
+const AUTOPLAY_MS = 6500;
 
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -14,6 +14,8 @@ function prefersReducedMotion() {
 export function VehicleCarousel({ vehicles, defaultCurrency, label }: { vehicles: Vehicle[]; defaultCurrency?: string | null; label: string }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
+  // Once the visitor drives the carousel themselves, it stops advancing on its own for good.
+  const surrendered = useRef(false);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
 
@@ -48,22 +50,23 @@ export function VehicleCarousel({ vehicles, defaultCurrency, label }: { vehicles
 
   useEffect(() => {
     if (vehicles.length < 2 || prefersReducedMotion()) return;
-    const timer = window.setInterval(() => { if (!paused.current && !document.hidden) step(1); }, AUTOPLAY_MS);
+    const timer = window.setInterval(() => { if (!paused.current && !surrendered.current && !document.hidden) step(1); }, AUTOPLAY_MS);
     return () => window.clearInterval(timer);
   }, [step, vehicles.length]);
 
   const pause = useCallback(() => { paused.current = true; }, []);
   const resume = useCallback(() => { paused.current = false; }, []);
+  const takeOver = useCallback(() => { surrendered.current = true; }, []);
 
-  return <div className="vehicle-carousel" onMouseEnter={pause} onMouseLeave={resume} onFocusCapture={pause} onBlurCapture={resume} onPointerDown={pause}>
+  return <div className="vehicle-carousel" onMouseEnter={pause} onMouseLeave={resume} onFocusCapture={pause} onBlurCapture={resume} onPointerDown={takeOver}>
     <div className="carousel-track" ref={trackRef} role="group" aria-roledescription="carousel" aria-label={label} tabIndex={0}>
       {vehicles.map((vehicle, index) => <div className="carousel-item" key={vehicle.id}>
         <VehicleCard vehicle={vehicle} priority={index < 2} defaultCurrency={defaultCurrency} />
       </div>)}
     </div>
     {vehicles.length > 1 ? <>
-      <button className="carousel-arrow prev" type="button" onClick={() => step(-1)} aria-label="Previous cars" aria-disabled={atStart ? "true" : undefined}><ChevronLeft size={22} aria-hidden="true" /></button>
-      <button className="carousel-arrow next" type="button" onClick={() => step(1)} aria-label="Next cars" aria-disabled={atEnd ? "true" : undefined}><ChevronRight size={22} aria-hidden="true" /></button>
+      <button className="carousel-arrow prev" type="button" onClick={() => { takeOver(); step(-1); }} aria-label="Previous cars" aria-disabled={atStart ? "true" : undefined}><ChevronLeft size={22} aria-hidden="true" /></button>
+      <button className="carousel-arrow next" type="button" onClick={() => { takeOver(); step(1); }} aria-label="Next cars" aria-disabled={atEnd ? "true" : undefined}><ChevronRight size={22} aria-hidden="true" /></button>
     </> : null}
   </div>;
 }
