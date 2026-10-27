@@ -49,7 +49,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   }, [active]);
 
   if (!count) return <div className="gallery-empty"><Camera size={30} aria-hidden="true" /><p>No photos yet</p></div>;
-  const selected = usable[Math.min(active, count - 1)];
+  const current = Math.min(active, count - 1);
   const onKeys = (event: KeyboardEvent) => {
     if (count < 2) return;
     if (event.key === "ArrowRight") { event.preventDefault(); move(1); }
@@ -59,8 +59,12 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   return <div className="vehicle-gallery" onKeyDown={onKeys}>
     <div className="gallery-stage" {...stageSwipe.handlers}>
       <button ref={openerRef} className="gallery-main" type="button" onClick={() => { if (!stageSwipe.consumeSwipe()) setFullscreen(true); }} aria-label={`Open full-screen photos of ${title}`}>
-        <Image key={`bg-${selected.id}`} className="gallery-backdrop" src={selected.url!} alt="" aria-hidden="true" fill quality={30} sizes="96px" />
-        <Image key={selected.id} src={selected.url!} alt={selected.alt_text ?? title} fill loading="eager" fetchPriority="high" sizes="(max-width: 960px) 100vw, 820px" />
+        <div className="gallery-track" style={{ transform: `translate3d(${current * -100}%, 0, 0)` }}>
+          {usable.map((image, index) => <div className="gallery-slide" key={image.id} aria-hidden={index === current ? undefined : "true"}>
+            <Image className="gallery-backdrop" src={image.url!} alt="" aria-hidden="true" fill quality={30} sizes="96px" />
+            <Image src={image.url!} alt={index === current ? image.alt_text ?? title : ""} fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 960px) 100vw, 820px" />
+          </div>)}
+        </div>
       </button>
       {count > 1 ? <>
         <button className="gallery-arrow prev" type="button" onClick={() => move(-1)} aria-label="Previous photo"><ChevronLeft size={22} /></button>
@@ -76,7 +80,13 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
     </div> : null}
     {fullscreen ? <dialog ref={dialogRef} className="image-lightbox" aria-label={`${title} photos`} onClose={() => { setFullscreen(false); openerRef.current?.focus(); }}>
       <div className="lightbox-topline"><strong>{title}</strong><span aria-live="polite">{active + 1} / {count}</span><button className="lightbox-close" type="button" onClick={() => dialogRef.current?.close()} aria-label="Close photo viewer"><X size={22} /></button></div>
-      <div className="lightbox-image" {...viewerSwipe.handlers}><Image key={selected.id} src={selected.url!} alt={selected.alt_text ?? title} fill sizes="100vw" /></div>
+      <div className="lightbox-image" {...viewerSwipe.handlers}>
+        <div className="gallery-track" style={{ transform: `translate3d(${current * -100}%, 0, 0)` }}>
+          {usable.map((image, index) => <div className="gallery-slide" key={image.id} aria-hidden={index === current ? undefined : "true"}>
+            <Image src={image.url!} alt={index === current ? image.alt_text ?? title : ""} fill sizes="100vw" />
+          </div>)}
+        </div>
+      </div>
       {count > 1 ? <><button className="lightbox-nav lightbox-prev" type="button" onClick={() => move(-1)} aria-label="Previous photo"><ChevronLeft /></button><button className="lightbox-nav lightbox-next" type="button" onClick={() => move(1)} aria-label="Next photo"><ChevronRight /></button></> : null}
     </dialog> : null}
   </div>;

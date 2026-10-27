@@ -15,7 +15,7 @@ export const revalidate = 300;
 const display = Archivo({ subsets: ["latin"], variable: "--font-display", display: "swap", axes: ["wdth"] });
 const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 
-export const viewport: Viewport = { themeColor: "#ffffff" };
+export const viewport: Viewport = { themeColor: "#ffffff", viewportFit: "cover" };
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();

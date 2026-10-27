@@ -39,7 +39,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
           </div>
           <div className="detail-head-row">
             <div className="detail-prices">
-              <div><span>In-house price</span><strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong></div>
+              <div><span>Internal price</span><strong className={`detail-price${hasPrice ? "" : " is-request"}`}>{price}</strong></div>
               {cashPrice ? <div className="detail-cash-price"><span>Cash price · bank transfer</span><strong>{cashPrice}</strong></div> : null}
             </div>
           </div>
@@ -84,7 +84,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
     </div>
 
     {!preview ? <div className="mobile-cta">
-      <div className="mobile-cta-price"><span>{cashPrice ? "Cash price" : "In-house price"} · {heading}</span><strong>{cashPrice ?? price}</strong></div>
+      <div className="mobile-cta-price"><span>{cashPrice ? "Cash price" : "Internal price"} · {heading}</span><strong>{cashPrice ?? price}</strong></div>
       {whatsApp && inquire ? <a className="button button-whatsapp" href={whatsApp} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> WhatsApp</a> : <a className="button button-primary" href="/contact">Contact</a>}
     </div> : null}
   </>;

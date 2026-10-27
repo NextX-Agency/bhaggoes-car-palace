@@ -5,7 +5,7 @@ import { SocialIcon } from "@/components/social-icon";
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { HeroSearch } from "@/components/hero-search";
-import { VehicleGrid } from "@/components/vehicle-grid";
+import { VehicleCarousel } from "@/components/vehicle-carousel";
 import { BrandLogo } from "@/components/brand-logo";
 import { getFeaturedVehicles, getRecentVehicles, getSettings, getVehicleFilterOptions } from "@/lib/data";
 import { buildWhatsAppLink, parseLocations } from "@/lib/domain";
@@ -22,6 +22,7 @@ export default async function HomePage() {
     getSettings(), getFeaturedVehicles(6), getRecentVehicles(6), getVehicleFilterOptions(),
   ]);
   const vehicles = featured.length >= 3 ? featured : recent;
+  const alsoNew = vehicles === featured ? recent.filter((vehicle) => !featured.some((item) => item.id === vehicle.id)) : [];
   const whatsappHref = buildWhatsAppLink(settings.whatsapp, `Hello, I have a question about a car at ${settings.business_name}.`);
   const hours = Object.entries(settings.business_hours ?? {});
   const locations = parseLocations(settings.address);
@@ -55,11 +56,18 @@ export default async function HomePage() {
           {vehicles.length ? <Link className="button button-primary button-lg section-heading-cta" href="/cars">View all cars <ArrowRight size={20} aria-hidden="true" /></Link> : null}
         </div>
         {vehicles.length
-          ? <VehicleGrid vehicles={vehicles} defaultCurrency={settings.currency} />
+          ? <VehicleCarousel vehicles={vehicles} defaultCurrency={settings.currency} label={vehicles === featured ? "Featured cars" : "Latest cars"} />
           : <EmptyState title="No cars are listed right now" href="/contact" action="Ask about availability" />}
         {vehicles.length ? <div className="home-more"><Link className="button button-outline button-lg" href="/cars">View all cars <ArrowRight size={20} aria-hidden="true" /></Link></div> : null}
       </div>
     </section>
+
+    {alsoNew.length >= 2 ? <section className="section-tight home-inventory" aria-labelledby="home-latest">
+      <div className="container">
+        <div className="section-heading"><div><p className="section-kicker">Fresh stock</p><h2 id="home-latest">Just arrived</h2></div></div>
+        <VehicleCarousel vehicles={alsoNew} defaultCurrency={settings.currency} label="Just arrived" />
+      </div>
+    </section> : null}
 
     {makes.length > 1 ? <section className="section-tight" aria-labelledby="home-makes">
       <div className="container">

@@ -23,7 +23,7 @@ export function VehicleCard({ vehicle, priority = false, defaultCurrency }: { ve
       <p className="vcard-meta"><BrandLogo make={vehicle.make} />{[vehicle.year, vehicle.make].filter(Boolean).join(" · ")}</p>
       <h3 className="vcard-title"><Link href={`/cars/${vehicle.slug}`}>{name}</Link></h3>
       {specs.length ? <ul className="vcard-specs">{specs.map((spec) => <li key={spec}>{spec}</li>)}</ul> : null}
-      <div className="vcard-prices"><span>In-house price <strong className={`vcard-price${hasPrice ? "" : " is-request"}`}>{formatAmount(vehicle.price, currency)}</strong></span>{vehicle.cash_price != null ? <span>Cash price <strong className="vcard-cash-price">{formatAmount(vehicle.cash_price, currency)}</strong></span> : null}</div>
+      <div className="vcard-prices"><span>Internal price <strong className={`vcard-price${hasPrice ? "" : " is-request"}`}>{formatAmount(vehicle.price, currency)}</strong></span>{vehicle.cash_price != null ? <span>Cash price <strong className="vcard-cash-price">{formatAmount(vehicle.cash_price, currency)}</strong></span> : null}</div>
     </div>
   </article>;
 }

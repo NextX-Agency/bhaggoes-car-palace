@@ -72,11 +72,14 @@
    ========================================================================== */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+/* The viewport is served with viewport-fit=cover so env(safe-area-inset-*) works; in landscape the
+   gutter grows to clear a notch or rounded corner while section backgrounds stay full-bleed. */
+@media (orientation: landscape) { :root { --gutter: max(clamp(16px, 3.4vw, 40px), env(safe-area-inset-left), env(safe-area-inset-right)); } }
 /* Keep anchor and focus targets clear of the sticky header. This is a margin on the targets rather than
    scroll-padding on <html>: with scroll-padding, focusing a control inside the sticky header itself
    (the menu button, a nav link) made Chrome scroll the whole page back to the top. */
 :where([id]) { scroll-margin-top: calc(var(--header-h) + 16px); }
-body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: var(--fs-body); line-height: 1.55; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; overflow-x: clip; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: var(--fs-body); line-height: 1.55; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 h1, h2, h3, h4 { margin: 0; font-family: var(--font-head); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; overflow-wrap: anywhere; }
 main { flex: 1 0 auto; }
 p { margin: 0; }
@@ -135,7 +138,9 @@ img { max-width: 100%; }
 /* Mobile menu: a full-screen sheet portaled to <body>. It must not live inside .site-header,
    whose backdrop-filter turns the header into the containing block for fixed descendants. */
 .mobile-menu-overlay { position: fixed; inset: 0; z-index: 60; background: #fff; }
-.mobile-menu { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; height: 100dvh; background: #fff; outline: none; animation: fade-in 0.16s var(--ease); }
+.mobile-menu { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; height: 100dvh; background: #fff; outline: none; animation: fade-in 0.18s var(--ease); }
+/* Links cascade with opacity only: they must keep their measured position while the menu opens. */
+@media (prefers-reduced-motion: no-preference) { .mobile-nav a { animation: fade-in 0.3s var(--ease) both; } .mobile-nav a:nth-child(2) { animation-delay: 0.03s; } .mobile-nav a:nth-child(3) { animation-delay: 0.06s; } .mobile-nav a:nth-child(4) { animation-delay: 0.09s; } .mobile-nav a:nth-child(n + 5) { animation-delay: 0.12s; } }
 .mobile-menu-bar { flex: 0 0 auto; border-bottom: 1px solid var(--line); }
 .mobile-nav { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding-top: 8px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 .mobile-nav a { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 1.0625rem; font-weight: 500; }
@@ -237,6 +242,19 @@ img { max-width: 100%; }
   .hero-search .make-select-popover, .hero-search .model-select-popover { position: static; width: 100%; margin-top: 5px; box-shadow: none; }
   .hero-search-advanced { display: none !important; }
   .hero-search-more { display: inline-flex; align-items: center; min-height: 44px; grid-column: 1 / -1; justify-self: center; color: var(--brand); font-size: var(--fs-xs); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+}
+
+/* Landscape phones: a 660px hero would bury the page under one screen of header art. */
+@media (max-width: 960px) and (max-height: 560px) and (orientation: landscape) {
+  .hero { min-height: 0; }
+  .hero-content { padding-block: 56px 44px; }
+  .home-hero, .home-hero .hero-content { min-height: 0; }
+  .home-hero .hero-content { padding-block: 28px 40px; }
+  .home-hero h1 { font-size: clamp(2rem, 5.6vw, 2.75rem); }
+  .home-hero .hero-copy { display: none; }
+  .home-hero .hero-actions { margin-top: 20px; }
+  .hero-search-dock { margin-top: -34px; }
+  .mobile-menu .mobile-nav a { min-height: 48px; }
 }
 
 /* ==========================================================================
@@ -368,6 +386,27 @@ textarea { resize: vertical; }
 
 @media (max-width: 1080px) { .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .vehicle-grid { grid-template-columns: 1fr; gap: 32px; } }
+
+/* Sliding car carousel (homepage) */
+.vehicle-carousel { position: relative; container-type: inline-size; --cols: 3; --cgap: 24px; }
+.carousel-track { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - (var(--cols) - 1) * var(--cgap)) / var(--cols)); gap: var(--cgap); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px; }
+.carousel-track::-webkit-scrollbar { display: none; }
+.carousel-track:focus-visible { outline: 2px solid var(--brand); outline-offset: 6px; border-radius: var(--r-md); }
+.carousel-item { min-width: 0; scroll-snap-align: start; animation: card-rise 0.6s var(--ease) both; }
+.carousel-item:nth-child(2) { animation-delay: 0.08s; }
+.carousel-item:nth-child(3) { animation-delay: 0.16s; }
+.carousel-item:nth-child(n + 4) { animation-delay: 0.24s; }
+@keyframes card-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.carousel-arrow { position: absolute; z-index: 3; top: 40%; top: calc((100cqw - (var(--cols) - 1) * var(--cgap)) / var(--cols) / 2); display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgb(255 255 255 / 0.94); color: var(--ink); box-shadow: var(--shadow-sm); cursor: pointer; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s, background-color 0.15s; }
+.vehicle-carousel:hover .carousel-arrow, .carousel-arrow:focus-visible { opacity: 1; }
+.carousel-arrow:hover { background: #fff; }
+.carousel-arrow[aria-disabled="true"] { opacity: 0.45; }
+.vehicle-carousel:hover .carousel-arrow[aria-disabled="true"] { opacity: 0.55; }
+.carousel-arrow.prev { left: 12px; } .carousel-arrow.next { right: 12px; }
+@media (max-width: 1080px) { .vehicle-carousel { --cols: 2; } }
+@media (max-width: 960px) { .carousel-arrow { opacity: 1; } .vehicle-carousel:hover .carousel-arrow { opacity: 1; } }
+@media (max-width: 600px) { .vehicle-carousel { --cols: 1.12; --cgap: 16px; } }
+@media (prefers-reduced-motion: reduce) { .carousel-track { scroll-behavior: auto; } .carousel-item { animation: none; } }
 
 /* Status badge */
 .status { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--neutral-soft); color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 600; line-height: 1; white-space: nowrap; }
@@ -578,6 +617,8 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
 .gallery-main img { object-fit: contain; }
 .gallery-main img.gallery-backdrop { object-fit: cover; filter: blur(22px) saturate(1.1); transform: scale(1.18); opacity: 0.85; }
 .gallery-main:focus-visible { outline: 2px solid var(--brand); outline-offset: -4px; }
+.gallery-track { position: absolute; inset: 0; display: flex; width: 100%; height: 100%; will-change: transform; transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.gallery-slide { position: relative; flex: 0 0 100%; width: 100%; height: 100%; overflow: hidden; }
 .gallery-arrow { position: absolute; top: 50%; z-index: 2; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgb(255 255 255 / 0.92); color: var(--ink); box-shadow: var(--shadow-sm); cursor: pointer; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s, background-color 0.15s; }
 .gallery-stage:hover .gallery-arrow, .gallery-arrow:focus-visible { opacity: 1; }
 .gallery-arrow:hover { background: #fff; }
@@ -609,8 +650,9 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 .lightbox-topline strong { overflow: hidden; color: #fff; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .lightbox-topline span { flex: 0 0 auto; margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lightbox-close { flex: 0 0 auto; }
-.lightbox-image { position: absolute; inset: 64px 72px; touch-action: pan-y; }
+.lightbox-image { position: absolute; inset: 64px 72px; overflow: hidden; touch-action: pan-y; }
 .lightbox-image img { object-fit: contain; }
+.lightbox-image .gallery-track { transition-duration: 0.45s; }
 .lightbox-close, .lightbox-nav { display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-radius: 50%; background: rgb(255 255 255 / 0.1); color: #fff; cursor: pointer; transition: background-color 0.15s; }
 .lightbox-close:hover, .lightbox-nav:hover { background: rgb(255 255 255 / 0.2); }
 .lightbox-close:focus-visible, .lightbox-nav:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
@@ -832,4 +874,81 @@ dialog.image-lightbox::backdrop { background: #070d16; }
   .footer-col a.footer-location { display: grid; align-content: center; }
   .gallery-expand { min-height: 44px; }
   .chip { min-height: 44px; }
+}
+
+/* ==========================================================================
+   Motion
+   --------------------------------------------------------------------------
+   Entrance motion is scroll-driven CSS, guarded by @supports: browsers without
+   scroll-driven animations (Safari, Firefox) simply render the finished state,
+   so nothing can ever stay invisible. Everything here is opt-out through
+   prefers-reduced-motion.
+   ========================================================================== */
+@keyframes rise-in { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@keyframes rise-in-sm { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes hero-settle { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes hero-pan { from { transform: scale(1.07); } to { transform: none; } }
+@keyframes header-elevate { from { box-shadow: 0 0 0 rgb(13 23 38 / 0); } to { box-shadow: 0 10px 30px -22px rgb(13 23 38 / 0.65); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hero: a short staggered entrance on load. */
+  .hero-content > * { animation: hero-settle 0.72s var(--ease) both; }
+  .hero-content > .hero-kicker { animation-delay: 0.04s; }
+  .hero-content > h1 { animation-delay: 0.1s; }
+  .hero-content > .hero-heading-tagline { animation-delay: 0.16s; }
+  .hero-content > .hero-slogan { animation-delay: 0.2s; }
+  .hero-content > .hero-copy { animation-delay: 0.26s; }
+  .hero-content > .hero-actions { animation-delay: 0.33s; }
+  .hero-search-dock { animation: hero-settle 0.72s var(--ease) 0.42s both; }
+  .hero-visual img { animation: hero-pan 1.6s var(--ease) both; }
+
+  /* Interactive polish */
+  .button { transition: background-color 0.16s var(--ease), border-color 0.16s var(--ease), color 0.16s var(--ease), box-shadow 0.16s var(--ease), transform 0.16s var(--ease); }
+  .button-primary:hover, .button-whatsapp:hover, .button-outline:hover, .button-hero-outline:hover { transform: translateY(-1px); }
+  .button:active { transform: translateY(0); }
+  .icon-button { transition: background-color 0.15s var(--ease), color 0.15s var(--ease), transform 0.12s var(--ease); }
+  .icon-button:active { transform: scale(0.93); }
+  .vcard-media { transition: box-shadow 0.35s var(--ease); }
+  .vcard:hover .vcard-media { box-shadow: var(--shadow-md); }
+  .vcard-title { transition: color 0.18s var(--ease); }
+  .make-links a { transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease), color 0.18s var(--ease), transform 0.18s var(--ease); }
+  .make-links a:hover { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); transform: translateY(-2px); }
+  .finance-option, .contact-location, .faq-item { transition: border-color 0.2s var(--ease), box-shadow 0.25s var(--ease), transform 0.2s var(--ease); }
+  .finance-option:hover, .contact-location:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .gallery-thumbs button { transition: opacity 0.15s var(--ease), transform 0.2s var(--ease); }
+  .gallery-thumbs button:hover { transform: translateY(-2px); }
+  .gallery-arrow, .carousel-arrow, .lightbox-nav { transition: opacity 0.2s var(--ease), background-color 0.15s var(--ease), transform 0.15s var(--ease); }
+  .gallery-arrow:hover, .carousel-arrow:hover { transform: translateY(-50%) scale(1.06); }
+  .footer-col a, .footer-bottom a, .footer-direct a { transition: color 0.15s var(--ease); }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section-heading,
+    .vehicle-grid > .vcard,
+    .detail-block,
+    .visit > *,
+    .make-links,
+    .finance-hero, .finance-options-intro, .finance-option, .finance-note, .finance-next, .finance-unpublished,
+    .faq-item, .faq-aside,
+    .contact-location, .contact-follow, .contact-hours-section, .contact-map-section > .contact-section-heading,
+    .policy-body > section {
+      animation: rise-in 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 4% entry 46%;
+    }
+    .detail-block { animation-name: rise-in-sm; }
+    /* The horizontal carousel is its own scrollport; its items keep the load-in stagger instead. */
+    .carousel-item { animation-timeline: auto; }
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .site-header { animation: header-elevate linear both; animation-timeline: scroll(); animation-range: 0 140px; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-content > *, .hero-search-dock, .hero-visual img, .site-header { animation: none !important; }
 }

@@ -117,7 +117,7 @@ export function vehicleJsonLd(vehicle: Vehicle, settings: SiteSettings) {
     url: absoluteUrl(`/cars/${vehicle.slug}`),
     seller,
   }];
-  const offers = [...offer(vehicle.price, "In-house price"), ...offer(vehicle.cash_price, "Cash price")];
+  const offers = [...offer(vehicle.price, "Internal price"), ...offer(vehicle.cash_price, "Cash price")];
   const images = vehicle.images.filter((image) => image.url).slice(0, 8).map((image) => shareImageUrl(image.url!));
   return {
     "@context": "https://schema.org",
