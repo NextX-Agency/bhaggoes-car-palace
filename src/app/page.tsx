@@ -69,6 +69,14 @@ export default async function HomePage() {
       </div>
     </section> : null}
 
+    <section className="section-tight home-local" aria-labelledby="home-local-title">
+      <div className="container home-local-inner">
+        <div><p className="section-kicker">Voor Suriname</p><h2 id="home-local-title">Een auto kiezen die bij uw leven past.</h2></div>
+        <p>Bekijk de voorraad online en bespreek uw keuze met ons team in Suriname. We helpen u met de actuele prijs, betaalmogelijkheden en een bezoek aan de showroom.</p>
+        <Link className="text-link" href="/contact">Neem contact op <ArrowRight size={17} aria-hidden="true" /></Link>
+      </div>
+    </section>
+
     {makes.length > 1 ? <section className="section-tight" aria-labelledby="home-makes">
       <div className="container">
         <div className="section-heading"><h2 id="home-makes">Browse by make</h2></div>
