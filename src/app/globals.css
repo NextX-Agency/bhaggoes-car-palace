@@ -930,15 +930,13 @@ dialog.image-lightbox::backdrop { background: #070d16; }
   .hero-content > *, .hero-search-dock, .site-header { animation: none !important; }
 }
 
-/* Make the featured carousel visibly navigable without hover. */
+/* A visible next card and controls make the homepage sections read as slideshows. */
 .vehicle-carousel { --cols: 2.45; }
 .carousel-arrow, .carousel-arrow[aria-disabled="true"] { opacity: 1; }
 .carousel-arrow[aria-disabled="true"] { opacity: .65; }
-.vcard-meta { color: var(--ink-2); font-size: var(--fs-sm); font-weight: 700; }
+.vcard-meta { color: var(--ink-2); font-size: var(--fs-sm); }
 .vcard-meta .brand-logo { width: 24px; height: 24px; flex-basis: 24px; }
-.home-local { border-block: 1px solid var(--line); background: var(--brand-soft); }
-.home-local-inner { display: grid; grid-template-columns: 1fr 1fr auto; align-items: center; gap: 30px; }
-.home-local h2 { max-width: 500px; font-size: clamp(1.5rem, 2.4vw, 2.5rem); line-height: 1.15; }
-.home-local p:not(.section-kicker) { max-width: 540px; color: var(--ink-2); line-height: 1.6; }
-@media (max-width: 1080px) { .vehicle-carousel { --cols: 1.6; } .home-local-inner { grid-template-columns: 1fr 1fr; } .home-local .text-link { grid-column: 1 / -1; } }
-@media (max-width: 600px) { .vehicle-carousel { --cols: 1.12; } .home-local-inner { grid-template-columns: 1fr; gap: 14px; } .home-local .text-link { grid-column: auto; } }
+.vcard-make { color: var(--ink); font-family: var(--font-head); font-size: 1rem; font-weight: 750; line-height: 1.25; letter-spacing: -.015em; }
+.vcard-year { color: var(--muted); font-weight: 500; }
+@media (max-width: 1080px) { .vehicle-carousel { --cols: 1.6; } }
+@media (max-width: 600px) { .vehicle-carousel { --cols: 1.12; } }
