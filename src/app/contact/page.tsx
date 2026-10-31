@@ -4,23 +4,13 @@ import { SocialIcon } from "@/components/social-icon";
 import { JsonLd } from "@/components/json-ld";
 import { getSettings } from "@/lib/data";
 import { dealerJsonLd } from "@/lib/seo";
-import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
+import { buildWhatsAppLink, mapEmbedUrl, parseLocations, safeExternalUrl } from "@/lib/domain";
 
 export const metadata: Metadata = {
   title: "Contact & Locations",
   description: "Visit Bhaggoes Car Palace in Suriname. See both locations on the map or contact the team directly.",
   alternates: { canonical: "/contact" },
 };
-
-function mapEmbedUrl(address: string) {
-  const lower = address.toLowerCase();
-  const query = lower.includes("kwattaweg-tomaatstraat 495")
-    ? "Tomaat St 495, Paramaribo, Suriname"
-    : lower.includes("indira ghandiweg 50")
-      ? "Indira Gandhiweg 50, Wanica, Suriname"
-      : address;
-  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`;
-}
 
 export default async function ContactPage() {
   const settings = await getSettings();

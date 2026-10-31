@@ -275,6 +275,17 @@ export function parseLocations(value: string | null | undefined): DealershipLoca
   }).filter((location) => location.address);
 }
 
+/** Google Maps embed for a showroom; the two known addresses use the spelling Google recognises. */
+export function mapEmbedUrl(address: string) {
+  const lower = address.toLowerCase();
+  const query = lower.includes("kwattaweg-tomaatstraat 495")
+    ? "Tomaat St 495, Paramaribo, Suriname"
+    : lower.includes("indira ghandiweg 50")
+      ? "Indira Gandhiweg 50, Wanica, Suriname"
+      : address;
+  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`;
+}
+
 export function safeExternalUrl(value: string | null | undefined) {
   if (!value) return null;
   try {
