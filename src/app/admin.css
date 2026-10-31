@@ -557,3 +557,6 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .price-quick input { width: 110px; min-height: 34px; padding: 4px 8px; }
 .price-quick .admin-error { flex-basis: 100%; }
 .vehicle-admin-link .stock-tag, .inventory-mobile-title .stock-tag { color: var(--muted); font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.02em; }
+.photo-optimizer { border-color: #b9cdf2; background: var(--info-soft); }
+.photo-optimizer .catalog-switch-icon { background: #d6e4fa; color: var(--info); }
+.photo-optimizer .upload-progress-bar { margin-top: 6px; }

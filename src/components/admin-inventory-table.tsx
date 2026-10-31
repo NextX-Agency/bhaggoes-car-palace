@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { vehicleThumbUrl } from "@/lib/vehicle-image-url";
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, type ButtonHTMLAttributes, type SelectHTMLAttributes } from "react";
 import { useFormStatus } from "react-dom";
@@ -74,7 +75,7 @@ function RowActions({ vehicle }: { vehicle: AdminVehicle }) {
 }
 function Thumb({ vehicle, size }: { vehicle: AdminVehicle; size: number }) {
   const image = vehicle.images.find((item) => item.is_cover) ?? vehicle.images[0];
-  return <div className="inventory-table-photo">{image?.url ? <Image src={image.url} alt="" fill sizes={`${size}px`} unoptimized /> : <Camera size={18} role="img" aria-label="Geen foto" />}</div>;
+  return <div className="inventory-table-photo">{image?.url ? <Image src={vehicleThumbUrl(image.url, 160)} alt="" fill sizes={`${size}px`} unoptimized /> : <Camera size={18} role="img" aria-label="Geen foto" />}</div>;
 }
 
 export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {

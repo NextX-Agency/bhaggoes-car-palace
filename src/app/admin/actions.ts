@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import sharp from "sharp";
 import { z } from "zod";
 import { safeExternalUrl, slugify } from "@/lib/domain";
 import { listingTitle } from "@/lib/vehicle-templates";
@@ -392,4 +393,58 @@ export async function saveContentPageAction(_previous: ActionState, form: FormDa
     if (error) return { error: "De pagina kon niet worden opgeslagen." };
     expirePublicCache("pages"); revalidatePath(`/${parsed.data.slug}`); revalidatePath("/admin/content"); return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De pagina kon niet worden opgeslagen." }; }
+}
+
+// Photos uploaded before the browser-side shrinking (or from a browser that could not shrink them) are often
+// 2–5 MB. These are re-encoded once to at most 2000px WebP, which is plenty for the full-screen gallery.
+const LARGE_PHOTO_BYTES = 900 * 1024;
+const OPTIMIZE_BATCH = 6;
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+
+async function findLargePhotos(supabase: SupabaseServer) {
+  const { data: rows, error } = await supabase.from("vehicle_images").select("id, vehicle_id, storage_path");
+  if (error || !rows) throw new Error("De foto’s konden niet worden gecontroleerd.");
+  const stored = rows.filter((row) => !row.storage_path.startsWith("/images/"));
+  const folders = [...new Set(stored.map((row) => row.storage_path.split("/")[0]))];
+  const sizes = new Map<string, number>();
+  await Promise.all(folders.map(async (folder) => {
+    const { data } = await supabase.storage.from("vehicle-images").list(folder, { limit: 100 });
+    for (const object of data ?? []) sizes.set(`${folder}/${object.name}`, Number(object.metadata?.size ?? 0));
+  }));
+  return stored.filter((row) => (sizes.get(row.storage_path) ?? 0) > LARGE_PHOTO_BYTES);
+}
+
+export async function countLargePhotosAction(): Promise<{ count: number; error?: string }> {
+  try { return { count: (await findLargePhotos(await verifyAdmin())).length }; }
+  catch (error) { return { count: 0, error: error instanceof Error ? error.message : "De foto’s konden niet worden gecontroleerd." }; }
+}
+
+/** Shrinks a handful of large photos per call; the dashboard calls it repeatedly until `remaining` is 0. */
+export async function optimizePhotosAction(skip: string[] = []): Promise<{ optimized: number; remaining: number; savedBytes: number; failedIds: string[]; error?: string }> {
+  try {
+    const supabase = await verifyAdmin();
+    const skipped = new Set(z.array(z.string().uuid()).max(500).catch([]).parse(skip));
+    const large = (await findLargePhotos(supabase)).filter((photo) => !skipped.has(photo.id));
+    let optimized = 0; let savedBytes = 0; const failedIds: string[] = [];
+    await Promise.all(large.slice(0, OPTIMIZE_BATCH).map(async (photo) => {
+      try {
+        const { data: original, error: downloadError } = await supabase.storage.from("vehicle-images").download(photo.storage_path);
+        if (downloadError || !original) throw new Error("download");
+        const smaller = await sharp(Buffer.from(await original.arrayBuffer()), { failOn: "none" }).rotate()
+          .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+        if (smaller.length >= original.size) throw new Error("not smaller");
+        // New file first, then point the listing at it, then remove the old file: the car never shows a broken photo.
+        const path = `${photo.vehicle_id}/${crypto.randomUUID()}.webp`;
+        const { error: uploadError } = await supabase.storage.from("vehicle-images").upload(path, smaller, { contentType: "image/webp", upsert: false });
+        if (uploadError) throw new Error("upload");
+        const { error: updateError } = await supabase.from("vehicle_images").update({ storage_path: path }).eq("id", photo.id);
+        if (updateError) { await supabase.storage.from("vehicle-images").remove([path]); throw new Error("update"); }
+        await supabase.storage.from("vehicle-images").remove([photo.storage_path]);
+        optimized += 1; savedBytes += original.size - smaller.length;
+      } catch { failedIds.push(photo.id); }
+    }));
+    if (optimized) { expirePublicCache("vehicles"); revalidatePath("/admin"); revalidatePath("/admin/inventory"); }
+    // Photos that failed stay as they are; the caller skips them next time, so the loop always ends.
+    return { optimized, failedIds, savedBytes, remaining: Math.max(0, large.length - optimized - failedIds.length) };
+  } catch (error) { return { optimized: 0, failedIds: [], savedBytes: 0, remaining: 0, error: error instanceof Error ? error.message : "De foto’s konden niet worden geoptimaliseerd." }; }
 }

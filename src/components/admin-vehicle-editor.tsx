@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { vehicleThumbUrl } from "@/lib/vehicle-image-url";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -272,7 +273,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
 
       <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><div><h2 id="photos-heading">Foto’s</h2><p className="muted">Voeg maximaal {maxPhotos} foto’s toe: voorkant, zijkanten, achterkant, interieur en details. De eerste foto is de omslagfoto. Verplaats foto’s met de pijltjes of sleep ze naar een andere plek.</p></div><span className="muted">{photos.length} / {maxPhotos}</span></div>
         {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Foto’s van de auto" aria-busy={photoBusy || undefined}>{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}${photoBusy ? " is-busy" : ""}`} key={photo.id} role="listitem" draggable={!photoBusy} onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); setDraggingPhoto(null); void reorderPhoto(Number(event.dataTransfer.getData("text/plain")), index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Foto ${index + 1}${index === 0 ? ", omslagfoto" : ""}`}>
-          {photo.url ? <Image src={photo.url} alt={`Foto ${index + 1}`} fill sizes="200px" unoptimized /> : <span className="photo-no-preview">Foto opgeslagen</span>}
+          {photo.url ? <Image src={vehicleThumbUrl(photo.url, 400)} alt={`Foto ${index + 1}`} fill sizes="200px" unoptimized /> : <span className="photo-no-preview">Foto opgeslagen</span>}
           {index === 0 ? <span className="cover-label">Omslag</span> : null}
           <button className="photo-remove" type="button" disabled={photoBusy} onClick={() => { if (window.confirm("Deze foto verwijderen?")) void removePhoto(photo); }} aria-label={`Verwijder foto ${index + 1}`} title="Foto verwijderen"><Trash2 size={16} aria-hidden="true" /></button>
           <div className="photo-actions">
