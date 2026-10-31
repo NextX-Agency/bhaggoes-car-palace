@@ -44,6 +44,7 @@ const loadSettings = unstable_cache(async (): Promise<SiteSettings> => {
   settings.logo_url = settings.logo_path
     ? settings.logo_path.startsWith("http") ? settings.logo_path : client.storage.from("site-assets").getPublicUrl(settings.logo_path).data.publicUrl
     : null;
+  settings.catalog_image_urls = settings.catalog_images.map((path) => path.startsWith("http") ? path : client.storage.from("site-assets").getPublicUrl(path).data.publicUrl);
   return settings;
 }, ["site-settings"], { tags: [CACHE_TAGS.settings], revalidate: REVALIDATE_SECONDS });
 

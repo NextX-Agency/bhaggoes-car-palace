@@ -82,6 +82,9 @@ export interface SiteSettings {
   /** When on, the public site shows no cars at all, only the dealership information. */
   catalog_hidden: boolean;
   catalog_hidden_message: string | null;
+  /** Photos of the lot shown while the catalog is hidden (site-assets paths); empty means the default photos. */
+  catalog_images: string[];
+  catalog_image_urls?: string[];
   logo_path: string | null;
   logo_url?: string | null;
   updated_at?: string;
@@ -161,6 +164,7 @@ export const defaultSettings: SiteSettings = {
   show_sold: false,
   catalog_hidden: false,
   catalog_hidden_message: null,
+  catalog_images: [],
   logo_path: null,
   logo_url: null,
 };
@@ -172,6 +176,7 @@ export function normalizeSiteSettings(data: Partial<SiteSettings>): SiteSettings
     ...data,
     catalog_hidden: data.catalog_hidden === true,
     catalog_hidden_message: data.catalog_hidden_message?.trim() || null,
+    catalog_images: Array.isArray(data.catalog_images) ? data.catalog_images.filter((path): path is string => typeof path === "string").slice(0, 6) : [],
     phone: data.phone?.trim() || defaultSettings.phone,
     whatsapp: data.whatsapp?.trim() || defaultSettings.whatsapp,
     address: data.address?.trim() || defaultSettings.address,

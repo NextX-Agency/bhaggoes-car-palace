@@ -560,3 +560,11 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .photo-optimizer { border-color: #b9cdf2; background: var(--info-soft); }
 .photo-optimizer .catalog-switch-icon { background: #d6e4fa; color: var(--info); }
 .photo-optimizer .upload-progress-bar { margin-top: 6px; }
+.catalog-settings .catalog-photos { display: grid; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.catalog-photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.catalog-photos-item, .catalog-photos-add { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--r-sm); background: var(--surface-2); }
+.catalog-photos-item img { object-fit: cover; }
+.catalog-photos-item.is-first { box-shadow: 0 0 0 2px var(--brand); }
+.catalog-photos-add { display: grid; place-content: center; justify-items: center; gap: 6px; border: 1.5px dashed var(--line-strong); background: var(--surface); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
+.catalog-photos-add:hover, .catalog-photos-add:focus-within { border-color: var(--brand); color: var(--brand); }
+.catalog-photos-add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

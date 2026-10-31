@@ -1,9 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SocialIcon } from "@/components/social-icon";
 import type { SiteSettings } from "@/lib/domain";
 import { buildWhatsAppLink, parseLocations, safeExternalUrl } from "@/lib/domain";
 
 const socialLabels = { facebook: "Facebook", tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" } as const;
+
+// Real photos from the lot, used until staff upload their own in the settings.
+const defaultPhotos = ["/images/harrier-2018/front-three-quarter.webp", "/images/harrier-2018/rear.webp", "/images/harrier-2018/front.webp"];
 
 export const defaultCatalogMessage = "We are not listing cars online right now. Our stock changes daily, so send us a WhatsApp or come by one of our showrooms and we will show you what is on the lot.";
 
@@ -21,6 +25,8 @@ export function CatalogNotice({ settings, headingLevel = 2, id = "catalog-notice
     const url = safeExternalUrl(settings.social_links?.[platform]);
     return url ? [{ platform, url, label: socialLabels[platform] }] : [];
   });
+  const photos = settings.catalog_image_urls?.length ? settings.catalog_image_urls : defaultPhotos;
+  const place = locations.map((location) => location.name).filter(Boolean).join(" & ");
   const payment: [string, string][] = [
     ...(settings.financing_enabled ? [
       ["In-house", `${terms.internal_down_percent}% down, the rest in up to ${terms.internal_max_months} months`],
@@ -41,6 +47,13 @@ export function CatalogNotice({ settings, headingLevel = 2, id = "catalog-notice
             {settings.phone ? <a className="button button-outline" href={`tel:${settings.phone}`}>Call</a> : <Link className="button button-outline" href="/contact">Contact</Link>}
           </div>
         </div>
+      </div>
+
+      <div className={`lot-photos count-${Math.min(photos.length, 6)}`}>
+        {photos.slice(0, 6).map((src, index) => <figure key={src} className="lot-photo">
+          <Image src={src} alt={index === 0 ? `The lot at ${settings.business_name}` : ""} fill sizes={index === 0 ? "(max-width: 960px) 100vw, 60vw" : "(max-width: 960px) 50vw, 30vw"} loading={index === 0 ? "eager" : "lazy"} />
+        </figure>)}
+        {place || settings.slogan ? <p className="lot-plate">{place ? <strong>{place}</strong> : null}{settings.slogan ? <span>{settings.slogan}</span> : null}</p> : null}
       </div>
 
       <div className="lot-sheet">

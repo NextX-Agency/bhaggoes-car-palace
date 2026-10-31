@@ -295,16 +295,26 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
       trade_in: text(form, "trade_in") === "on",
       promo_text: text(form, "promo_text"),
     };
-    const catalog = { catalog_hidden: text(form, "catalog_hidden") === "on", catalog_hidden_message: nullable(text(form, "catalog_hidden_message")) };
+    let catalogImages: unknown = [];
+    try { catalogImages = JSON.parse(text(form, "catalog_images") || "[]"); } catch { return { error: "De foto’s voor de banner konden niet worden gelezen." }; }
+    const images = z.array(z.string().regex(/^catalog\/[0-9a-f-]{36}\.(webp|jpg|png|avif)$/)).max(6).safeParse(catalogImages);
+    if (!images.success) return { error: "Gebruik maximaal 6 foto’s voor de banner." };
+    const catalog = { catalog_hidden: text(form, "catalog_hidden") === "on", catalog_hidden_message: nullable(text(form, "catalog_hidden_message")), catalog_images: images.data };
     if (catalog.catalog_hidden_message && catalog.catalog_hidden_message.length > 600) return { error: "Het bericht bij de verborgen catalogus mag maximaal 600 tekens zijn." };
     const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), seo_title: text(form, "seo_title"), seo_description: text(form, "seo_description"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), sales_terms: salesTerms, show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
     const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).refine((value) => /^\d{7,15}$/.test(value.replace(/\D/g, "")), { message: "WhatsApp-nummer: gebruik landnummer plus nummer, bijvoorbeeld +597 866-8777." }).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(1500).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), sales_terms: z.object({ benefits: z.array(z.string().min(2).max(160)).max(15), internal_down_percent: z.number().int().min(0).max(100), internal_max_months: z.number().int().min(1).max(120), bank_down_percent: z.number().int().min(0).max(100), trade_in: z.boolean(), promo_text: z.string().max(300) }), show_sold: z.boolean(), business_hours: z.record(z.string().max(60), z.string().max(120)).refine((hours) => Object.keys(hours).length <= 14, { message: "Gebruik maximaal 14 regels voor de openingstijden." }), social_links: z.record(z.string(), z.string().max(300)), logo_path: z.string().max(300).regex(/^(?!.*\.\.)([A-Za-z0-9][A-Za-z0-9._\/-]*|https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/site-assets\/[A-Za-z0-9._\/-]+)$/).nullable() }).safeParse(settings);
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], settingsFieldLabels, "Controleer de website-instellingen en probeer het opnieuw.") };
     let { error } = await supabase.from("site_settings").update({ ...parsed.data, ...(form.has("catalog_hidden_message") ? catalog : {}) }).eq("id", 1);
     // Older databases do not have the catalog columns yet: save everything else and say what is missing.
+    // Older databases may miss the newest columns: save what fits and say what is missing.
     if (error && isMissingColumn(error) && form.has("catalog_hidden_message")) {
-      ({ error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1));
-      if (!error) { expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout"); return catalog.catalog_hidden ? { error: catalogMigrationMessage } : { ok: true }; }
+      const { catalog_images: photos, ...withoutPhotos } = catalog;
+      ({ error } = await supabase.from("site_settings").update({ ...parsed.data, ...withoutPhotos }).eq("id", 1));
+      if (!error) { expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout"); return photos.length ? { error: "De instellingen zijn opgeslagen, maar de foto’s voor de banner nog niet: de database heeft eerst een kleine update (migratie) nodig." } : { ok: true }; }
+      if (isMissingColumn(error)) {
+        ({ error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1));
+        if (!error) { expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout"); return catalog.catalog_hidden ? { error: catalogMigrationMessage } : { ok: true }; }
+      }
     }
     if (error) return { error: "De website-instellingen konden niet worden opgeslagen." };
     // show_sold changes which cars are public, so the vehicle caches expire together with the settings.
