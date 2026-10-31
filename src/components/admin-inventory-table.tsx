@@ -5,11 +5,15 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, type ButtonHTMLAttributes, type SelectHTMLAttributes } from "react";
 import { useFormStatus } from "react-dom";
 import { createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnFiltersState, type RowSelectionState, type SortingState } from "@tanstack/react-table";
-import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpDown, Camera, Eye, EyeOff, Pencil, Search, Star, StarOff, Tags, X } from "lucide-react";
-import { bulkUpdateVehiclesAction, updateVehicleAction } from "@/app/admin/actions";
+import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpDown, Camera, Check, Eye, EyeOff, Pencil, Search, Star, StarOff, Tags, X } from "lucide-react";
+import { bulkUpdateVehiclesAction, updateVehicleAction, updateVehiclePriceAction } from "@/app/admin/actions";
 import type { VehicleImage } from "@/lib/domain";
+import { matchesSearch } from "@/lib/search";
 
-export type AdminVehicle = { id: string; slug: string; title: string; make: string; model: string; year: number | null; price: number | null; currency: string | null; stock_number?: string | null; availability: string; featured: boolean; published: boolean; archived_at: string | null; updated_at: string; images: VehicleImage[] };
+export type AdminVehicle = {
+  id: string; slug: string; title: string; make: string | null; model: string | null; year: number | null; price: number | null; cash_price?: number | null; currency: string | null; stock_number?: string | null; availability: string; featured: boolean; published: boolean; archived_at: string | null; updated_at: string; images: VehicleImage[];
+  variant?: string | null; vin?: string | null; fuel_type?: string | null; transmission?: string | null; body_type?: string | null; drive_type?: string | null; exterior_color?: string | null; interior_color?: string | null; engine_capacity?: string | null; mileage?: number | null; seats?: number | null; description?: string | null; condition?: string; features?: string[];
+};
 const col = createColumnHelper<AdminVehicle>();
 const statusLabels: Record<string, string> = { available: "Beschikbaar", on_the_way: "Onderweg", reserved: "Gereserveerd", sold: "Verkocht", rental: "Verhuur" };
 const monthNames = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
@@ -17,6 +21,18 @@ const monthNames = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep
 const dateLabel = (iso: string) => { const time = Date.parse(iso); if (Number.isNaN(time)) return ""; const date = new Date(time - 3 * 3600 * 1000); return `${date.getUTCDate()} ${monthNames[date.getUTCMonth()]} ${date.getUTCFullYear()}`; };
 const priceLabel = (vehicle: AdminVehicle) => vehicle.price == null ? "Op aanvraag" : `${vehicle.currency ? `${vehicle.currency} ` : ""}${new Intl.NumberFormat("en-US").format(vehicle.price)}`;
 const visibilityOf = (vehicle: AdminVehicle) => vehicle.archived_at ? "archived" : vehicle.published ? "published" : "draft";
+const visibilityLabels = { archived: "gearchiveerd", published: "zichtbaar online", draft: "verborgen concept" } as const;
+const conditionLabels: Record<string, string> = { new: "nieuw", used: "gebruikt" };
+// Everything staff might type in the search box: stock number, VIN, year, colours, specifications, options, prices …
+const searchValues = (vehicle: AdminVehicle) => [
+  vehicle.title, vehicle.make, vehicle.model, vehicle.variant, vehicle.year, vehicle.stock_number, vehicle.vin, vehicle.slug,
+  vehicle.fuel_type, vehicle.transmission, vehicle.body_type, vehicle.drive_type, vehicle.exterior_color, vehicle.interior_color, vehicle.engine_capacity,
+  vehicle.seats ? `${vehicle.seats} seats` : null, vehicle.mileage != null ? `${vehicle.mileage} km` : null,
+  vehicle.price, vehicle.cash_price, vehicle.currency, vehicle.availability.replace(/_/g, " "), statusLabels[vehicle.availability], vehicle.condition, vehicle.condition ? conditionLabels[vehicle.condition] : null,
+  visibilityLabels[visibilityOf(vehicle)], vehicle.featured ? "homepage uitgelicht" : null, vehicle.images.length ? null : "geen foto zonder foto", vehicle.price == null && vehicle.cash_price == null ? "geen prijs op aanvraag" : null,
+  ...(vehicle.features ?? []), vehicle.description,
+];
+const subtitle = (vehicle: AdminVehicle) => [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" · ");
 
 // Row controls lock while their save is running, so a second tap cannot fire a duplicate update.
 function PendingSelect(props: SelectHTMLAttributes<HTMLSelectElement>) { const { pending } = useFormStatus(); return <select {...props} disabled={pending} aria-busy={pending || undefined} />; }
@@ -31,6 +47,24 @@ function FeaturedToggle({ vehicle }: { vehicle: AdminVehicle }) {
 function VisibilityToggle({ vehicle }: { vehicle: AdminVehicle }) {
   if (vehicle.archived_at) return <span className="admin-badge archived">Gearchiveerd</span>;
   return <form action={updateVehicleAction}><input type="hidden" name="id" value={vehicle.id} /><input type="hidden" name="published" value={String(!vehicle.published)} /><PendingButton className={`admin-badge ${vehicle.published ? "published" : "draft"}`} type="submit" aria-label={`${vehicle.title}: ${vehicle.published ? "zichtbaar op de website, tik om te verbergen" : "verborgen voor de website, tik om te tonen"}`} title={vehicle.published ? "Zichtbaar op de website — tik om te verbergen" : "Verborgen voor de website — tik om te tonen"}>{vehicle.published ? "Zichtbaar" : "Verborgen"}</PendingButton></form>;
+}
+// Tap the price to change it right here, without opening the car. Empty means "price on request".
+function PriceQuickEdit({ vehicle }: { vehicle: AdminVehicle }) {
+  const [editing, setEditing] = useState(false);
+  const [state, action, pending] = useActionState(async (previous: { error?: string; ok?: boolean }, form: FormData) => {
+    const result = await updateVehiclePriceAction(previous, form);
+    if (result.ok) setEditing(false);
+    return result;
+  }, {});
+  if (!editing) return <span className="price-quick"><button type="button" className="price-quick-button admin-price tabular" onClick={() => setEditing(true)} title="Prijs aanpassen" aria-label={`Prijs van ${vehicle.title} aanpassen: ${priceLabel(vehicle)}`}>{priceLabel(vehicle)}<Pencil size={12} aria-hidden="true" /></button></span>;
+  return <span className="price-quick"><form action={action} onKeyDown={(event) => { if (event.key === "Escape") setEditing(false); }}>
+    <input type="hidden" name="id" value={vehicle.id} />
+    <input className="admin-input" name="price" inputMode="decimal" defaultValue={vehicle.price ?? ""} placeholder="Intern" aria-label="Interne prijs" autoFocus disabled={pending} />
+    <input className="admin-input" name="cash_price" inputMode="decimal" defaultValue={vehicle.cash_price ?? ""} placeholder="Cash" aria-label="Cashprijs" disabled={pending} />
+    <button type="submit" className="row-action" disabled={pending} aria-label="Prijs opslaan" title="Opslaan"><Check size={15} aria-hidden="true" /></button>
+    <button type="button" className="row-action" onClick={() => setEditing(false)} disabled={pending} aria-label="Annuleren" title="Annuleren"><X size={15} aria-hidden="true" /></button>
+    {state.error ? <span className="admin-error">{state.error}</span> : null}
+  </form></span>;
 }
 function RowActions({ vehicle }: { vehicle: AdminVehicle }) {
   return <div className="admin-row-actions">
@@ -54,8 +88,8 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
 
   const columns = useMemo(() => [
     col.display({ id: "select", enableSorting: false, header: ({ table }) => <label className="table-check"><input type="checkbox" checked={table.getIsAllPageRowsSelected()} onChange={table.getToggleAllPageRowsSelectedHandler()} aria-label="Selecteer alle auto’s op deze pagina" /></label>, cell: ({ row }) => <label className="table-check"><input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} aria-label={`Selecteer ${row.original.title}`} /></label> }),
-    col.accessor("title", { header: "Auto", cell: (info) => <div className="vehicle-admin-cell"><Thumb vehicle={info.row.original} size={64} /><Link href={`/admin/inventory/${info.row.original.id}`} className="vehicle-admin-link">{info.getValue()}<small>{[info.row.original.year, info.row.original.make, info.row.original.model].filter(Boolean).join(" · ")}</small></Link></div> }),
-    col.accessor("price", { header: "Prijs", sortUndefined: "last", cell: (info) => <span className="admin-price tabular">{priceLabel(info.row.original)}</span> }),
+    col.accessor("title", { header: "Auto", cell: (info) => <div className="vehicle-admin-cell"><Thumb vehicle={info.row.original} size={64} /><Link href={`/admin/inventory/${info.row.original.id}`} className="vehicle-admin-link">{info.getValue()}<small>{subtitle(info.row.original)}</small>{info.row.original.stock_number ? <small className="stock-tag">{info.row.original.stock_number}</small> : null}</Link></div> }),
+    col.accessor("price", { header: "Prijs", sortUndefined: "last", cell: (info) => <PriceQuickEdit vehicle={info.row.original} /> }),
     col.accessor("availability", { header: "Status", filterFn: "equalsString", cell: (info) => <StatusSelect vehicle={info.row.original} /> }),
     col.accessor((row) => visibilityOf(row), { id: "visibility", header: "Website", filterFn: "equalsString", cell: (info) => <VisibilityToggle vehicle={info.row.original} /> }),
     col.accessor("featured", { header: "Homepage", cell: (info) => <FeaturedToggle vehicle={info.row.original} /> }),
@@ -65,7 +99,7 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
 
   // TanStack Table intentionally exposes imperative table methods for the table renderer.
   // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({ data, columns, state: { sorting, globalFilter: filter, rowSelection, columnFilters }, onSortingChange: setSorting, onGlobalFilterChange: setFilter, onColumnFiltersChange: setColumnFilters, onRowSelectionChange: setRowSelection, getRowId: (row) => row.id, enableRowSelection: true, globalFilterFn: (row, _id, value: string) => [row.original.title, row.original.make, row.original.model, row.original.year].join(" ").toLowerCase().includes(value.toLowerCase()), getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 20 } } });
+  const table = useReactTable({ data, columns, state: { sorting, globalFilter: filter, rowSelection, columnFilters }, onSortingChange: setSorting, onGlobalFilterChange: setFilter, onColumnFiltersChange: setColumnFilters, onRowSelectionChange: setRowSelection, getRowId: (row) => row.id, enableRowSelection: true, globalFilterFn: (row, _id, value: string) => matchesSearch(value, searchValues(row.original)), getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 20 } } });
   // Only cars that are still visible under the current search and filters count, so a bulk action never touches hidden rows.
   const selectedIds = table.getFilteredSelectedRowModel().rows.map((row) => row.id);
   const setColumnFilter = (id: string, value: string) => setColumnFilters((current) => [...current.filter((item) => item.id !== id), ...(value ? [{ id, value }] : [])]);
@@ -76,7 +110,7 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
 
   return <>
     <div className="inventory-table-toolbar">
-      <label className="table-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Zoek in de voorraad</span><input type="search" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Zoek op merk, model of jaar" /></label>
+      <label className="table-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Zoek in de voorraad</span><input type="search" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Zoek op stocknummer, merk, model, jaar, kleur, VIN, prijs, optie…" /></label>
       <div className="table-filters">
         <label><span className="sr-only">Filter op beschikbaarheid</span><select className="admin-input" value={columnFilter("availability")} onChange={(event) => setColumnFilter("availability", event.target.value)}><option value="">Alle beschikbaarheid</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label><span className="sr-only">Filter op zichtbaarheid op de website</span><select className="admin-input" value={columnFilter("visibility")} onChange={(event) => setColumnFilter("visibility", event.target.value)}><option value="">Alle advertenties</option><option value="published">Zichtbaar op de website</option><option value="draft">Verborgen (concept)</option><option value="archived">Gearchiveerd</option></select></label>
@@ -101,7 +135,7 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
     {bulkState.error ? <p className="admin-feedback admin-error" role="alert">{bulkState.error}</p> : bulkState.ok ? <p className="admin-feedback" role="status">Geselecteerde auto’s bijgewerkt.</p> : null}
     <div className="admin-table-wrap admin-inventory-desktop"><table className="admin-table inventory-table"><thead>{table.getHeaderGroups().map((group) => <tr key={group.id}>{group.headers.map((header) => { const sorted = header.column.getIsSorted(); return <th key={header.id} className={`col-${header.column.id}`} aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}>{header.isPlaceholder ? null : header.column.getCanSort() ? <button type="button" className="table-sort" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp size={12} /> : sorted === "desc" ? <ArrowDown size={12} /> : <ArrowUpDown size={12} />}</button> : flexRender(header.column.columnDef.header, header.getContext())}</th>; })}</tr>)}</thead><tbody>{rows.length ? rows.map((row) => <tr key={row.id} className={`${row.original.archived_at ? "archived-row" : ""}${row.getIsSelected() ? " selected-row" : ""}`}>{row.getVisibleCells().map((cell) => <td key={cell.id} className={`col-${cell.column.id}`}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>) : <tr><td colSpan={columns.length} className="table-empty">{emptyText}{filtered ? <> <button type="button" className="link-button" onClick={() => { setFilter(""); setColumnFilters([]); }}>Filters wissen</button></> : null}</td></tr>}</tbody></table></div>
     <div className="admin-inventory-mobile">{rows.length ? rows.map((row) => { const vehicle = row.original; return <article key={vehicle.id} className={`inventory-mobile-card${vehicle.archived_at ? " archived-row" : ""}`}>
-      <div className="inventory-mobile-heading"><label className="inventory-mobile-select"><input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} /><span className="sr-only">Selecteer {vehicle.title}</span></label><Thumb vehicle={vehicle} size={80} /><div className="inventory-mobile-title"><Link href={`/admin/inventory/${vehicle.id}`}>{vehicle.title}</Link><span>{[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" · ")}</span><strong className="tabular">{priceLabel(vehicle)}</strong></div></div>
+      <div className="inventory-mobile-heading"><label className="inventory-mobile-select"><input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} /><span className="sr-only">Selecteer {vehicle.title}</span></label><Thumb vehicle={vehicle} size={80} /><div className="inventory-mobile-title"><Link href={`/admin/inventory/${vehicle.id}`}>{vehicle.title}</Link><span>{subtitle(vehicle)}</span>{vehicle.stock_number ? <span className="stock-tag">{vehicle.stock_number}</span> : null}<PriceQuickEdit vehicle={vehicle} /></div></div>
       <div className="inventory-mobile-controls"><StatusSelect vehicle={vehicle} /><VisibilityToggle vehicle={vehicle} /><FeaturedToggle vehicle={vehicle} /></div>
       <RowActions vehicle={vehicle} />
     </article>; }) : <p className="table-empty">{emptyText}</p>}</div>

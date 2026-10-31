@@ -5,6 +5,7 @@ import { defaultSettings, normalizeSiteSettings, type SiteSettings, type Vehicle
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
+import { searchTermGroups } from "@/lib/search";
 import type { VehicleTemplate } from "@/lib/vehicle-templates";
 
 const PAGE_SIZE = 12;
@@ -49,6 +50,19 @@ const loadSettings = unstable_cache(async (): Promise<SiteSettings> => {
 // Read by the root layout, its metadata and most pages; cache() also dedupes it within one render.
 export const getSettings = cache(async (): Promise<SiteSettings> => hasSupabaseEnv() ? loadSettings() : defaultSettings);
 
+// The catalog switch in the settings hides every car from the public site. The database enforces the same rule
+// (row level security), this check keeps the pages and caches consistent with it.
+async function catalogHidden() {
+  try { return (await getSettings()).catalog_hidden; } catch { return false; }
+}
+
+// The search columns are only used for filtering in the database; they are not sent on to the pages.
+function withoutSearchColumns(row: Record<string, unknown>) {
+  const copy = { ...row };
+  delete copy.search_text; delete copy.search_vector;
+  return copy;
+}
+
 async function attachVehicleMedia(rows: Record<string, unknown>[], client: SupabaseClient, strict = false) {
   if (!rows.length) return [] as Vehicle[];
   const ids = rows.map((row) => row.id as string);
@@ -70,7 +84,7 @@ async function attachVehicleMedia(rows: Record<string, unknown>[], client: Supab
   }
 
   return rows.map((row) => ({
-    ...row,
+    ...withoutSearchColumns(row),
     images: (byVehicle.get(row.id as string) ?? []).map((image) => ({
       id: image.id,
       storage_path: image.storage_path,
@@ -86,6 +100,15 @@ async function attachVehicleMedia(rows: Record<string, unknown>[], client: Supab
 }
 
 async function queryVehicles(filters: VehicleFilters) {
+  try { return await runVehicleQuery(filters, true); }
+  catch (error) {
+    // Before the search migration is applied the search_text column does not exist yet; use the old full-text index.
+    if (filters.search?.trim() && error instanceof Error && error.message === "search_text missing") return runVehicleQuery(filters, false);
+    throw error;
+  }
+}
+
+async function runVehicleQuery(filters: VehicleFilters, useSearchText: boolean) {
   const client = publicClient();
   const pageSize = Math.min(Math.max(filters.pageSize ?? PAGE_SIZE, 1), 48);
   const page = Math.max(filters.page ?? 1, 1);
@@ -93,7 +116,12 @@ async function queryVehicles(filters: VehicleFilters) {
   let query = client.from("vehicles").select("*", { count: "exact" })
     .eq("published", true).is("archived_at", null);
 
-  if (filters.search?.trim()) query = query.textSearch("search_vector", filters.search.trim(), { type: "websearch", config: "simple" });
+  // Every word has to appear somewhere in the car's details (stock number, year, colour, options, price …).
+  if (filters.search?.trim() && useSearchText) {
+    for (const group of searchTermGroups(filters.search)) {
+      query = group.length === 1 ? query.ilike("search_text", `%${group[0]}%`) : query.or(group.map((term) => `search_text.ilike."%${term}%"`).join(","));
+    }
+  } else if (filters.search?.trim()) query = query.textSearch("search_vector", filters.search.trim(), { type: "websearch", config: "simple" });
   if (filters.make) query = query.ilike("make", filters.make);
   if (filters.model) query = query.ilike("model", `%${filters.model}%`);
   if (filters.year) query = query.eq("year", filters.year);
@@ -104,6 +132,7 @@ async function queryVehicles(filters: VehicleFilters) {
   if (filters.fuel) query = query.eq("fuel_type", filters.fuel);
   if (filters.transmission) query = query.eq("transmission", filters.transmission);
   if (filters.bodyType) query = query.eq("body_type", filters.bodyType);
+  if (filters.color) query = query.ilike("exterior_color", filters.color);
   if (filters.minMileage != null) query = query.gte("mileage", filters.minMileage);
   if (filters.maxMileage != null) query = query.lte("mileage", filters.maxMileage);
 
@@ -116,6 +145,7 @@ async function queryVehicles(filters: VehicleFilters) {
   query = query.order(column, { ascending, nullsFirst: false }).range(start, start + pageSize - 1);
 
   const { data, count, error } = await query;
+  if (error?.code === "42703" && useSearchText) throw new Error("search_text missing");
   if (error || !data) throw new Error("Unable to load vehicles");
   return { vehicles: await attachVehicleMedia(data, client, true), total: count ?? 0, page, pageSize };
 }
@@ -124,7 +154,7 @@ const loadVehicles = unstable_cache(queryVehicles, ["vehicle-list"], { tags: [CA
 
 export async function getVehicles(filters: VehicleFilters = {}) {
   const empty = { vehicles: [] as Vehicle[], total: 0, page: filters.page ?? 1, pageSize: filters.pageSize ?? PAGE_SIZE };
-  if (!hasSupabaseEnv()) return empty;
+  if (!hasSupabaseEnv() || await catalogHidden()) return empty;
   try {
     // Free-text searches are unbounded, so they are never cached (no cache-key growth); everything else is.
     return filters.search?.trim() || filters.model?.trim() ? await queryVehicles(filters) : await loadVehicles(filters);
@@ -141,7 +171,7 @@ const loadFeaturedVehicles = unstable_cache(async (limit: number) => {
 }, ["vehicles-featured"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getFeaturedVehicles(limit = 4) {
-  return hasSupabaseEnv() ? loadFeaturedVehicles(limit) : [] as Vehicle[];
+  return hasSupabaseEnv() && !await catalogHidden() ? loadFeaturedVehicles(limit) : [] as Vehicle[];
 }
 
 const loadRecentVehicles = unstable_cache(async (limit: number) => {
@@ -154,7 +184,7 @@ const loadRecentVehicles = unstable_cache(async (limit: number) => {
 }, ["vehicles-recent"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getRecentVehicles(limit = 4) {
-  return hasSupabaseEnv() ? loadRecentVehicles(limit) : [] as Vehicle[];
+  return hasSupabaseEnv() && !await catalogHidden() ? loadRecentVehicles(limit) : [] as Vehicle[];
 }
 
 const loadVehicleBySlug = unstable_cache(async (slug: string) => {
@@ -168,7 +198,7 @@ const loadVehicleBySlug = unstable_cache(async (slug: string) => {
 }, ["vehicle-by-slug"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 // Deduped within a render so generateMetadata and the page share one lookup.
-export const getVehicleBySlug = cache(async (slug: string): Promise<Vehicle | null> => hasSupabaseEnv() ? loadVehicleBySlug(slug) : null);
+export const getVehicleBySlug = cache(async (slug: string): Promise<Vehicle | null> => hasSupabaseEnv() && !await catalogHidden() ? loadVehicleBySlug(slug) : null);
 
 const loadRelatedVehicles = unstable_cache(async (make: string, excludeId: string, limit: number) => {
   const client = publicClient();
@@ -179,14 +209,14 @@ const loadRelatedVehicles = unstable_cache(async (make: string, excludeId: strin
   return attachVehicleMedia(data, client, true);
 }, ["vehicles-related"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
-export async function getRelatedVehicles(make: string, excludeId: string, limit = 3) {
-  return hasSupabaseEnv() ? loadRelatedVehicles(make, excludeId, limit) : [] as Vehicle[];
+export async function getRelatedVehicles(make: string | null, excludeId: string, limit = 3) {
+  return make && hasSupabaseEnv() && !await catalogHidden() ? loadRelatedVehicles(make, excludeId, limit) : [] as Vehicle[];
 }
 
 export async function getVehiclesByIds(ids: string[]) {
   const client = await clientOrNull();
   const safeIds = ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id)).slice(0, 100);
-  if (!client || !safeIds.length) return [] as Vehicle[];
+  if (!client || !safeIds.length || await catalogHidden()) return [] as Vehicle[];
   const { data, error } = await client.from("vehicles").select("*").in("id", safeIds)
     .eq("published", true).is("archived_at", null);
   return error || !data ? [] : attachVehicleMedia(data, client);
@@ -194,17 +224,17 @@ export async function getVehiclesByIds(ids: string[]) {
 
 const loadVehicleFilterOptions = unstable_cache(async () => {
   const client = publicClient();
-  const rows: { make: string | null; model: string | null; fuel_type: string | null; transmission: string | null; body_type: string | null }[] = [];
+  const rows: { make: string | null; model: string | null; fuel_type: string | null; transmission: string | null; body_type: string | null; exterior_color: string | null }[] = [];
   for (let offset = 0; ; offset += 1000) {
     const { data, error } = await client.from("vehicles")
-      .select("make, model, fuel_type, transmission, body_type")
+      .select("make, model, fuel_type, transmission, body_type, exterior_color")
       .eq("published", true).is("archived_at", null)
       .order("id").range(offset, offset + 999);
     if (error) throw new Error("Unable to load filter options");
     rows.push(...(data ?? []));
     if (!data || data.length < 1000) break;
   }
-  const distinct = (key: "make" | "fuel_type" | "transmission" | "body_type") =>
+  const distinct = (key: "make" | "fuel_type" | "transmission" | "body_type" | "exterior_color") =>
     Array.from(new Set(rows.map((row) => row[key]).filter((value): value is string => Boolean(value)))).sort();
   const makeCounts: Record<string, number> = {};
   const modelsByMake: Record<string, string[]> = {};
@@ -214,11 +244,11 @@ const loadVehicleFilterOptions = unstable_cache(async () => {
     if (row.model && !modelsByMake[row.make]?.includes(row.model)) modelsByMake[row.make] = [...(modelsByMake[row.make] ?? []), row.model];
   }
   for (const models of Object.values(modelsByMake)) models.sort((a, b) => a.localeCompare(b));
-  return { makes: distinct("make"), modelsByMake, fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type"), makeCounts };
+  return { makes: distinct("make"), modelsByMake, fuels: distinct("fuel_type"), transmissions: distinct("transmission"), bodyTypes: distinct("body_type"), colors: distinct("exterior_color"), makeCounts };
 }, ["vehicle-filter-options"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getVehicleFilterOptions() {
-  if (!hasSupabaseEnv()) return { makes: [] as string[], modelsByMake: {} as Record<string, string[]>, fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], makeCounts: {} as Record<string, number> };
+  if (!hasSupabaseEnv() || await catalogHidden()) return { makes: [] as string[], modelsByMake: {} as Record<string, string[]>, fuels: [] as string[], transmissions: [] as string[], bodyTypes: [] as string[], colors: [] as string[], makeCounts: {} as Record<string, number> };
   return loadVehicleFilterOptions();
 }
 
@@ -261,16 +291,21 @@ export async function getAdminStats() {
 export async function getAdminVehicles() {
   const client = await clientOrNull();
   if (!client) return [];
-  const { data, error } = await client.from("vehicles").select("*")
-    .order("updated_at", { ascending: false });
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  const [{ data, error }, privateRows] = await Promise.all([
+    client.from("vehicles").select("*").order("updated_at", { ascending: false }),
+    client.from("vehicle_private").select("vehicle_id, vin"),
+  ]);
+  if (error || !data) return [];
+  // The chassis number is staff-only; it is added here so the inventory search can find it.
+  const vins = new Map((privateRows.data ?? []).map((row) => [row.vehicle_id as string, row.vin as string | null]));
+  return (await attachVehicleMedia(data, client)).map((vehicle) => ({ ...vehicle, vin: vins.get(vehicle.id) ?? null }));
 }
 
 export async function getAdminDashboardVehicles() {
   const client = await clientOrNull();
   if (!client) return [];
   const { data, error } = await client.from("vehicles")
-    .select("id, title, published, availability, archived_at, price, cash_price, currency, year, fuel_type, transmission, body_type, seats, updated_at, vehicle_images(id, storage_path, is_cover, sort_order)")
+    .select("id, title, make, model, published, availability, archived_at, price, cash_price, currency, year, fuel_type, transmission, body_type, seats, updated_at, vehicle_images(id, storage_path, is_cover, sort_order)")
     .is("archived_at", null)
     .order("updated_at", { ascending: false });
   return error || !data ? [] : data;
@@ -340,7 +375,7 @@ const loadSitemapEntries = unstable_cache(async () => {
 }, ["vehicle-sitemap"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getPublicVehicleSitemapEntries() {
-  return hasSupabaseEnv() ? loadSitemapEntries() : [];
+  return hasSupabaseEnv() && !await catalogHidden() ? loadSitemapEntries() : [];
 }
 
 // Slugs to pre-render at build time. Never fails the build; every other car renders on its first request.

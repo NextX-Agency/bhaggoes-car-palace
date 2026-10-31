@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { safeExternalUrl, slugify } from "@/lib/domain";
+import { listingTitle } from "@/lib/vehicle-templates";
 import { clearFailures, clientAddress, isThrottled, recordFailure } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
@@ -117,10 +118,13 @@ export async function signOutAction() {
 
 const vehicleFieldLabels: Record<string, string> = { title: "De titel", make: "Het merk", model: "Het model", variant: "De variant", year: "Het bouwjaar", price: "De interne prijs", cash_price: "De cashprijs", currency: "De valuta", mileage: "De kilometerstand", engine_capacity: "De motorinhoud", fuel_type: "De brandstof", transmission: "De transmissie", drive_type: "De aandrijving", body_type: "De carrosserie", exterior_color: "De buitenkleur", interior_color: "De binnenkleur", seats: "Het aantal zitplaatsen", doors: "Het aantal deuren", description: "De beschrijving", condition: "De conditie", availability: "De beschikbaarheid", stock_number: "Het stocknummer", vin: "Het chassisnummer", admin_notes: "De interne notities", features: "De kenmerken" };
 const vehicleSchema = z.object({
-  title: z.string().trim().min(2).max(180), make: z.string().trim().min(1).max(80), model: z.string().trim().min(1).max(100),
+  title: z.string().trim().max(180), make: z.string().trim().max(80), model: z.string().trim().max(100),
   variant: z.string().max(120), year: z.number().int().min(1886).max(2200).nullable(), price: z.number().min(0).max(1_000_000_000).nullable(), cash_price: z.number().min(0).max(1_000_000_000).nullable(), currency: z.string().max(8), mileage: z.number().min(0).max(10_000_000).nullable(),
   engine_capacity: z.string().max(50), fuel_type: z.string().max(50), transmission: z.string().max(50), drive_type: z.string().max(50), body_type: z.string().max(50), exterior_color: z.string().max(50), interior_color: z.string().max(50), seats: z.number().int().min(1).max(100).nullable(), doors: z.number().int().min(1).max(20).nullable(), description: z.string().max(10000), condition: z.enum(["new", "used"]), availability: z.enum(["available", "on_the_way", "reserved", "sold", "rental"]), featured: z.boolean(), published: z.boolean(), stock_number: z.string().max(80), vin: z.string().max(80), admin_notes: z.string().max(5000), features: z.array(z.string().max(80)).max(60),
-}).refine((value) => (value.price === null && value.cash_price === null) || Boolean(value.currency.trim()), { path: ["currency"], message: "Kies een valuta als je een prijs invult." });
+});
+
+// Only photos are needed to list a car: when there is no title, one is made from the details or the stock number.
+const photoOnlyTitle = (stockNumber: string | null | undefined) => stockNumber ? `Vehicle ${stockNumber}` : "Vehicle";
 
 export async function saveVehicleAction(_previous: ActionState & { id?: string; slug?: string }, form: FormData): Promise<ActionState & { id?: string; slug?: string }> {
   try {
@@ -132,26 +136,33 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
     const parsed = vehicleSchema.safeParse(fields);
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], vehicleFieldLabels, "Controleer de gegevens van de auto en probeer het opnieuw.") };
     const value = parsed.data;
+    const title = value.title || listingTitle(value.year ? String(value.year) : "", value.make, value.model, value.variant);
     const existingId = text(form, "id");
     if (existingId && !z.string().uuid().safeParse(existingId).success) return { error: "Deze auto is niet gevonden. Ga terug naar de voorraad en probeer het opnieuw." };
     const slugBase = slugify([value.year, value.make, value.model, value.variant].filter(Boolean).join(" ")) || "vehicle";
     let slug = `${slugBase}-${crypto.randomUUID().slice(0, 6)}`;
     let archived = false;
+    let currentStock: string | null = null;
     if (existingId) {
-      const { data: current, error: currentError } = await supabase.from("vehicles").select("slug, archived_at").eq("id", existingId).maybeSingle();
+      const { data: current, error: currentError } = await supabase.from("vehicles").select("slug, archived_at, stock_number").eq("id", existingId).maybeSingle();
       if (currentError || !current) return { error: "Deze auto is niet gevonden. Ga terug naar de voorraad en probeer het opnieuw." };
       slug = current.slug;
       archived = Boolean(current.archived_at);
+      currentStock = current.stock_number;
     }
     const vehiclePayload = {
       slug,
-      title: value.title, make: value.make, model: value.model, variant: nullable(value.variant), year: value.year, price: value.price, cash_price: value.cash_price, currency: nullable(value.currency), mileage: value.mileage,
+      title: title || photoOnlyTitle(nullable(value.stock_number) ?? currentStock), make: nullable(value.make), model: nullable(value.model), variant: nullable(value.variant), year: value.year, price: value.price, cash_price: value.cash_price, currency: nullable(value.currency), mileage: value.mileage,
       engine_capacity: nullable(value.engine_capacity), fuel_type: nullable(value.fuel_type), transmission: nullable(value.transmission), drive_type: nullable(value.drive_type), body_type: nullable(value.body_type), exterior_color: nullable(value.exterior_color), interior_color: nullable(value.interior_color), seats: value.seats, doors: value.doors, description: nullable(value.description), condition: value.condition, availability: value.availability, featured: value.featured, published: archived ? false : value.published, stock_number: nullable(value.stock_number),
     };
     const result = existingId
       ? await supabase.from("vehicles").update(vehiclePayload).eq("id", existingId).select("id,slug").single()
-      : await supabase.from("vehicles").insert({ ...vehiclePayload, archived_at: null }).select("id,slug").single();
-    if (result.error || !result.data) return { error: result.error?.code === "23505" ? "Dit stocknummer is al in gebruik." : "De auto kon niet worden opgeslagen." };
+      : await supabase.from("vehicles").insert({ ...vehiclePayload, archived_at: null }).select("id,slug,stock_number").single();
+    if (result.error || !result.data) return { error: result.error?.code === "23505" ? "Dit stocknummer is al in gebruik." : result.error?.code === "23502" ? "Merk en model zijn nog verplicht in de database. Voer de nieuwste database-update (migratie) uit om auto’s zonder merk of model op te slaan." : "De auto kon niet worden opgeslagen." };
+    // A new photo-only car gets its automatic stock number on insert, so its title can only name it afterwards.
+    if (!title && !existingId && "stock_number" in result.data && result.data.stock_number && !value.stock_number) {
+      await supabase.from("vehicles").update({ title: photoOnlyTitle(result.data.stock_number as string) }).eq("id", result.data.id);
+    }
     const { error: privateError } = await supabase.from("vehicle_private").upsert({ vehicle_id: result.data.id, vin: nullable(value.vin), admin_notes: nullable(value.admin_notes) }, { onConflict: "vehicle_id" });
     if (privateError) return { error: "De auto is opgeslagen, maar het chassisnummer en de interne notities niet. Sla opnieuw op om het nog eens te proberen." };
     const names = [...new Set(value.features.map((name) => name.trim()).filter(Boolean))];
@@ -194,7 +205,7 @@ export async function duplicateVehicleAction(form: FormData) {
   const { data: vehicle } = await supabase.from("vehicles").select("*").eq("id", id).single();
   if (!vehicle) return;
   const payload = {
-    slug: `${slugify(vehicle.title)}-${crypto.randomUUID().slice(0, 6)}`, title: vehicle.title, make: vehicle.make, model: vehicle.model,
+    slug: `${slugify(vehicle.title) || "vehicle"}-${crypto.randomUUID().slice(0, 6)}`, title: vehicle.title, make: vehicle.make, model: vehicle.model,
     variant: vehicle.variant, year: vehicle.year, price: vehicle.price, cash_price: vehicle.cash_price, currency: vehicle.currency, mileage: vehicle.mileage,
     engine_capacity: vehicle.engine_capacity, fuel_type: vehicle.fuel_type, transmission: vehicle.transmission, drive_type: vehicle.drive_type,
     body_type: vehicle.body_type, exterior_color: vehicle.exterior_color, interior_color: vehicle.interior_color, seats: vehicle.seats,
@@ -283,14 +294,53 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
       trade_in: text(form, "trade_in") === "on",
       promo_text: text(form, "promo_text"),
     };
+    const catalog = { catalog_hidden: text(form, "catalog_hidden") === "on", catalog_hidden_message: nullable(text(form, "catalog_hidden_message")) };
+    if (catalog.catalog_hidden_message && catalog.catalog_hidden_message.length > 600) return { error: "Het bericht bij de verborgen catalogus mag maximaal 600 tekens zijn." };
     const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), seo_title: text(form, "seo_title"), seo_description: text(form, "seo_description"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), sales_terms: salesTerms, show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
     const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).refine((value) => /^\d{7,15}$/.test(value.replace(/\D/g, "")), { message: "WhatsApp-nummer: gebruik landnummer plus nummer, bijvoorbeeld +597 866-8777." }).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(1500).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), sales_terms: z.object({ benefits: z.array(z.string().min(2).max(160)).max(15), internal_down_percent: z.number().int().min(0).max(100), internal_max_months: z.number().int().min(1).max(120), bank_down_percent: z.number().int().min(0).max(100), trade_in: z.boolean(), promo_text: z.string().max(300) }), show_sold: z.boolean(), business_hours: z.record(z.string().max(60), z.string().max(120)).refine((hours) => Object.keys(hours).length <= 14, { message: "Gebruik maximaal 14 regels voor de openingstijden." }), social_links: z.record(z.string(), z.string().max(300)), logo_path: z.string().max(300).regex(/^(?!.*\.\.)([A-Za-z0-9][A-Za-z0-9._\/-]*|https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/site-assets\/[A-Za-z0-9._\/-]+)$/).nullable() }).safeParse(settings);
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], settingsFieldLabels, "Controleer de website-instellingen en probeer het opnieuw.") };
-    const { error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1);
+    let { error } = await supabase.from("site_settings").update({ ...parsed.data, ...(form.has("catalog_hidden_message") ? catalog : {}) }).eq("id", 1);
+    // Older databases do not have the catalog columns yet: save everything else and say what is missing.
+    if (error && isMissingColumn(error) && form.has("catalog_hidden_message")) {
+      ({ error } = await supabase.from("site_settings").update(parsed.data).eq("id", 1));
+      if (!error) { expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout"); return catalog.catalog_hidden ? { error: catalogMigrationMessage } : { ok: true }; }
+    }
     if (error) return { error: "De website-instellingen konden niet worden opgeslagen." };
     // show_sold changes which cars are public, so the vehicle caches expire together with the settings.
     expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout"); return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De website-instellingen konden niet worden opgeslagen." }; }
+}
+
+const catalogMigrationMessage = "De catalogus kon niet worden verborgen: de database heeft eerst de nieuwste update (migratie) nodig. De andere instellingen zijn opgeslagen.";
+const isMissingColumn = (error: { code?: string }) => error.code === "PGRST204" || error.code === "42703";
+
+/** The one-tap switch on the dashboard: hides or shows every car on the public website. */
+export async function setCatalogHiddenAction(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const hidden = text(form, "hidden");
+  if (hidden !== "true" && hidden !== "false") return { error: "Kies of de catalogus zichtbaar moet zijn." };
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.from("site_settings").update({ catalog_hidden: hidden === "true" }).eq("id", 1);
+    if (error) return { error: isMissingColumn(error) ? "De database heeft eerst de nieuwste update (migratie) nodig voordat de catalogus verborgen kan worden." : "De catalogus kon niet worden bijgewerkt." };
+    expirePublicCache("settings", "vehicles"); revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (error) { return { error: error instanceof Error ? error.message : "De catalogus kon niet worden bijgewerkt." }; }
+}
+
+/** Quick price edit from the inventory list; an empty field means "price on request". */
+export async function updateVehiclePriceAction(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const id = text(form, "id");
+  if (!z.string().uuid().safeParse(id).success) return { error: "Deze auto kon niet worden herkend." };
+  const parsed = z.object({ price: z.number().min(0).max(1_000_000_000).nullable(), cash_price: z.number().min(0).max(1_000_000_000).nullable() })
+    .safeParse({ price: optionalNumber(text(form, "price").replace(/[^\d.]/g, "")), cash_price: optionalNumber(text(form, "cash_price").replace(/[^\d.]/g, "")) });
+  if (!parsed.success) return { error: "Vul een geldige prijs in, of laat het veld leeg voor ‘op aanvraag’." };
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.from("vehicles").update(parsed.data).eq("id", id);
+    if (error) return { error: "De prijs kon niet worden opgeslagen." };
+    expirePublicCache("vehicles"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    return { ok: true };
+  } catch (error) { return { error: error instanceof Error ? error.message : "De prijs kon niet worden opgeslagen." }; }
 }
 
 export async function updateInquiryAction(form: FormData) {

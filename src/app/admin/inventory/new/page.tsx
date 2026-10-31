@@ -10,5 +10,5 @@ export const metadata = { title: "Nieuwe auto" };
 export default async function NewVehiclePage() {
   const { user } = await requireAdmin();
   const templates = await getAdminVehicleTemplates();
-  return <AdminFrame active="/admin/inventory" email={user.email ?? "Beheerder"} title="Nieuwe auto" actions={<Link className="button button-ghost button-sm" href="/admin/inventory"><ArrowLeft size={15} /> Voorraad</Link>}><AdminVehicleEditor templates={templates} /></AdminFrame>;
+  return <AdminFrame active="/admin/inventory" email={user.email ?? "Beheerder"} title="Nieuwe auto" actions={<Link className="button button-ghost button-sm" href="/admin/inventory"><ArrowLeft size={15} /> Voorraad</Link>}><p className="admin-inventory-intro">Meerdere auto’s tegelijk toevoegen? Gebruik <Link href="/admin/inventory/bulk">Snel uploaden</Link>: sleep de foto’s erin en sla alles in één keer op.</p><AdminVehicleEditor templates={templates} /></AdminFrame>;
 }

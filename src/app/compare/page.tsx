@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CatalogNotice } from "@/components/catalog-notice";
 import { SavedCars } from "@/components/favorites-compare";
 import { compareCarsEnabled } from "@/lib/features";
 import { getSettings } from "@/lib/data";
@@ -10,5 +11,6 @@ export const metadata: Metadata = compareCarsEnabled
 export default async function ComparePage() {
   if (!compareCarsEnabled) notFound();
   const settings = await getSettings();
+  if (settings.catalog_hidden) return <div className="catalog-page"><CatalogNotice settings={settings} headingLevel={1} /></div>;
   return <div className="container page-wrap"><div className="page-intro"><h1>Compare cars</h1><p>Compare up to three cars side by side.</p></div><SavedCars mode="compare" defaultCurrency={settings.currency} /></div>;
 }

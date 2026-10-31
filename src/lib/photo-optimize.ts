@@ -2,6 +2,7 @@
 export const maxPhotoBytes = 15 * 1024 * 1024;
 // Originals may be larger than the storage limit because they are shrunk before upload; anything beyond this is not worth decoding.
 export const maxSourcePhotoBytes = 40 * 1024 * 1024;
+const MAX_EDGE = 2000;
 export const photoAccept = "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif";
 
 export const isHeicPhoto = (file: File) => /^image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
@@ -12,7 +13,8 @@ function encode(canvas: HTMLCanvasElement, type: string, quality: number) {
 }
 
 /**
- * Returns a photo that storage accepts (JPEG, PNG, WebP or AVIF, at most 2400px on the long side when it was re-encoded).
+ * Returns a photo that storage accepts (JPEG, PNG, WebP or AVIF, at most 2000px on the long side when it was re-encoded).
+ * 2000px is still sharp in the full-screen gallery and keeps uploads small on a phone connection.
  * Throws an Error with a Dutch message for photos this browser cannot convert.
  */
 export async function preparePhoto(file: File): Promise<File> {
@@ -24,7 +26,7 @@ export async function preparePhoto(file: File): Promise<File> {
   let bitmap: ImageBitmap | null = null;
   try {
     bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
     if (!heic && scale === 1 && file.type === "image/webp" && file.size < 1_500_000) return file;
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -33,8 +35,8 @@ export async function preparePhoto(file: File): Promise<File> {
     if (!context) throw new Error("canvas");
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     // Not every browser can encode WebP (Safari may hand back a PNG instead), so check the type we actually got.
-    let blob = await encode(canvas, "image/webp", 0.84);
-    if (!blob || blob.type !== "image/webp") blob = await encode(canvas, "image/jpeg", 0.86);
+    let blob = await encode(canvas, "image/webp", 0.82);
+    if (!blob || blob.type !== "image/webp") blob = await encode(canvas, "image/jpeg", 0.84);
     if (!blob || !/^image\/(webp|jpeg)$/.test(blob.type)) throw new Error("encode");
     if (!heic && blob.size >= file.size) return file;
     const baseName = file.name.replace(/\.[^.]+$/, "") || "vehicle-photo";

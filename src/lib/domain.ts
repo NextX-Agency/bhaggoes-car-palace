@@ -5,8 +5,8 @@ export interface Vehicle {
   id: string;
   slug: string;
   title: string;
-  make: string;
-  model: string;
+  make: string | null;
+  model: string | null;
   variant: string | null;
   year: number | null;
   price: number | null;
@@ -44,6 +44,18 @@ export interface VehicleImage {
   url?: string;
 }
 
+type NamedVehicle = Pick<Vehicle, "title" | "year" | "make" | "model" | "variant">;
+
+/** "2018 Toyota Harrier Premium"; falls back to the listing title for cars saved with photos only. */
+export function vehicleDisplayName(vehicle: NamedVehicle) {
+  return [vehicle.year, vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ") || vehicle.title;
+}
+
+/** "Toyota Harrier Premium" (no year); falls back to the listing title. */
+export function vehicleHeading(vehicle: NamedVehicle) {
+  return [vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ") || vehicle.title;
+}
+
 export function isDemoVehicle(vehicle: Pick<Vehicle, "stock_number">) {
   return vehicle.stock_number?.startsWith("DEMO-") ?? false;
 }
@@ -67,6 +79,9 @@ export interface SiteSettings {
   sales_terms: SalesTerms;
   currency: string | null;
   show_sold: boolean;
+  /** When on, the public site shows no cars at all, only the dealership information. */
+  catalog_hidden: boolean;
+  catalog_hidden_message: string | null;
   logo_path: string | null;
   logo_url?: string | null;
   updated_at?: string;
@@ -117,6 +132,7 @@ export interface VehicleFilters {
   fuel?: string;
   transmission?: string;
   bodyType?: string;
+  color?: string;
   minMileage?: number;
   maxMileage?: number;
   sort?: "newest" | "oldest" | "price-asc" | "price-desc" | "year-desc";
@@ -143,6 +159,8 @@ export const defaultSettings: SiteSettings = {
   sales_terms: defaultSalesTerms,
   currency: null,
   show_sold: false,
+  catalog_hidden: false,
+  catalog_hidden_message: null,
   logo_path: null,
   logo_url: null,
 };
@@ -152,6 +170,8 @@ export function normalizeSiteSettings(data: Partial<SiteSettings>): SiteSettings
   return {
     ...defaultSettings,
     ...data,
+    catalog_hidden: data.catalog_hidden === true,
+    catalog_hidden_message: data.catalog_hidden_message?.trim() || null,
     phone: data.phone?.trim() || defaultSettings.phone,
     whatsapp: data.whatsapp?.trim() || defaultSettings.whatsapp,
     address: data.address?.trim() || defaultSettings.address,

@@ -25,7 +25,9 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
   const setOpen = (next: boolean) => setOpenPath(next ? pathname : null);
   const favoritesSnapshot = useSyncExternalStore(subscribeToBrowserStore, () => readBrowserSnapshot(FAVORITES_KEY), emptyBrowserSnapshot);
   const savedCount = parseStoredIds(favoritesSnapshot, 100).length;
-  const visibleLinks = links.filter(([label]) => label !== "Financing" || settings.financing_enabled);
+  // With the catalog switched off there are no cars to browse or save, so those links go away.
+  const catalog = !settings.catalog_hidden;
+  const visibleLinks = links.filter(([label]) => (label !== "Financing" || settings.financing_enabled) && (label !== "Inventory" || catalog));
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
             {visibleLinks.map(([label, href]) => <Link href={href} key={href} aria-current={isActive(href) ? "page" : undefined}>{label}</Link>)}
           </nav>
           <div className="nav-actions">
-            {favoritesLink}
+            {catalog ? favoritesLink : null}
             <Dialog.Trigger asChild>
               <button className="icon-button menu-toggle" type="button" aria-label="Open menu"><Menu size={22} /></button>
             </Dialog.Trigger>
@@ -70,15 +72,15 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
             <div className="container nav-row">
               {brand}
               <div className="nav-actions">
-                {favoritesLink}
+                {catalog ? favoritesLink : null}
                 <Dialog.Close asChild><button className="icon-button" type="button" aria-label="Close menu"><X size={22} /></button></Dialog.Close>
               </div>
             </div>
           </div>
           <nav className="mobile-nav container" aria-label="Mobile navigation">
             {visibleLinks.map(([label, href]) => <Link href={href} key={href} aria-current={isActive(href) ? "page" : undefined}>{label}<ArrowRight size={18} aria-hidden="true" /></Link>)}
-            {compareCarsEnabled ? <Link href="/compare" aria-current={isActive("/compare") ? "page" : undefined}>Compare cars<ArrowRight size={18} aria-hidden="true" /></Link> : null}
-            <Link href="/favorites" aria-current={isActive("/favorites") ? "page" : undefined}>Saved cars{savedCount ? ` (${savedCount})` : ""}<ArrowRight size={18} aria-hidden="true" /></Link>
+            {compareCarsEnabled && catalog ? <Link href="/compare" aria-current={isActive("/compare") ? "page" : undefined}>Compare cars<ArrowRight size={18} aria-hidden="true" /></Link> : null}
+            {catalog ? <Link href="/favorites" aria-current={isActive("/favorites") ? "page" : undefined}>Saved cars{savedCount ? ` (${savedCount})` : ""}<ArrowRight size={18} aria-hidden="true" /></Link> : null}
             {settings.phone ? <div className="mobile-nav-actions"><a className="button button-outline" href={`tel:${settings.phone}`}>Call {settings.phone}</a></div> : null}
           </nav>
         </Dialog.Content>

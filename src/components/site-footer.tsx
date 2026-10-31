@@ -27,9 +27,8 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       </div>
       <nav className="footer-col footer-explore" aria-label="Explore">
         <p className="footer-label">Explore</p>
-        <Link href="/cars">Inventory</Link>
-        <Link href="/favorites">Saved cars</Link>
-        {compareCarsEnabled ? <Link href="/compare">Compare cars</Link> : null}
+        {settings.catalog_hidden ? null : <><Link href="/cars">Inventory</Link><Link href="/favorites">Saved cars</Link></>}
+        {compareCarsEnabled && !settings.catalog_hidden ? <Link href="/compare">Compare cars</Link> : null}
         {settings.financing_enabled ? <Link href="/financing">Financing</Link> : null}
         <Link href="/faq">FAQ</Link>
         <Link href="/contact">Contact</Link>

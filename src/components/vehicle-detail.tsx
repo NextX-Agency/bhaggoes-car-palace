@@ -5,16 +5,14 @@ import { VehicleGallery } from "@/components/vehicle-gallery";
 import { VehicleShareButton } from "@/components/vehicle-share-button";
 import { BrandLogo } from "@/components/brand-logo";
 import type { SiteSettings, Vehicle } from "@/lib/domain";
-import { buildWhatsAppLink, formatAmount, parseLocations, safeExternalUrl, vehicleSpecifications } from "@/lib/domain";
+import { buildWhatsAppLink, formatAmount, parseLocations, safeExternalUrl, vehicleDisplayName, vehicleHeading, vehicleSpecifications } from "@/lib/domain";
 import { siteUrl } from "@/lib/site-url";
 
-export function vehicleDisplayName(vehicle: Vehicle) {
-  return [vehicle.year, vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
-}
+export { vehicleDisplayName };
 
 export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle: Vehicle; settings: SiteSettings; preview?: boolean }) {
   const name = vehicleDisplayName(vehicle);
-  const heading = [vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
+  const heading = vehicleHeading(vehicle);
   const price = formatAmount(vehicle.price, vehicle.currency ?? settings.currency);
   const cashPrice = vehicle.cash_price == null ? null : formatAmount(vehicle.cash_price, vehicle.currency ?? settings.currency);
   const hasPrice = vehicle.price != null;
@@ -34,7 +32,7 @@ export function VehicleDetail({ vehicle, settings, preview = false }: { vehicle:
       <aside className="detail-aside" aria-label="Price and contact">
         <div className="detail-summary">
           <div>
-            <p className="eyebrow detail-brand"><BrandLogo make={vehicle.make} />{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
+            <p className="eyebrow detail-brand">{vehicle.make ? <BrandLogo make={vehicle.make} /> : null}{[vehicle.year, vehicle.condition === "new" ? "New" : "Used"].filter(Boolean).join(" · ")}</p>
             <Title>{heading}</Title>
           </div>
           <div className="detail-head-row">

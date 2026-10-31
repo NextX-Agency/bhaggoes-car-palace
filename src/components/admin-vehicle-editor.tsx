@@ -9,7 +9,8 @@ import type { Vehicle } from "@/lib/domain";
 import { deleteVehicleAction, deleteVehicleTemplateAction, refreshPublicInventoryAction, saveVehicleAction, saveVehicleTemplateAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
-import { isSupportedPhoto, maxPhotoBytes, maxSourcePhotoBytes, photoAccept, preparePhoto } from "@/lib/photo-optimize";
+import { photoAccept } from "@/lib/photo-optimize";
+import { maxPhotosPerVehicle, uploadVehiclePhotos, warmPhotos } from "@/lib/vehicle-photo-upload";
 import { bodyTypes, currencies, driveTypes, fuelTypes, transmissionTypes, vehicleColors, vehicleMakes } from "@/lib/vehicle-catalog";
 import { BrandLogo } from "@/components/brand-logo";
 import { ComboField } from "@/components/combo-field";
@@ -20,7 +21,7 @@ import { listingTitle, templateFieldNames, type VehicleTemplate, type VehicleTem
 // Option names are stored data and shown on the website as they are; everything else on this screen is Dutch.
 const commonFeatures = ["Air conditioning", "Backup camera", "Bluetooth", "Apple CarPlay", "Android Auto", "Leather seats", "Keyless entry", "Alloy wheels", "Cruise control", "Sunroof", "Parking sensors"];
 const importLabels: Record<string, string> = { year: "Bouwjaar", make: "Merk", model: "Model", fuel_type: "Brandstof", transmission: "Transmissie", body_type: "Carrosserie", seats: "Zitplaatsen", stock_number: "Stocknummer", price: "Interne prijs", cash_price: "Cashprijs" };
-const maxPhotos = 15;
+const maxPhotos = maxPhotosPerVehicle;
 const photoCount = (count: number) => `${count} ${count === 1 ? "foto" : "foto’s"}`;
 
 type Notice = { text: string; error?: boolean };
@@ -34,7 +35,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const [deleting, setDeleting] = useState(false);
   const [savedId, setSavedId] = useState(vehicle?.id ?? "");
   const [photos, setPhotos] = useState(vehicle?.images ?? []); const [featureText, setFeatureText] = useState((vehicle?.features ?? []).join("\n")); const [uploading, setUploading] = useState(false); const [message, setMessage] = useState<Notice | null>(notice ? { text: notice } : null);
-  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [failedFiles, setFailedFiles] = useState<File[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -123,8 +124,19 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
       router.refresh();
     });
   };
+  // After "Opslaan & volgende" the form is emptied for the next car instead of opening the saved one.
+  const resetForNextCar = () => {
+    const form = formRef.current;
+    if (!form) return;
+    form.reset();
+    generatedTitle.current = "";
+    previewUrls.current.forEach((url) => URL.revokeObjectURL(url)); previewUrls.current.clear();
+    setPhotos([]); setSavedId(""); setFeatureText(""); setImportText(""); setMakePreview(""); setFailedFiles([]); setDirty(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (pending || uploading) return;
+    const next = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "next";
     const form = event.currentTarget; const formData = new FormData(form); formData.set("features", featureText);
     const files = Array.from(form.querySelector<HTMLInputElement>('input[name="photos"]')?.files ?? []);
     formData.delete("photos");
@@ -138,46 +150,25 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
       const saved = vehicle ? "Wijzigingen opgeslagen." : "Auto opgeslagen.";
       // A new car moves on to its own page once everything is in; when a photo failed it stays here so the retry button and the reason stay visible.
       const complete = files.length ? await uploadFiles(result.id, files, `${saved} `) : (notify(saved), true);
-      if (!vehicle && complete) router.replace(`/admin/inventory/${result.id}?opgeslagen=1`);
+      if (!vehicle && complete && next) { resetForNextCar(); notify(`${saved} Je kunt nu de volgende auto toevoegen.`); router.refresh(); }
+      else if (!vehicle && complete) router.replace(`/admin/inventory/${result.id}?opgeslagen=1`);
     });
   }
-  /** Uploads photos one by one; returns true when every photo made it. Photos that failed on the connection are kept for the retry button. */
+  /** Uploads photos several at a time; returns true when every photo made it. Photos that failed on the connection are kept for the retry button. */
   async function uploadFiles(vehicleId: string, files: File[], prefix = ""): Promise<boolean> {
     if (uploading) return false;
     if (photos.length + files.length > maxPhotos) { notify(`${prefix}Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${Math.max(0, maxPhotos - photos.length)} toevoegen.`, true); return false; }
     setUploading(true); setMessage(null); setFailedFiles([]);
-    const issues: string[] = []; const retry: File[] = [];
-    let uploaded = 0;
     try {
-      const client = createClient();
-      for (const [index, file] of files.entries()) {
-        setUploadProgress({ current: index + 1, total: files.length, name: file.name });
-        try {
-          if (!isSupportedPhoto(file)) { issues.push(`${file.name} is geen ondersteunde foto (gebruik JPEG, PNG, WebP, AVIF of HEIC).`); continue; }
-          if (file.size > maxSourcePhotoBytes) { issues.push(`${file.name} is groter dan ${maxSourcePhotoBytes / 1024 / 1024} MB.`); continue; }
-          let optimized: File;
-          try { optimized = await preparePhoto(file); } catch (cause) { issues.push(`${file.name} ${cause instanceof Error ? cause.message : "kon niet worden verwerkt."}`); continue; }
-          if (optimized.size > maxPhotoBytes) { issues.push(`${file.name} is ook na het verkleinen groter dan ${maxPhotoBytes / 1024 / 1024} MB.`); continue; }
-          const extension = optimized.type.split("/")[1].replace("jpeg", "jpg"); const path = `${vehicleId}/${crypto.randomUUID()}.${extension}`;
-          const { error: uploadError } = await client.storage.from("vehicle-images").upload(path, optimized, { contentType: optimized.type, upsert: false });
-          if (uploadError) { issues.push(`${file.name} kon niet worden geüpload. Controleer je verbinding.`); retry.push(file); continue; }
-          const nextOrder = photos.length + uploaded;
-          const imageAlt = `${vehicle?.title ?? "Vehicle"} photo ${nextOrder + 1}`;
-          const { data: imageRecord, error } = await client.from("vehicle_images").insert({ vehicle_id: vehicleId, storage_path: path, alt_text: imageAlt, sort_order: nextOrder, is_cover: nextOrder === 0 }).select("id").single();
-          if (error || !imageRecord) { await client.storage.from("vehicle-images").remove([path]); issues.push(`${file.name} kon niet aan de auto worden toegevoegd.`); retry.push(file); }
-          else {
-            uploaded += 1;
-            const previewUrl = URL.createObjectURL(optimized);
-            previewUrls.current.add(previewUrl);
-            setPhotos((current) => [...current, { id: imageRecord.id, storage_path: path, alt_text: imageAlt, sort_order: current.length, is_cover: current.length === 0, url: previewUrl }]);
-          }
-        } catch { issues.push(`${file.name} kon niet worden geüpload. Controleer je verbinding.`); retry.push(file); }
-      }
+      const title = (formRef.current?.elements.namedItem("title") as HTMLInputElement | null)?.value || vehicle?.title || "Vehicle";
+      const { uploaded, issues, retry } = await uploadVehiclePhotos({ client: createClient(), vehicleId, files, existing: photos, altBase: title, onProgress: (done, total) => setUploadProgress({ done, total }) });
+      for (const photo of uploaded) previewUrls.current.add(photo.url);
+      setPhotos((current) => [...current, ...uploaded].map((item, index) => ({ ...item, sort_order: index, is_cover: index === 0 })));
       const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.value = "";
       setFailedFiles(retry);
-      if (uploaded) void refreshPublicInventoryAction(); // photos are written straight to Supabase, so refresh the public site cache
-      if (issues.length) notify(`${prefix}${uploaded} van ${files.length} foto’s geüpload. ${issues.join(" ")}${retry.length ? " Gebruik “Opnieuw proberen” om de mislukte foto’s nog eens te uploaden." : ""}`, true);
-      else notify(`${prefix}${photoCount(uploaded)} geüpload.`);
+      if (uploaded.length) void refreshPublicInventoryAction(); // photos are written straight to Supabase, so refresh the public site cache
+      if (issues.length) notify(`${prefix}${uploaded.length} van ${files.length} foto’s geüpload. ${issues.join(" ")}${retry.length ? " Gebruik “Opnieuw proberen” om de mislukte foto’s nog eens te uploaden." : ""}`, true);
+      else notify(`${prefix}${photoCount(uploaded.length)} geüpload.`);
       return !issues.length;
     } catch { notify(`${prefix}Foto-opslag is niet ingesteld. Controleer de Supabase-verbinding.`, true); return false; }
     finally { setUploading(false); setUploadProgress(null); }
@@ -231,7 +222,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const selectedFeatures = featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
   const templatePreview = templates.find((item) => item.id === selectedTemplate);
   const templateValues = templatePreview ? templateFieldNames.filter((name) => name !== "condition" && templatePreview.fields[name]) : [];
-  const progress = uploadProgress ? Math.round(((uploadProgress.current - 1) / uploadProgress.total) * 100) : 0;
+  const progress = uploadProgress ? Math.round((uploadProgress.done / uploadProgress.total) * 100) : 0;
   const busy = pending || uploading || templatePending;
   return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit} onInvalidCapture={dutchValidation.onInvalidCapture} onInput={(event) => { dutchValidation.onInput(event); setDirty(true); }} onChange={(event) => { dutchValidation.onChange(event); setDirty(true); }}>
     <input type="hidden" name="id" value={savedId} />
@@ -253,9 +244,10 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
     </section>
     <div className="editor-main">
       <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basisgegevens</h2><div className="admin-form-grid">
-        <label className="admin-field span-all">Titel van de advertentie<input name="title" defaultValue={defaults.title} required maxLength={180} placeholder="Wordt automatisch ingevuld" /></label>
-        <label className="admin-field">Merk<ComboField name="make" label="Merk" options={vehicleMakes} defaultValue={defaults.make} required maxLength={80} placeholder="Toyota" renderOption={(option) => <BrandLogo make={option} />} onInput={(event) => { setMakePreview(event.currentTarget.value); refreshTitle(event.currentTarget.form!); }} /><span className="help-text">Kies uit de lijst of typ een ander merk.</span>{makePreview.trim() ? <span className="admin-make-preview"><BrandLogo make={makePreview} />{makePreview.trim()}</span> : null}</label>
-        <label className="admin-field">Model<ComboField name="model" label="Model" options={modelsForMake(makePreview)} defaultValue={defaults.model} required maxLength={100} placeholder="RAV4" emptyText="Kies eerst een merk voor modelsuggesties, of typ zelf een model." browseLabel="Kies model uit de lijst" onInput={(event) => refreshTitle(event.currentTarget.form!)} /><span className="help-text">Kies uit de lijst of typ het exacte model; elk model is toegestaan.</span></label>
+        <p className="help-text span-all editor-optional-note">Alles is optioneel. Alleen foto’s is genoeg om een auto op te slaan; vul de rest aan wanneer je wilt.</p>
+        <label className="admin-field span-all">Titel van de advertentie<input name="title" defaultValue={defaults.title} maxLength={180} placeholder="Leeg laten: wordt automatisch gemaakt uit merk, model en jaar" /></label>
+        <label className="admin-field">Merk<ComboField name="make" label="Merk" options={vehicleMakes} defaultValue={defaults.make} maxLength={80} placeholder="Toyota" renderOption={(option) => <BrandLogo make={option} />} onInput={(event) => { setMakePreview(event.currentTarget.value); refreshTitle(event.currentTarget.form!); }} /><span className="help-text">Kies uit de lijst of typ een ander merk.</span>{makePreview.trim() ? <span className="admin-make-preview"><BrandLogo make={makePreview} />{makePreview.trim()}</span> : null}</label>
+        <label className="admin-field">Model<ComboField name="model" label="Model" options={modelsForMake(makePreview)} defaultValue={defaults.model} maxLength={100} placeholder="RAV4" emptyText="Kies eerst een merk voor modelsuggesties, of typ zelf een model." browseLabel="Kies model uit de lijst" onInput={(event) => refreshTitle(event.currentTarget.form!)} /><span className="help-text">Kies uit de lijst of typ het exacte model; elk model is toegestaan.</span></label>
         <label className="admin-field">Variant<input name="variant" defaultValue={defaults.variant} maxLength={120} placeholder="Limited" onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
         <label className="admin-field">Bouwjaar<input name="year" type="number" inputMode="numeric" min="1886" max="2200" defaultValue={defaults.year} onInput={(event) => refreshTitle(event.currentTarget.form!)} /></label>
         <label className="admin-field">Conditie<select name="condition" defaultValue={vehicle?.condition ?? "used"}><option value="new">Nieuw</option><option value="used">Gebruikt</option></select></label>
@@ -289,12 +281,12 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
             <button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Verplaats foto ${index + 1} naar achteren`} title="Naar achteren" disabled={photoBusy || index === photos.length - 1}><ArrowRight size={16} aria-hidden="true" /></button>
           </div>
         </div>)}</div> : null}
-        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!savedId) { notify("Sla de auto eerst op om foto’s te kunnen uploaden.", true); return; } if (files.length) void uploadFiles(savedId, files); }}>
+        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!files.length) return; if (photos.length + files.length > maxPhotos) { notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); return; } if (savedId) { void uploadFiles(savedId, files); return; } const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.files = event.dataTransfer.files; warmPhotos(files); setDirty(true); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); }}>
           <ImagePlus size={24} aria-hidden="true" />
-          <label className="photo-file-picker">Foto’s kiezen<input type="file" name="photos" accept={photoAccept} multiple disabled={photos.length >= maxPhotos || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (!files.length) return; if (photos.length + files.length > maxPhotos) { input.value = ""; notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); } else if (savedId) { input.value = ""; void uploadFiles(savedId, files); } else notify(`${photoCount(files.length)} gekozen. Ze worden geüpload zodra je de auto opslaat.`); }} /></label>
-          <p>{savedId ? <><span className="drop-hint-drag">Of sleep foto’s hierheen. </span>JPEG, PNG, WebP, AVIF of HEIC. Grote foto’s worden automatisch verkleind.</> : "Foto’s worden geüpload zodra je de auto opslaat."}</p>
+          <label className="photo-file-picker">Foto’s kiezen<input type="file" name="photos" accept={photoAccept} multiple disabled={photos.length >= maxPhotos || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (!files.length) return; if (photos.length + files.length > maxPhotos) { input.value = ""; notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); } else if (savedId) { input.value = ""; void uploadFiles(savedId, files); } else { warmPhotos(files); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); } }} /></label>
+          <p><span className="drop-hint-drag">Of sleep foto’s hierheen. </span>JPEG, PNG, WebP, AVIF of HEIC. Grote foto’s worden automatisch verkleind{savedId ? "" : " en geüpload zodra je de auto opslaat"}.</p>
         </div>
-        {uploadProgress ? <div className="upload-progress" role="status" aria-live="polite"><div className="upload-progress-bar"><span style={{ width: `${Math.max(progress, 6)}%` }} /></div><p><LoaderCircle size={14} className="spin" aria-hidden="true" /> Foto {uploadProgress.current} van {uploadProgress.total} wordt geüpload: {uploadProgress.name}</p></div> : null}
+        {uploadProgress ? <div className="upload-progress" role="status" aria-live="polite"><div className="upload-progress-bar"><span style={{ width: `${Math.max(progress, 6)}%` }} /></div><p><LoaderCircle size={14} className="spin" aria-hidden="true" /> {uploadProgress.done} van {photoCount(uploadProgress.total)} klaar…</p></div> : null}
         {failedFiles.length && !uploading ? <div className="upload-retry"><button className="button button-outline button-sm" type="button" onClick={() => void uploadFiles(savedId, failedFiles)}>Opnieuw proberen ({photoCount(failedFiles.length)})</button></div> : null}
       </section>
 
@@ -309,7 +301,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
         {archived ? <p className="help-text">Deze auto is gearchiveerd en verborgen. Opslaan houdt hem gearchiveerd. Gebruik Herstellen in de voorraad om hem weer te tonen.</p> : null}
         <div className="price-field"><label className="admin-field">Interne prijs<input name="price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.price} placeholder="Op aanvraag" /></label><label className="admin-field">Cashprijs / giraal deal<input name="cash_price" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={defaults.cash_price} placeholder="Op aanvraag" /></label></div>
         <label className="admin-field">Valuta<ComboField name="currency" label="Valuta" options={currencies} defaultValue={defaults.currency || "USD"} placeholder="USD" maxLength={8} autoCapitalize="characters" /></label>
-        <p className="help-text">Vul je een prijs in, kies dan ook de valuta (bijvoorbeeld USD of SRD).</p>
+        <p className="help-text">Nog geen prijs? Laat de velden leeg: de website toont dan “Price on request”.</p>
         <label className="admin-field">Beschikbaarheid<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Beschikbaar</option><option value="on_the_way">Onderweg</option><option value="reserved">Gereserveerd</option><option value="sold">Verkocht</option><option value="rental">Verhuur</option></select></label>
         <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} maxLength={80} placeholder="Automatisch bij opslaan" /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer je eigen nummer in.</span></label>
         <div className="admin-switches">
@@ -324,6 +316,6 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
       </div></section>
     </div>
 
-    <div className="admin-form-footer"><div className="admin-form-message" role="status" aria-live="polite">{message ? <p className={`admin-feedback${message.error ? " admin-error" : ""}`} role={message.error ? "alert" : undefined}>{message.error ? <CircleAlert size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />} {message.text}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={busy || photoBusy} onClick={deleteVehicle}>{deleting ? "Verwijderen…" : "Permanent verwijderen"}</button> : null}<Link className="button button-ghost" href="/admin/inventory" onClick={(event) => { if (dirty && !window.confirm("Je hebt wijzigingen die nog niet zijn opgeslagen. Toch weggaan?")) event.preventDefault(); }}>Annuleren</Link><button className="button button-primary" type="submit" disabled={busy || photoBusy} aria-busy={pending || undefined}>{pending || uploading ? <><LoaderCircle size={16} className="spin" aria-hidden="true" />{deleting ? "Verwijderen…" : uploading ? "Foto’s uploaden…" : "Opslaan…"}</> : savedId ? "Wijzigingen opslaan" : "Auto opslaan"}</button></div></div>
+    <div className="admin-form-footer"><div className="admin-form-message" role="status" aria-live="polite">{message ? <p className={`admin-feedback${message.error ? " admin-error" : ""}`} role={message.error ? "alert" : undefined}>{message.error ? <CircleAlert size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />} {message.text}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={busy || photoBusy} onClick={deleteVehicle}>{deleting ? "Verwijderen…" : "Permanent verwijderen"}</button> : null}<Link className="button button-ghost" href="/admin/inventory" onClick={(event) => { if (dirty && !window.confirm("Je hebt wijzigingen die nog niet zijn opgeslagen. Toch weggaan?")) event.preventDefault(); }}>Annuleren</Link>{!vehicle && !savedId ? <button className="button button-outline" type="submit" name="intent" value="next" disabled={busy || photoBusy}>Opslaan &amp; volgende</button> : null}<button className="button button-primary" type="submit" disabled={busy || photoBusy} aria-busy={pending || undefined}>{pending || uploading ? <><LoaderCircle size={16} className="spin" aria-hidden="true" />{deleting ? "Verwijderen…" : uploading ? "Foto’s uploaden…" : "Opslaan…"}</> : savedId ? "Wijzigingen opslaan" : "Auto opslaan"}</button></div></div>
   </form>;
 }

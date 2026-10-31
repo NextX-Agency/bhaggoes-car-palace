@@ -1,11 +1,9 @@
-import { coverImage, isDemoVehicle, parseLocations, safeExternalUrl, type SiteSettings, type Vehicle } from "@/lib/domain";
+import { coverImage, isDemoVehicle, vehicleDisplayName, parseLocations, safeExternalUrl, type SiteSettings, type Vehicle } from "@/lib/domain";
 import { absoluteUrl, shareImageUrl } from "@/lib/site-url";
 
 export const defaultShareImage = { url: "/images/og-default.jpg", width: 1200, height: 630, alt: "Bhaggoes Car Palace, car dealership in Suriname" };
 
-export function vehicleName(vehicle: Pick<Vehicle, "year" | "make" | "model" | "variant">) {
-  return [vehicle.year, vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
-}
+export const vehicleName = vehicleDisplayName;
 
 // Cuts at a word boundary so search snippets and link previews never end mid-word.
 export function trimDescription(text: string | null | undefined, max = 155) {
@@ -127,8 +125,8 @@ export function vehicleJsonLd(vehicle: Vehicle, settings: SiteSettings) {
     name: vehicleName(vehicle),
     description: vehicleDescription(vehicle, settings),
     sku: demo ? undefined : vehicle.stock_number ?? undefined,
-    brand: { "@type": "Brand", name: vehicle.make },
-    model: vehicle.model,
+    brand: vehicle.make ? { "@type": "Brand", name: vehicle.make } : undefined,
+    model: vehicle.model ?? undefined,
     vehicleModelDate: vehicle.year?.toString(),
     bodyType: vehicle.body_type ?? undefined,
     color: vehicle.exterior_color ?? undefined,

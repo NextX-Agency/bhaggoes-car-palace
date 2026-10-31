@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { CatalogNotice } from "@/components/catalog-notice";
 import { EmptyState } from "@/components/empty-state";
 import { MobileFilterDrawer } from "@/components/mobile-filter-drawer";
 import { SortSelect } from "@/components/sort-select";
 import { VehicleFilterForm, sortLabels } from "@/components/vehicle-filter-form";
 import { VehicleGrid } from "@/components/vehicle-grid";
 import { getSettings, getVehicles, getVehicleFilterOptions } from "@/lib/data";
-import type { VehicleFilters } from "@/lib/domain";
+import { availabilityLabels, type Availability, type VehicleFilters } from "@/lib/domain";
 import { compareCarsEnabled } from "@/lib/features";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -20,6 +21,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   const keys = Object.keys(params).filter((key) => one(params[key]));
   const requestedMake = one(params.make)?.trim();
   const base = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, and more.", alternates: { canonical: "/cars" } };
+  if ((await getSettings()).catalog_hidden) return { ...base, title: "Cars", robots: { index: false, follow: true } };
   if (!keys.length) return base;
   if (requestedMake && keys.length === 1) {
     const { makes, makeCounts } = await getVehicleFilterOptions();
@@ -29,7 +31,8 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   return { ...base, robots: { index: false, follow: true } };
 }
 const numberValue = (value: string | string[] | undefined) => { const parsed = Number(one(value)); return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined; };
-const filterKeys = ["search", "make", "model", "year", "minPrice", "maxPrice", "fuel", "transmission", "bodyType"] as const;
+const filterKeys = ["search", "make", "model", "year", "minPrice", "maxPrice", "fuel", "transmission", "bodyType", "color", "condition", "availability", "maxMileage"] as const;
+const conditions = ["new", "used"] as const;
 const number = (value: number) => new Intl.NumberFormat("en-US").format(value);
 
 export default async function CarsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -39,9 +42,13 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
     search: one(params.search) || undefined, make: one(params.make) || undefined, model: one(params.model) || undefined, year: numberValue(params.year),
     minPrice: numberValue(params.minPrice), maxPrice: numberValue(params.maxPrice),
     fuel: one(params.fuel) || undefined, transmission: one(params.transmission) || undefined, bodyType: one(params.bodyType) || undefined,
+    color: one(params.color) || undefined, maxMileage: numberValue(params.maxMileage),
+    condition: conditions.find((value) => value === one(params.condition)),
+    availability: (Object.keys(availabilityLabels) as Availability[]).find((value) => value === one(params.availability)),
     sort: sort && sort in sortLabels ? sort as VehicleFilters["sort"] : "newest", page: numberValue(params.page) ?? 1,
   };
   const [{ vehicles, total, page, pageSize }, options, settings] = await Promise.all([getVehicles(filters), getVehicleFilterOptions(), getSettings()]);
+  if (settings.catalog_hidden) return <div className="catalog-page"><CatalogNotice settings={settings} headingLevel={1} /></div>;
 
   const active = filterKeys.flatMap((key) => filters[key] ? [[key, String(filters[key])] as [string, string]] : []);
   const query = (entries: [string, string][]) => { const search = new URLSearchParams(entries); return search.size ? `/cars?${search}` : "/cars"; };
@@ -53,6 +60,9 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
       case "search": return `“${value}”`;
       case "minPrice": return `From ${number(Number(value))}`;
       case "maxPrice": return `Up to ${number(Number(value))}`;
+      case "maxMileage": return `Up to ${number(Number(value))} km`;
+      case "condition": return value === "new" ? "New" : "Used";
+      case "availability": return availabilityLabels[value as Availability] ?? value;
       default: return value;
     }
   };
