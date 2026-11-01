@@ -943,73 +943,80 @@ dialog.image-lightbox::backdrop { background: #070d16; }
 @media (max-width: 600px) { .vehicle-carousel { --cols: 1.12; } }
 
 /* ==========================================================================
-   Catalog switched off: a photo-led landing with the dealership details instead of the cars
+   Catalog switched off: a cinematic landing with the lot, a moving band and both showrooms on the map
    ========================================================================== */
-.lot { background: var(--navy); }
+.lot { background: var(--navy); color: #fff; }
 
-/* 1. Full-bleed cover photo with the message on it */
-.lot-cover { position: relative; display: flex; align-items: flex-end; min-height: clamp(560px, 82vh, 780px); overflow: hidden; background: var(--navy); color: #fff; isolation: isolate; }
+/* 1. Cover photo with a slow zoom */
+.lot-cover { position: relative; display: flex; align-items: flex-end; min-height: clamp(580px, 86vh, 820px); overflow: hidden; isolation: isolate; }
 .lot-cover-photo { z-index: -2; object-fit: cover; object-position: 50% 60%; }
-.lot-cover::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgb(8 18 33 / 0.94) 0%, rgb(8 18 33 / 0.72) 34%, rgb(8 18 33 / 0.12) 68%, rgb(8 18 33 / 0.28) 100%), linear-gradient(90deg, rgb(8 18 33 / 0.55) 0%, rgb(8 18 33 / 0) 60%); }
-.lot-cover-content { display: grid; justify-items: start; gap: 16px; padding-block: 120px clamp(48px, 7vw, 88px); }
-.lot-place { display: inline-flex; align-items: center; gap: 12px; color: #fff; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.lot-place span { width: 28px; height: 3px; background: var(--accent); }
-.lot-cover h1, .lot-cover h2 { max-width: 13ch; color: #fff; font-size: clamp(2.5rem, 5vw + 0.5rem, 5rem); line-height: 0.98; letter-spacing: -0.035em; text-shadow: 0 2px 30px rgb(3 12 28 / 0.35); }
-.lot-message { max-width: 48ch; color: #e3ebf8; font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.6; }
-.lot-phone { margin-top: 6px; color: #fff; font-family: var(--font-head); font-size: clamp(2rem, 3vw + 0.75rem, 3rem); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
-.lot-phone:hover { color: #cbdcff; }
-.lot-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.lot-cover::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgb(8 18 33 / 0.96) 0%, rgb(8 18 33 / 0.66) 30%, rgb(8 18 33 / 0.08) 64%, rgb(8 18 33 / 0.3) 100%), linear-gradient(90deg, rgb(8 18 33 / 0.6) 0%, rgb(8 18 33 / 0) 58%); }
+.lot-cover-content { display: grid; justify-items: start; gap: 18px; padding-block: 120px clamp(56px, 8vw, 104px); }
+.lot-place { display: inline-flex; align-items: center; gap: 12px; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.lot-place span { width: 32px; height: 3px; background: var(--accent); }
+.lot-cover h1, .lot-cover h2 { max-width: 12ch; color: #fff; font-size: clamp(2.75rem, 6vw + 0.5rem, 6rem); line-height: 0.95; letter-spacing: -0.04em; text-shadow: 0 2px 40px rgb(3 12 28 / 0.4); }
+.lot-message { max-width: 40ch; color: #e3ebf8; font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.55; }
+.lot-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.lot-actions .button { min-height: 54px; padding-inline: 24px; font-size: 1.0625rem; }
 .lot-button-light { border-color: #fff; background: #fff; color: var(--navy); font-weight: 700; }
 .lot-button-light:hover { border-color: #e3ebf8; background: #e3ebf8; }
-.lot-button-line { border-color: rgb(255 255 255 / 0.6); background: transparent; color: #fff; }
-.lot-button-line:hover { border-color: #fff; background: rgb(255 255 255 / 0.1); }
+.lot-button-line { border-color: rgb(255 255 255 / 0.55); background: rgb(8 18 33 / 0.25); color: #fff; font-variant-numeric: tabular-nums; backdrop-filter: blur(6px); }
+.lot-button-line:hover { border-color: #fff; background: rgb(255 255 255 / 0.12); }
 
-/* 2. Photos from the lot, edge to edge */
-.lot-strip { display: flex; gap: 4px; height: clamp(200px, 22vw, 320px); padding-top: 4px; background: var(--navy); }
+/* 2. Moving band: slogan and what every purchase includes */
+.lot-ticker { overflow: hidden; background: var(--accent); }
+.lot-ticker-track { display: flex; width: max-content; }
+.lot-ticker-run { display: flex; flex-shrink: 0; }
+.lot-ticker-run span { display: inline-flex; align-items: center; gap: 28px; padding: 18px 0 18px 28px; color: #fff; font-family: var(--font-head); font-size: clamp(1rem, 1.5vw, 1.375rem); font-weight: 800; letter-spacing: 0.01em; text-transform: uppercase; white-space: nowrap; }
+.lot-ticker-run span::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: rgb(255 255 255 / 0.7); }
+
+/* 3. Photos from the lot, edge to edge */
+.lot-strip { display: flex; gap: 4px; height: clamp(200px, 24vw, 340px); }
 .lot-strip-photo { position: relative; flex: 1 1 0; min-width: 0; margin: 0; overflow: hidden; background: var(--navy-2); }
-.lot-strip-photo img { object-fit: cover; transition: transform 0.7s var(--ease), opacity 0.3s; opacity: 0.92; }
-.lot-strip-photo:hover img { transform: scale(1.04); opacity: 1; }
+.lot-strip-photo img { object-fit: cover; transition: transform 0.8s var(--ease); }
+.lot-strip-photo:hover img { transform: scale(1.05); }
 
-/* 3. Details on the dark band */
-.lot-details { padding-block: clamp(48px, 6vw, 88px) var(--section); color: #fff; }
-.lot-slogan { margin-bottom: clamp(28px, 4vw, 48px); color: #fff; font-family: var(--font-head); font-size: clamp(2rem, 5.2vw, 4.75rem); font-weight: 800; line-height: 0.95; letter-spacing: -0.03em; text-transform: uppercase; }
-.lot-slogan::after { content: ""; display: block; width: 72px; height: 5px; margin-top: 18px; background: var(--accent); }
-.lot-sheet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgb(255 255 255 / 0.22); }
-.lot-column { display: grid; align-content: start; gap: 14px; padding: 28px 32px 32px 0; }
-.lot-column + .lot-column { padding-left: 32px; border-left: 1px solid rgb(255 255 255 / 0.14); }
-.lot-column h3 { color: #9fb6dc; font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600; }
-.lot-location { display: grid; gap: 2px; }
-.lot-location + .lot-location { padding-top: 14px; border-top: 1px solid rgb(255 255 255 / 0.12); }
-.lot-location strong { color: #fff; font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
-.lot-location span { color: #c9d6ea; font-size: var(--fs-sm); }
-.lot-location a, .lot-link { width: fit-content; margin-top: 4px; color: #fff; font-size: var(--fs-sm); font-weight: 700; text-decoration: underline; text-decoration-color: rgb(255 255 255 / 0.4); text-underline-offset: 4px; }
-.lot-location a:hover, .lot-link:hover, .lot-social a:hover { text-decoration-color: #fff; }
-.lot-hours, .lot-terms { display: grid; margin: 0; }
-.lot-hours div, .lot-terms div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid rgb(255 255 255 / 0.12); font-size: var(--fs-sm); }
-.lot-hours dt, .lot-terms dt { color: #fff; font-weight: 600; }
-.lot-hours dd, .lot-terms dd { margin: 0; color: #c9d6ea; }
-.lot-included { display: grid; margin: 0; padding: 0; list-style: none; counter-reset: included; }
-.lot-included li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); padding: 10px 0; border-top: 1px solid rgb(255 255 255 / 0.12); color: #fff; font-size: var(--fs-sm); counter-increment: included; }
-.lot-included li::before { content: counter(included, decimal-leading-zero); color: #ff6b63; font-variant-numeric: tabular-nums; font-weight: 700; }
-.lot-figure { display: grid; gap: 4px; }
-.lot-figure strong { color: #fff; font-family: var(--font-head); font-size: clamp(3.5rem, 6vw, 5rem); font-weight: 800; line-height: 0.9; letter-spacing: -0.04em; }
-.lot-figure span { max-width: 26ch; color: #c9d6ea; font-size: var(--fs-sm); }
-.lot-note { padding-left: 12px; border-left: 3px solid var(--accent); color: #fff; font-size: var(--fs-sm); font-weight: 600; }
-.lot-social { padding-top: 20px; border-top: 1px solid rgb(255 255 255 / 0.22); color: #c9d6ea; font-size: var(--fs-sm); }
-.lot-social a { color: #fff; font-weight: 700; text-decoration: underline; text-decoration-color: rgb(255 255 255 / 0.4); text-underline-offset: 4px; }
+/* 4. Both showrooms on a dark-styled map */
+.lot-visit { padding-block: clamp(56px, 7vw, 104px); }
+.lot-visit-head { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 12px 32px; margin-bottom: clamp(24px, 3vw, 40px); }
+.lot-visit-head h3 { max-width: 14ch; color: #fff; font-size: clamp(2rem, 3.4vw + 0.5rem, 3.5rem); line-height: 1; letter-spacing: -0.03em; }
+.lot-visit-head p { color: #9fb6dc; font-size: var(--fs-sm); }
+.lot-visit-head a { color: #fff; font-weight: 700; text-decoration: underline; text-decoration-color: rgb(255 255 255 / 0.4); text-underline-offset: 4px; }
+.lot-maps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.lot-maps.count-1 { grid-template-columns: minmax(0, 1fr); }
+.lot-maps.count-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.lot-map { position: relative; height: clamp(380px, 36vw, 500px); overflow: hidden; border-radius: 18px; background: var(--navy-2); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08); }
+/* Google's embed has no dark theme; inverting it and turning the hue back keeps the colours but darkens the map. */
+.lot-map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; filter: invert(0.9) hue-rotate(180deg) saturate(0.7) brightness(0.95) contrast(1.05); }
+.lot-map-card { position: absolute; z-index: 1; left: 16px; bottom: 28px; width: min(calc(100% - 32px), 470px); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 16px 16px 16px 20px; border-radius: 14px; background: #fff; color: var(--ink); box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.55); }
+.lot-map-number { color: var(--accent); font-family: var(--font-head); font-size: 1.75rem; font-weight: 800; line-height: 1; }
+.lot-map-card h4 { font-size: 1.25rem; letter-spacing: -0.01em; }
+.lot-map-card p { color: var(--muted); font-size: var(--fs-sm); }
+.lot-map-go { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 10px; background: var(--brand); color: #fff; font-size: var(--fs-sm); font-weight: 700; transition: background 0.15s; }
+.lot-map-go:hover { background: var(--brand-hover); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .lot-cover-photo { animation: lot-zoom 24s ease-in-out infinite alternate; }
+  .lot-ticker-track { animation: lot-ticker 38s linear infinite; }
+  .lot-ticker:hover .lot-ticker-track { animation-play-state: paused; }
+}
+@keyframes lot-zoom { from { transform: scale(1); } to { transform: scale(1.09) translate(-1%, -1%); } }
+@keyframes lot-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 @media (max-width: 960px) {
-  .lot-sheet { grid-template-columns: minmax(0, 1fr); }
-  .lot-column, .lot-column + .lot-column { padding: 24px 0; border-left: 0; }
-  .lot-column + .lot-column { border-top: 1px solid rgb(255 255 255 / 0.14); }
+  .lot-maps, .lot-maps.count-3 { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
-  .lot-cover { min-height: 620px; }
-  .lot-cover-content { padding-block: 96px 40px; }
+  .lot-cover { min-height: 640px; }
+  .lot-cover-content { padding-block: 96px 44px; }
   .lot-actions { width: 100%; }
-  .lot-actions .button { flex: 1 1 0; }
-  .lot-strip { height: 220px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .lot-actions .button { flex: 1 1 100%; }
+  .lot-strip { height: 230px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .lot-strip::-webkit-scrollbar { display: none; }
-  .lot-strip-photo { flex: 0 0 72vw; scroll-snap-align: start; }
-  .lot-hours div, .lot-terms div { grid-template-columns: 6rem minmax(0, 1fr); }
+  .lot-strip-photo { flex: 0 0 74vw; scroll-snap-align: start; }
+  .lot-map { display: flex; flex-direction: column; height: auto; }
+  /* On phones the page scrolls over the map instead of the map catching the finger; Directions opens Maps. */
+  .lot-map iframe { position: relative; height: 280px; pointer-events: none; }
+  .lot-map-card { position: relative; left: auto; bottom: auto; width: auto; grid-template-columns: auto minmax(0, 1fr); padding: 16px; border-radius: 0; box-shadow: none; }
+  .lot-map-go { grid-column: 1 / -1; justify-content: center; }
 }
