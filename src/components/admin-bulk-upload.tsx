@@ -99,6 +99,9 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
   }
 
   async function saveDraft(draft: Draft, client: ReturnType<typeof createClient>) {
+    // A card without photos and without any details would become a blank listing on the website.
+    const empty = !draft.id && !draft.files.length && (["make", "model", "year", "price", "cash_price", "stock_number"] as const).every((field) => !draft[field].trim());
+    if (empty) { update(draft.key, { status: "error", message: "Deze kaart is leeg. Voeg foto’s of gegevens toe, of haal hem weg." }); return false; }
     update(draft.key, { status: "saving", message: undefined, progress: draft.files.length ? { done: 0, total: draft.files.length } : undefined });
     let id = draft.id;
     if (!id) {

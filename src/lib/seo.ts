@@ -77,7 +77,7 @@ export function dealerJsonLd(settings: SiteSettings, { website = true }: { websi
         url: absoluteUrl("/"),
         name: settings.business_name,
         publisher: { "@id": absoluteUrl("/#dealer") },
-        potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${absoluteUrl("/cars")}?search={search_term_string}` }, "query-input": "required name=search_term_string" },
+        potentialAction: settings.catalog_hidden ? undefined : { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${absoluteUrl("/cars")}?search={search_term_string}` }, "query-input": "required name=search_term_string" },
       }] : []),
     ],
   };

@@ -44,6 +44,6 @@ export default async function FinancingPage() {
     </section> : <section className="finance-unpublished"><h2>Let’s talk about your options.</h2><p>Financing terms are not published online right now. Our team can tell you what is available for the car you have in mind.</p></section>}
 
     {settings.financing_enabled && (settings.financing_notes || terms.promo_text) ? <div className="finance-note">{settings.financing_notes ? <p>{settings.financing_notes}</p> : null}{terms.promo_text ? <p>{terms.promo_text}</p> : null}</div> : null}
-    <div className="finance-next"><div><h2>Found a car you like?</h2><p>Send us the listing and we’ll talk through the current price and options.</p></div><Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link></div>
+    <div className="finance-next"><div><h2>Found a car you like?</h2><p>Send us the listing and we’ll talk through the current price and options.</p></div>{settings.catalog_hidden ? <Link className="button button-primary" href="/contact">Ask about current stock <ArrowRight size={18} aria-hidden="true" /></Link> : <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>}</div>
   </div>;
 }

@@ -29,7 +29,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     if (!image) return new NextResponse(null, { status: 404 });
     const { data, error } = await supabase.storage.from("vehicle-images").download(path);
     if (error || !data || !IMAGE_TYPES.has(data.type)) return new NextResponse(null, { status: 404 });
-    const { data: { user } } = await supabase.auth.getUser();
+    // Access was already checked by row level security above; the session cookie only decides who may cache it.
+    // (No auth.getUser() here: it is a network round trip per photo, and dashboard pages load fifteen at once.)
+    const signedIn = /(?:^|;\s*)sb-[^=]*-auth-token/.test(request.headers.get("cookie") ?? "");
     let body: BodyInit = data.stream();
     let type = data.type;
     if (width) { body = new Uint8Array(await resize(await data.arrayBuffer(), width, 72)); type = "image/webp"; }
@@ -37,7 +39,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     const headers = new Headers({ "content-type": type, "x-content-type-options": "nosniff", "content-disposition": "inline", "content-security-policy": "default-src 'none'; sandbox" });
     // A photo's path holds a random id and is never reused, so staff browsers may keep it; the public copy stays
     // short-lived because the catalog switch or a status change can hide the car at any moment.
-    headers.set("cache-control", user ? "private, max-age=86400, immutable" : "public, max-age=300, stale-while-revalidate=3600");
+    headers.set("cache-control", signedIn ? "private, max-age=86400, immutable" : "public, max-age=300, stale-while-revalidate=3600");
     return new Response(body, { status: 200, headers });
   } catch { return new NextResponse(null, { status: 404 }); }
 }
