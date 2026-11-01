@@ -463,3 +463,95 @@ export async function optimizePhotosAction(skip: string[] = []): Promise<{ optim
     return { optimized, failedIds, savedBytes, remaining: Math.max(0, large.length - optimized - failedIds.length) };
   } catch (error) { return { optimized: 0, failedIds: [], savedBytes: 0, remaining: 0, error: error instanceof Error ? error.message : "De foto’s konden niet worden geoptimaliseerd." }; }
 }
+
+// ---- Gebruikers -------------------------------------------------------------------------------------------
+const userErrors: Record<string, string> = {
+  invalid_email: "Vul een geldig e-mailadres in.",
+  invalid_password: "Het wachtwoord moet 12 tot 72 tekens lang zijn.",
+  invalid_role: "Kies een geldige toegang.",
+  email_taken: "Er bestaat al een account met dit e-mailadres.",
+  cannot_demote_self: "Je kunt je eigen beheerderstoegang niet uitzetten.",
+  cannot_delete_self: "Je kunt je eigen account niet verwijderen.",
+  use_own_account_page: "Wijzig je eigen wachtwoord via ‘Mijn account’.",
+  user_not_found: "Deze gebruiker bestaat niet meer. Vernieuw de pagina.",
+};
+function userError(error: { message?: string; code?: string } | null, fallback: string) {
+  if (!error) return fallback;
+  if (error.code === "PGRST202" || error.code === "42883") return "Gebruikersbeheer is nog niet geactiveerd: de database heeft eerst de nieuwste update (migratie) nodig.";
+  const key = Object.keys(userErrors).find((name) => error.message?.includes(name));
+  return key ? userErrors[key] : fallback;
+}
+const passwordSchema = z.string().min(12).max(72);
+
+export async function createUserAction(_previous: ActionState, form: FormData): Promise<ActionState & { created?: { email: string; password: string } }> {
+  const parsed = z.object({ email: z.string().trim().toLowerCase().email().max(254), password: passwordSchema, name: z.string().trim().max(80), role: z.enum(["admin", "staff"]) })
+    .safeParse({ email: text(form, "email"), password: String(form.get("password") ?? ""), name: text(form, "name"), role: text(form, "role") || "admin" });
+  if (!parsed.success) return { error: fieldError(parsed.error.issues[0], { email: "Het e-mailadres", password: "Het tijdelijke wachtwoord (minstens 12 tekens)", name: "De naam" }, "Controleer de gegevens van de nieuwe gebruiker.") };
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.rpc("admin_create_user", { p_email: parsed.data.email, p_password: parsed.data.password, p_display_name: parsed.data.name, p_role: parsed.data.role });
+    if (error) return { error: userError(error, "De gebruiker kon niet worden aangemaakt.") };
+    revalidatePath("/admin/users");
+    return { ok: true, created: { email: parsed.data.email, password: parsed.data.password } };
+  } catch (error) { return { error: error instanceof Error ? error.message : "De gebruiker kon niet worden aangemaakt." }; }
+}
+
+export async function updateUserAction(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = z.object({ id: z.string().uuid(), name: z.string().trim().max(80), role: z.enum(["admin", "staff"]) }).safeParse({ id: text(form, "id"), name: text(form, "name"), role: text(form, "role") });
+  if (!parsed.success) return { error: "Controleer de naam en de toegang." };
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.rpc("admin_update_user", { p_user_id: parsed.data.id, p_display_name: parsed.data.name, p_role: parsed.data.role });
+    if (error) return { error: userError(error, "De gebruiker kon niet worden bijgewerkt.") };
+    revalidatePath("/admin/users");
+    return { ok: true };
+  } catch (error) { return { error: error instanceof Error ? error.message : "De gebruiker kon niet worden bijgewerkt." }; }
+}
+
+export async function resetUserPasswordAction(_previous: ActionState, form: FormData): Promise<ActionState & { password?: string }> {
+  const parsed = z.object({ id: z.string().uuid(), password: passwordSchema }).safeParse({ id: text(form, "id"), password: String(form.get("password") ?? "") });
+  if (!parsed.success) return { error: "Het tijdelijke wachtwoord moet 12 tot 72 tekens lang zijn." };
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.rpc("admin_set_user_password", { p_user_id: parsed.data.id, p_password: parsed.data.password });
+    if (error) return { error: userError(error, "Het wachtwoord kon niet worden ingesteld.") };
+    revalidatePath("/admin/users");
+    return { ok: true, password: parsed.data.password };
+  } catch (error) { return { error: error instanceof Error ? error.message : "Het wachtwoord kon niet worden ingesteld." }; }
+}
+
+export async function deleteUserAction(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const id = text(form, "id");
+  if (!z.string().uuid().safeParse(id).success) return { error: "Deze gebruiker kon niet worden herkend." };
+  try {
+    const supabase = await verifyAdmin();
+    const { error } = await supabase.rpc("admin_delete_user", { p_user_id: id });
+    if (error) return { error: userError(error, "De gebruiker kon niet worden verwijderd.") };
+    revalidatePath("/admin/users");
+    return { ok: true };
+  } catch (error) { return { error: error instanceof Error ? error.message : "De gebruiker kon niet worden verwijderd." }; }
+}
+
+/** Mijn account: the signed-in person changes their own password (required after a temporary one) and name. */
+export async function updateOwnAccountAction(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const password = String(form.get("password") ?? ""); const confirm = String(form.get("confirm") ?? ""); const name = text(form, "name");
+  if (password && !passwordSchema.safeParse(password).success) return { error: "Gebruik een wachtwoord van 12 tot 72 tekens." };
+  if (password !== confirm) return { error: "De twee wachtwoorden zijn niet hetzelfde." };
+  if (name.length > 80) return { error: "De naam mag maximaal 80 tekens zijn." };
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Je sessie is verlopen. Log opnieuw in." };
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    if (profile?.role !== "admin") return { error: "Beheerderstoegang is vereist." };
+    if (user.user_metadata?.must_change_password && !password) return { error: "Kies eerst een nieuw wachtwoord; je gebruikt nu een tijdelijk wachtwoord." };
+    if (password) {
+      const { error } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
+      if (error) return { error: error.code === "same_password" ? "Kies een ander wachtwoord dan het huidige." : error.code === "weak_password" ? "Dit wachtwoord is te zwak of komt voor in gelekte lijsten. Kies een ander." : "Het wachtwoord kon niet worden gewijzigd." };
+    }
+    const { error: nameError } = await supabase.rpc("admin_update_user", { p_user_id: user.id, p_display_name: name, p_role: "admin" });
+    if (nameError && !password) return { error: userError(nameError, "Je naam kon niet worden opgeslagen.") };
+    revalidatePath("/admin", "layout");
+    return { ok: true };
+  } catch { return { error: "Je account kon niet worden bijgewerkt." }; }
+}

@@ -22,7 +22,7 @@ export function AdminFrame({ active, email, title, actions, children }: { active
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>
           <div className="admin-user">
             <span className="admin-avatar" aria-hidden="true">{email.slice(0, 1).toUpperCase()}</span>
-            <div className="admin-user-details"><span className="admin-user-label">Ingelogd als</span><span className="admin-email" title={email}>{email}</span></div>
+            <Link href="/admin/account" className="admin-user-details" title="Mijn account: naam en wachtwoord"><span className="admin-user-label">Mijn account</span><span className="admin-email" title={email}>{email}</span></Link>
           </div>
           <form action={signOutAction}><PendingSubmit className="admin-signout-button" pendingLabel="Uitloggen…"><LogOut size={16} aria-hidden="true" /> Uitloggen</PendingSubmit></form>
         </div>

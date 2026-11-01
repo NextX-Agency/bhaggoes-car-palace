@@ -48,7 +48,7 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
         </nav>
         <footer className="admin-drawer-foot">
           <Link href="/" target="_blank" className="admin-site-link"><ExternalLink size={16} aria-hidden="true" /> Bekijk website</Link>
-          <p className="admin-drawer-user"><span className="admin-user-label">Ingelogd als</span><span className="admin-email" title={email}>{email}</span></p>
+          <Link href="/admin/account" className="admin-drawer-user"><span className="admin-user-label">Mijn account</span><span className="admin-email" title={email}>{email}</span></Link>
           <form action={signOutAction}><PendingSubmit className="button button-outline button-block" pendingLabel="Uitloggen…"><LogOut size={17} aria-hidden="true" /> Uitloggen</PendingSubmit></form>
         </footer>
       </Dialog.Content>

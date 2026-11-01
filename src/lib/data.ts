@@ -389,3 +389,14 @@ export async function getVehicleSlugsForBuild(limit = 24) {
     return (data ?? []).map((row) => row.slug as string);
   } catch { return []; }
 }
+
+export type AdminUser = { id: string; email: string; display_name: string | null; role: "admin" | "staff"; created_at: string; last_sign_in_at: string | null; must_change_password: boolean };
+
+/** Every login account, for the Gebruikers page. `ready` is false until the user-management migration is applied. */
+export async function getAdminUsers(): Promise<{ users: AdminUser[]; ready: boolean }> {
+  const client = await clientOrNull();
+  if (!client) return { users: [], ready: false };
+  const { data, error } = await client.rpc("admin_list_users");
+  if (error) return { users: [], ready: error.code !== "PGRST202" && error.code !== "42883" };
+  return { users: (data ?? []) as AdminUser[], ready: true };
+}

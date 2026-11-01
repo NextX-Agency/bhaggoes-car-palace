@@ -1,4 +1,4 @@
-import { CarFront, Files, Images, Inbox, LayoutDashboard, Settings2 } from "lucide-react";
+import { CarFront, Files, Images, Inbox, LayoutDashboard, Settings2, Users } from "lucide-react";
 import { websiteInquiriesEnabled } from "@/lib/features";
 
 export const adminNavItems = [
@@ -8,4 +8,5 @@ export const adminNavItems = [
   ...(websiteInquiriesEnabled ? [["Aanvragen", "/admin/inquiries", Inbox] as const] : []),
   ["Website-instellingen", "/admin/settings", Settings2],
   ["Pagina’s & FAQ", "/admin/content", Files],
+  ["Gebruikers", "/admin/users", Users],
 ] as const;

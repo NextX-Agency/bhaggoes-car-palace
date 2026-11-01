@@ -147,6 +147,15 @@ test("admin sends an unconfigured project to setup guidance", async ({ page }) =
   await expect(page).toHaveURL(/\/admin\/login\?setup=1/);
 });
 
+test("every dashboard page is closed to visitors who are not logged in", async ({ page }) => {
+  for (const path of ["/admin", "/admin/inventory", "/admin/inventory/new", "/admin/inventory/bulk", "/admin/settings", "/admin/content", "/admin/users", "/admin/account"]) {
+    await page.goto(path);
+    await expect(page, path).toHaveURL(/\/admin\/login/);
+    await expect(page.getByRole("heading", { name: "Inloggen voor medewerkers" })).toBeVisible();
+  }
+  await expect(page.getByText(/Wachtwoord vergeten\?/)).toBeVisible();
+});
+
 test("mobile navigation opens and inventory fits the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
