@@ -29,9 +29,12 @@ export default async function HomePage() {
   const locations = parseLocations(settings.address);
   const hasVisitDetails = Boolean(settings.address || settings.phone || settings.email || hours.length);
   const makes = filterOptions.makes.filter((make) => filterOptions.makeCounts[make]);
-  // Catalog switched off in the dashboard: header, hero and footer stay; the cars make way for the dealership details.
-  const catalog = !settings.catalog_hidden;
-  const heroCopy = settings.homepage_subtitle || (catalog ? "See the cars we have listed, then ask our team about the one you want to visit." : "Visit one of our showrooms or message our team to hear which cars are available today.");
+  // Catalog switched off in the dashboard: the landing below replaces the hero and every car section, so the
+  // page has exactly one hero (the lot photo) between the header and the footer.
+  if (settings.catalog_hidden) return <>
+    <JsonLd data={dealerJsonLd(settings)} />
+    <CatalogNotice settings={settings} headingLevel={1} />
+  </>;
 
   return <>
     <JsonLd data={dealerJsonLd(settings)} />
@@ -43,17 +46,14 @@ export default async function HomePage() {
         <h1 id="hero-title">{settings.business_name}</h1>
         {settings.homepage_title !== "Browse Our Cars" ? <p className="hero-heading-tagline">{settings.homepage_title}</p> : null}
         {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
-        <p className="hero-copy">{heroCopy}</p>
+        <p className="hero-copy">{settings.homepage_subtitle || "See the cars we have listed, then ask our team about the one you want to visit."}</p>
         <div className="hero-actions">
-          {catalog ? <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link> : <Link className="button button-primary" href="/contact">Find our showrooms <ArrowRight size={18} aria-hidden="true" /></Link>}
+          <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
           {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask us on WhatsApp</a> : null}
         </div>
       </div>
     </section>
 
-    {catalog ? null : <CatalogNotice settings={settings} />}
-
-    {catalog ? <>
     <div className="container hero-search-dock"><HeroSearch makes={filterOptions.makes} modelsByMake={filterOptions.modelsByMake} /></div>
 
     <section className="section home-inventory" aria-labelledby="home-cars">
@@ -84,9 +84,8 @@ export default async function HomePage() {
         </nav>
       </div>
     </section> : null}
-    </> : null}
 
-    {catalog && (hasVisitDetails || whatsappHref) ? <section className="section section-muted home-visit" aria-labelledby="home-visit">
+    {hasVisitDetails || whatsappHref ? <section className="section section-muted home-visit" aria-labelledby="home-visit">
       <div className="container visit">
         <div>
           <p className="section-kicker">Here to help</p>

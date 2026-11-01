@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Navigation, Phone } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Navigation, Phone } from "lucide-react";
 import { SocialIcon } from "@/components/social-icon";
 import type { SiteSettings } from "@/lib/domain";
 import { buildWhatsAppLink, mapEmbedUrl, parseLocations, safeExternalUrl } from "@/lib/domain";
@@ -40,13 +40,14 @@ export function CatalogNotice({ settings, headingLevel = 2, id = "catalog-notice
     <div className="lot-cover">
       <Image className="lot-cover-photo" src={cover} alt={`The lot at ${settings.business_name}`} fill sizes="100vw" />
       <div className="container lot-cover-content">
-        {place ? <p className="lot-place"><span aria-hidden="true" />{place} · Suriname</p> : null}
+        <p className="lot-place"><span aria-hidden="true" />{settings.business_name}{place ? <em className="lot-place-extra"> · {place}</em> : null}</p>
         <Heading id={`${id}-title`}>Ask us what is on the lot today.</Heading>
         <p className="lot-message">{settings.catalog_hidden_message || defaultCatalogMessage}</p>
         <div className="lot-actions">
           {whatsapp ? <a className="button lot-button-light" href={whatsapp} target="_blank" rel="noopener noreferrer"><SocialIcon platform="whatsapp" /> WhatsApp us</a> : null}
           {settings.phone ? <a className="button lot-button-line" href={`tel:${settings.phone}`}><Phone size={17} aria-hidden="true" /> {settings.phone}</a> : <Link className="button lot-button-line" href="/contact">Contact</Link>}
         </div>
+        {locations.length ? <a className="lot-scroll" href={`#${id}-showrooms`}>See our {locations.length === 1 ? "showroom" : "showrooms"} <ArrowDown size={16} aria-hidden="true" /></a> : null}
       </div>
     </div>
 
@@ -62,7 +63,7 @@ export function CatalogNotice({ settings, headingLevel = 2, id = "catalog-notice
       {strip.map((src) => <figure key={src} className="lot-strip-photo"><Image src={src} alt="" fill sizes="(max-width: 640px) 74vw, 25vw" /></figure>)}
     </div> : null}
 
-    {locations.length ? <div className="lot-visit">
+    {locations.length ? <div className="lot-visit" id={`${id}-showrooms`}>
       <div className="container">
         <div className="lot-visit-head">
           <h3>Come see the cars in person.</h3>
