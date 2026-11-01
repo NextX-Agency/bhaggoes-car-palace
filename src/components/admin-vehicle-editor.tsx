@@ -50,6 +50,21 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const previewUrls = useRef(new Set<string>());
   useEffect(() => () => previewUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
   const notify = (text: string, error = false) => setMessage({ text, error });
+  // Closing the tab, reloading or going back with unsaved changes asks first, like the Annuleren button does.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  // Ctrl+S / Cmd+S saves, as in any other program.
+  useEffect(() => {
+    const save = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") { event.preventDefault(); formRef.current?.requestSubmit(); }
+    };
+    window.addEventListener("keydown", save);
+    return () => window.removeEventListener("keydown", save);
+  }, []);
   const toggledFeature = (feature: string, checked: boolean) => {
     const selected = new Set(featureText.split(/[\n,]/).map((item) => item.trim()).filter(Boolean));
     if (checked) selected.add(feature); else selected.delete(feature);
@@ -227,8 +242,8 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const busy = pending || uploading || templatePending;
   return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit} onInvalidCapture={dutchValidation.onInvalidCapture} onInput={(event) => { dutchValidation.onInput(event); setDirty(true); }} onChange={(event) => { dutchValidation.onChange(event); setDirty(true); }}>
     <input type="hidden" name="id" value={savedId} />
-    <section className="admin-form-section editor-template-panel" aria-labelledby="template-heading">
-      <h2 id="template-heading">{vehicle ? "Gegevens hergebruiken" : "Snelle start"}</h2>
+    <details className="admin-form-section editor-template-panel">
+      <summary className="editor-quickstart-summary"><span><strong id="template-heading">{vehicle ? "Gegevens hergebruiken" : "Snel invullen"}</strong><small>Plak een advertentietekst of kies een bewaarde uitvoering, dan wordt het formulier voor je ingevuld.</small></span></summary>
       <div className="editor-shared-summary"><strong>Financiering, aankoopvoordelen en contact worden automatisch toegevoegd.</strong><Link href="/admin/settings">Wijzig vaste informatie</Link></div>
       {!vehicle ? <div className="editor-mode-switch" role="group" aria-label="Kies een snelle start"><button type="button" aria-pressed={startMode === "paste"} onClick={() => setStartMode("paste")}>Advertentie plakken</button><button type="button" aria-pressed={startMode === "template"} onClick={() => setStartMode("template")}>Uitvoering kiezen</button></div> : null}
       {!vehicle && startMode === "paste" ? <div className="editor-import"><h3>Advertentietekst plakken</h3><p className="help-text">Plak een bestaand bericht. Controleer de ingevulde gegevens voordat je opslaat.</p>
@@ -242,8 +257,28 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
         {templatePreview ? <div className="editor-template-preview"><strong>{templatePreview.name}</strong><p>{templateValues.length ? templateValues.map((name) => templatePreview.fields[name]).join(" · ") : "Geen specificaties opgeslagen"}</p><p>{templatePreview.fields.features.length ? `${templatePreview.fields.features.length} opties: ${templatePreview.fields.features.join(", ")}` : "Geen opties opgeslagen"}</p><small>Jaar, prijzen, stocknummer en foto’s blijven per auto apart.</small><button className="button button-primary" type="button" onClick={applyTemplate} disabled={busy}>Vul deze gegevens in</button></div> : null}
         <details className="editor-template-manage"><summary>Uitvoeringen beheren</summary><p className="help-text">Bewaar de ingevulde specificaties en opties voor de volgende auto.</p><div className="editor-template-controls"><label className="admin-field">Naam voor hergebruik<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} maxLength={80} placeholder="Bijv. Toyota Harrier Premium" /></label><button className="button button-ghost" type="button" onClick={saveTemplate} disabled={busy || !templateName.trim()}>{templatePending ? "Bezig…" : "Bewaar uitvoering"}</button></div>{templatePreview ? <button className="editor-template-delete" type="button" onClick={deleteTemplate} disabled={busy}>Verwijder “{templatePreview.name}”</button> : null}</details>
       </div>}
-    </section>
+    </details>
     <div className="editor-main">
+      <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><div><h2 id="photos-heading">Foto’s</h2><p className="muted">Voeg maximaal {maxPhotos} foto’s toe: voorkant, zijkanten, achterkant, interieur en details. De eerste foto is de omslagfoto. Verplaats foto’s met de pijltjes of sleep ze naar een andere plek.</p></div><span className="muted">{photos.length} / {maxPhotos}</span></div>
+        {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Foto’s van de auto" aria-busy={photoBusy || undefined}>{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}${photoBusy ? " is-busy" : ""}`} key={photo.id} role="listitem" draggable={!photoBusy} onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); setDraggingPhoto(null); void reorderPhoto(Number(event.dataTransfer.getData("text/plain")), index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Foto ${index + 1}${index === 0 ? ", omslagfoto" : ""}`}>
+          {photo.url ? <Image src={vehicleThumbUrl(photo.url, 400)} alt={`Foto ${index + 1}`} fill sizes="200px" unoptimized /> : <span className="photo-no-preview">Foto opgeslagen</span>}
+          {index === 0 ? <span className="cover-label">Omslag</span> : null}
+          <button className="photo-remove" type="button" disabled={photoBusy} onClick={() => { if (window.confirm("Deze foto verwijderen?")) void removePhoto(photo); }} aria-label={`Verwijder foto ${index + 1}`} title="Foto verwijderen"><Trash2 size={16} aria-hidden="true" /></button>
+          <div className="photo-actions">
+            <button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Verplaats foto ${index + 1} naar voren`} title="Naar voren" disabled={photoBusy || index === 0}><ArrowLeft size={16} aria-hidden="true" /></button>
+            {index > 0 ? <button type="button" className="photo-cover-button" onClick={() => void reorderPhoto(index, 0)} disabled={photoBusy} aria-label={`Maak foto ${index + 1} de omslagfoto`} title="Als omslagfoto instellen"><Star size={16} aria-hidden="true" /></button> : null}
+            <button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Verplaats foto ${index + 1} naar achteren`} title="Naar achteren" disabled={photoBusy || index === photos.length - 1}><ArrowRight size={16} aria-hidden="true" /></button>
+          </div>
+        </div>)}</div> : null}
+        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!files.length) return; if (photos.length + files.length > maxPhotos) { notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); return; } if (savedId) { void uploadFiles(savedId, files); return; } const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.files = event.dataTransfer.files; warmPhotos(files); setDirty(true); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); }}>
+          <ImagePlus size={24} aria-hidden="true" />
+          <label className="photo-file-picker">Foto’s kiezen<input type="file" name="photos" accept={photoAccept} multiple disabled={photos.length >= maxPhotos || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (!files.length) return; if (photos.length + files.length > maxPhotos) { input.value = ""; notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); } else if (savedId) { input.value = ""; void uploadFiles(savedId, files); } else { warmPhotos(files); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); } }} /></label>
+          <p><span className="drop-hint-drag">Of sleep foto’s hierheen. </span>JPEG, PNG, WebP, AVIF of HEIC. Grote foto’s worden automatisch verkleind{savedId ? "" : " en geüpload zodra je de auto opslaat"}.</p>
+        </div>
+        {uploadProgress ? <div className="upload-progress" role="status" aria-live="polite"><div className="upload-progress-bar"><span style={{ width: `${Math.max(progress, 6)}%` }} /></div><p><LoaderCircle size={14} className="spin" aria-hidden="true" /> {uploadProgress.done} van {photoCount(uploadProgress.total)} klaar…</p></div> : null}
+        {failedFiles.length && !uploading ? <div className="upload-retry"><button className="button button-outline button-sm" type="button" onClick={() => void uploadFiles(savedId, failedFiles)}>Opnieuw proberen ({photoCount(failedFiles.length)})</button></div> : null}
+      </section>
+
       <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basisgegevens</h2><div className="admin-form-grid">
         <p className="help-text span-all editor-optional-note">Alles is optioneel. Alleen foto’s is genoeg om een auto op te slaan; vul de rest aan wanneer je wilt.</p>
         <label className="admin-field span-all">Titel van de advertentie<input name="title" defaultValue={defaults.title} maxLength={180} placeholder="Leeg laten: wordt automatisch gemaakt uit merk, model en jaar" /></label>
@@ -271,26 +306,6 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
         <label className="admin-field span-all">Omschrijving<textarea name="description" defaultValue={defaults.description} maxLength={10000} rows={6} /></label>
       </div></details>
 
-      <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><div><h2 id="photos-heading">Foto’s</h2><p className="muted">Voeg maximaal {maxPhotos} foto’s toe: voorkant, zijkanten, achterkant, interieur en details. De eerste foto is de omslagfoto. Verplaats foto’s met de pijltjes of sleep ze naar een andere plek.</p></div><span className="muted">{photos.length} / {maxPhotos}</span></div>
-        {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Foto’s van de auto" aria-busy={photoBusy || undefined}>{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}${photoBusy ? " is-busy" : ""}`} key={photo.id} role="listitem" draggable={!photoBusy} onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); setDraggingPhoto(null); void reorderPhoto(Number(event.dataTransfer.getData("text/plain")), index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Foto ${index + 1}${index === 0 ? ", omslagfoto" : ""}`}>
-          {photo.url ? <Image src={vehicleThumbUrl(photo.url, 400)} alt={`Foto ${index + 1}`} fill sizes="200px" unoptimized /> : <span className="photo-no-preview">Foto opgeslagen</span>}
-          {index === 0 ? <span className="cover-label">Omslag</span> : null}
-          <button className="photo-remove" type="button" disabled={photoBusy} onClick={() => { if (window.confirm("Deze foto verwijderen?")) void removePhoto(photo); }} aria-label={`Verwijder foto ${index + 1}`} title="Foto verwijderen"><Trash2 size={16} aria-hidden="true" /></button>
-          <div className="photo-actions">
-            <button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Verplaats foto ${index + 1} naar voren`} title="Naar voren" disabled={photoBusy || index === 0}><ArrowLeft size={16} aria-hidden="true" /></button>
-            {index > 0 ? <button type="button" className="photo-cover-button" onClick={() => void reorderPhoto(index, 0)} disabled={photoBusy} aria-label={`Maak foto ${index + 1} de omslagfoto`} title="Als omslagfoto instellen"><Star size={16} aria-hidden="true" /></button> : null}
-            <button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Verplaats foto ${index + 1} naar achteren`} title="Naar achteren" disabled={photoBusy || index === photos.length - 1}><ArrowRight size={16} aria-hidden="true" /></button>
-          </div>
-        </div>)}</div> : null}
-        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!files.length) return; if (photos.length + files.length > maxPhotos) { notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); return; } if (savedId) { void uploadFiles(savedId, files); return; } const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.files = event.dataTransfer.files; warmPhotos(files); setDirty(true); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); }}>
-          <ImagePlus size={24} aria-hidden="true" />
-          <label className="photo-file-picker">Foto’s kiezen<input type="file" name="photos" accept={photoAccept} multiple disabled={photos.length >= maxPhotos || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (!files.length) return; if (photos.length + files.length > maxPhotos) { input.value = ""; notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); } else if (savedId) { input.value = ""; void uploadFiles(savedId, files); } else { warmPhotos(files); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); } }} /></label>
-          <p><span className="drop-hint-drag">Of sleep foto’s hierheen. </span>JPEG, PNG, WebP, AVIF of HEIC. Grote foto’s worden automatisch verkleind{savedId ? "" : " en geüpload zodra je de auto opslaat"}.</p>
-        </div>
-        {uploadProgress ? <div className="upload-progress" role="status" aria-live="polite"><div className="upload-progress-bar"><span style={{ width: `${Math.max(progress, 6)}%` }} /></div><p><LoaderCircle size={14} className="spin" aria-hidden="true" /> {uploadProgress.done} van {photoCount(uploadProgress.total)} klaar…</p></div> : null}
-        {failedFiles.length && !uploading ? <div className="upload-retry"><button className="button button-outline button-sm" type="button" onClick={() => void uploadFiles(savedId, failedFiles)}>Opnieuw proberen ({photoCount(failedFiles.length)})</button></div> : null}
-      </section>
-
       <section className="admin-form-section" aria-labelledby="features-heading"><h2 id="features-heading">Opties</h2>
         <div className="feature-chips">{commonFeatures.map((feature) => <label className={`feature-chip${selectedFeatures.includes(feature) ? " is-on" : ""}`} key={feature}><input type="checkbox" checked={selectedFeatures.includes(feature)} onChange={(event) => toggledFeature(feature, event.target.checked)} />{feature}</label>)}</div>
         <label className="admin-field" style={{ marginTop: 18 }}>Alle opties <span className="help-text">Eén per regel. Ze staan zo op de website.</span><textarea name="features" value={featureText} onChange={(event) => setFeatureText(event.target.value)} rows={4} /></label>
@@ -306,7 +321,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
         <label className="admin-field">Beschikbaarheid<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Beschikbaar</option><option value="on_the_way">Onderweg</option><option value="reserved">Gereserveerd</option><option value="sold">Verkocht</option><option value="rental">Verhuur</option></select></label>
         <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} maxLength={80} placeholder="Automatisch bij opslaan" /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer je eigen nummer in.</span></label>
         <div className="admin-switches">
-          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? false} disabled={archived} /><span><strong>Tonen op de website</strong><small>{archived ? "Herstel deze auto eerst in de voorraad" : "Bezoekers kunnen deze advertentie openen"}</small></span></label>
+          <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? true} disabled={archived} /><span><strong>Tonen op de website</strong><small>{archived ? "Herstel deze auto eerst in de voorraad" : "Bezoekers kunnen deze advertentie openen"}</small></span></label>
           <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Tonen op de homepage</strong><small>Verschijnt in het autogedeelte van de homepage</small></span></label>
         </div>
       </div></section>

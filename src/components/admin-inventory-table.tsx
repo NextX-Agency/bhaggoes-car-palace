@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, type ButtonHTMLAttributes, type SelectHTMLAttributes } from "react";
 import { useFormStatus } from "react-dom";
 import { createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnFiltersState, type RowSelectionState, type SortingState } from "@tanstack/react-table";
-import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpDown, Camera, Check, Eye, EyeOff, Pencil, Search, Star, StarOff, Tags, X } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpDown, Camera, Check, ExternalLink, Eye, EyeOff, Pencil, Search, Star, StarOff, Tags, X } from "lucide-react";
 import { bulkUpdateVehiclesAction, updateVehicleAction, updateVehiclePriceAction } from "@/app/admin/actions";
 import type { VehicleImage } from "@/lib/domain";
 import { matchesSearch } from "@/lib/search";
@@ -33,6 +33,14 @@ const searchValues = (vehicle: AdminVehicle) => [
   visibilityLabels[visibilityOf(vehicle)], vehicle.featured ? "homepage uitgelicht" : null, vehicle.images.length ? null : "geen foto zonder foto", vehicle.price == null && vehicle.cash_price == null ? "geen prijs op aanvraag" : null,
   ...(vehicle.features ?? []), vehicle.description,
 ];
+// Quick filter for what still needs doing after a fast upload (photos only, no price yet, …).
+const attentionChecks = {
+  photos: ["Zonder foto’s", (vehicle: AdminVehicle) => !vehicle.images.length],
+  price: ["Zonder prijs", (vehicle: AdminVehicle) => vehicle.price == null && vehicle.cash_price == null],
+  details: ["Zonder merk of model", (vehicle: AdminVehicle) => !vehicle.make || !vehicle.model],
+  hidden: ["Niet online", (vehicle: AdminVehicle) => !vehicle.published && !vehicle.archived_at],
+} as const;
+type AttentionKey = keyof typeof attentionChecks;
 const subtitle = (vehicle: AdminVehicle) => [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" · ");
 
 // Row controls lock while their save is running, so a second tap cannot fire a duplicate update.
@@ -70,6 +78,7 @@ function PriceQuickEdit({ vehicle }: { vehicle: AdminVehicle }) {
 function RowActions({ vehicle }: { vehicle: AdminVehicle }) {
   return <div className="admin-row-actions">
     <Link className="row-action" href={`/admin/inventory/${vehicle.id}`} aria-label={`Bewerk ${vehicle.title}`}><Pencil size={15} aria-hidden="true" /><span className="row-action-label">Bewerken</span></Link>
+    {vehicle.published && !vehicle.archived_at ? <a className="row-action" href={`/cars/${vehicle.slug}`} target="_blank" rel="noopener" aria-label={`Bekijk ${vehicle.title} op de website`} title="Bekijk op de website"><ExternalLink size={15} aria-hidden="true" /><span className="row-action-label">Bekijk</span></a> : null}
     <form action={updateVehicleAction}><input type="hidden" name="id" value={vehicle.id} /><input type="hidden" name="archived" value={vehicle.archived_at ? "false" : "true"} /><PendingButton className="row-action" type="submit" title={vehicle.archived_at ? "Terugzetten in de voorraad als concept" : "Archiveren en van de website halen"} aria-label={`${vehicle.archived_at ? "Herstel" : "Archiveer"} ${vehicle.title}`}>{vehicle.archived_at ? <ArchiveRestore size={15} aria-hidden="true" /> : <Archive size={15} aria-hidden="true" />}<span className="row-action-label">{vehicle.archived_at ? "Herstellen" : "Archiveren"}</span></PendingButton></form>
   </div>;
 }
@@ -78,7 +87,10 @@ function Thumb({ vehicle, size }: { vehicle: AdminVehicle; size: number }) {
   return <div className="inventory-table-photo">{image?.url ? <Image src={vehicleThumbUrl(image.url, 160)} alt="" fill sizes={`${size}px`} unoptimized /> : <Camera size={18} role="img" aria-label="Geen foto" />}</div>;
 }
 
-export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
+export function AdminInventoryTable({ data: allVehicles }: { data: AdminVehicle[] }) {
+  const [attention, setAttention] = useState<AttentionKey | "">("");
+  const data = useMemo(() => attention ? allVehicles.filter(attentionChecks[attention][1]) : allVehicles, [allVehicles, attention]);
+  const attentionCounts = useMemo(() => Object.fromEntries((Object.keys(attentionChecks) as AttentionKey[]).map((key) => [key, allVehicles.filter(attentionChecks[key][1]).length])) as Record<AttentionKey, number>, [allVehicles]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [filter, setFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -106,13 +118,14 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
   const setColumnFilter = (id: string, value: string) => setColumnFilters((current) => [...current.filter((item) => item.id !== id), ...(value ? [{ id, value }] : [])]);
   const columnFilter = (id: string) => (columnFilters.find((item) => item.id === id)?.value as string | undefined) ?? "";
   const rows = table.getRowModel().rows;
-  const filtered = Boolean(filter || columnFilters.length);
-  const emptyText = data.length ? "Geen auto’s gevonden met deze filters." : "Nog geen auto’s. Voeg je eerste auto toe om te beginnen.";
+  const filtered = Boolean(filter || columnFilters.length || attention);
+  const emptyText = allVehicles.length ? "Geen auto’s gevonden met deze filters." : "Nog geen auto’s. Voeg je eerste auto toe om te beginnen.";
 
   return <>
     <div className="inventory-table-toolbar">
-      <label className="table-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Zoek in de voorraad</span><input type="search" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Zoek op stocknummer, merk, model, jaar, kleur, VIN, prijs, optie…" /></label>
+      <label className="table-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Zoek in de voorraad</span><input type="search" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Zoek: stocknr., merk, model, kleur, VIN…" title="Zoek op stocknummer, merk, model, jaar, kleur, chassisnummer, prijs of optie" /></label>
       <div className="table-filters">
+        <label><span className="sr-only">Toon auto’s die nog iets nodig hebben</span><select className={`admin-input${attention ? " is-attention" : ""}`} value={attention} onChange={(event) => setAttention(event.target.value as AttentionKey | "")}><option value="">Alle auto’s</option>{(Object.keys(attentionChecks) as AttentionKey[]).map((key) => <option key={key} value={key} disabled={!attentionCounts[key]}>{attentionChecks[key][0]} ({attentionCounts[key]})</option>)}</select></label>
         <label><span className="sr-only">Filter op beschikbaarheid</span><select className="admin-input" value={columnFilter("availability")} onChange={(event) => setColumnFilter("availability", event.target.value)}><option value="">Alle beschikbaarheid</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label><span className="sr-only">Filter op zichtbaarheid op de website</span><select className="admin-input" value={columnFilter("visibility")} onChange={(event) => setColumnFilter("visibility", event.target.value)}><option value="">Alle advertenties</option><option value="published">Zichtbaar op de website</option><option value="draft">Verborgen (concept)</option><option value="archived">Gearchiveerd</option></select></label>
       </div>
@@ -134,12 +147,12 @@ export function AdminInventoryTable({ data }: { data: AdminVehicle[] }) {
       {pendingBulk ? <span className="sr-only" role="status">Geselecteerde auto’s worden opgeslagen…</span> : null}
     </form> : null}
     {bulkState.error ? <p className="admin-feedback admin-error" role="alert">{bulkState.error}</p> : bulkState.ok ? <p className="admin-feedback" role="status">Geselecteerde auto’s bijgewerkt.</p> : null}
-    <div className="admin-table-wrap admin-inventory-desktop"><table className="admin-table inventory-table"><thead>{table.getHeaderGroups().map((group) => <tr key={group.id}>{group.headers.map((header) => { const sorted = header.column.getIsSorted(); return <th key={header.id} className={`col-${header.column.id}`} aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}>{header.isPlaceholder ? null : header.column.getCanSort() ? <button type="button" className="table-sort" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp size={12} /> : sorted === "desc" ? <ArrowDown size={12} /> : <ArrowUpDown size={12} />}</button> : flexRender(header.column.columnDef.header, header.getContext())}</th>; })}</tr>)}</thead><tbody>{rows.length ? rows.map((row) => <tr key={row.id} className={`${row.original.archived_at ? "archived-row" : ""}${row.getIsSelected() ? " selected-row" : ""}`}>{row.getVisibleCells().map((cell) => <td key={cell.id} className={`col-${cell.column.id}`}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>) : <tr><td colSpan={columns.length} className="table-empty">{emptyText}{filtered ? <> <button type="button" className="link-button" onClick={() => { setFilter(""); setColumnFilters([]); }}>Filters wissen</button></> : null}</td></tr>}</tbody></table></div>
+    <div className="admin-table-wrap admin-inventory-desktop"><table className="admin-table inventory-table"><thead>{table.getHeaderGroups().map((group) => <tr key={group.id}>{group.headers.map((header) => { const sorted = header.column.getIsSorted(); return <th key={header.id} className={`col-${header.column.id}`} aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}>{header.isPlaceholder ? null : header.column.getCanSort() ? <button type="button" className="table-sort" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp size={12} /> : sorted === "desc" ? <ArrowDown size={12} /> : <ArrowUpDown size={12} />}</button> : flexRender(header.column.columnDef.header, header.getContext())}</th>; })}</tr>)}</thead><tbody>{rows.length ? rows.map((row) => <tr key={row.id} className={`${row.original.archived_at ? "archived-row" : ""}${row.getIsSelected() ? " selected-row" : ""}`}>{row.getVisibleCells().map((cell) => <td key={cell.id} className={`col-${cell.column.id}`}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>) : <tr><td colSpan={columns.length} className="table-empty">{emptyText}{filtered ? <> <button type="button" className="link-button" onClick={() => { setFilter(""); setColumnFilters([]); setAttention(""); }}>Filters wissen</button></> : null}</td></tr>}</tbody></table></div>
     <div className="admin-inventory-mobile">{rows.length ? rows.map((row) => { const vehicle = row.original; return <article key={vehicle.id} className={`inventory-mobile-card${vehicle.archived_at ? " archived-row" : ""}`}>
       <div className="inventory-mobile-heading"><label className="inventory-mobile-select"><input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} /><span className="sr-only">Selecteer {vehicle.title}</span></label><Thumb vehicle={vehicle} size={80} /><div className="inventory-mobile-title"><Link href={`/admin/inventory/${vehicle.id}`}>{vehicle.title}</Link><span>{subtitle(vehicle)}</span>{vehicle.stock_number ? <span className="stock-tag">{vehicle.stock_number}</span> : null}<PriceQuickEdit vehicle={vehicle} /></div></div>
       <div className="inventory-mobile-controls"><StatusSelect vehicle={vehicle} /><VisibilityToggle vehicle={vehicle} /><FeaturedToggle vehicle={vehicle} /></div>
       <RowActions vehicle={vehicle} />
     </article>; }) : <p className="table-empty">{emptyText}</p>}</div>
-    <div className="table-pagination"><span>{table.getFilteredRowModel().rows.length} van {data.length} auto’s</span>{table.getPageCount() > 1 ? <div><button type="button" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>Vorige</button><span>Pagina {table.getState().pagination.pageIndex + 1} van {table.getPageCount()}</span><button type="button" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>Volgende</button></div> : null}</div>
+    <div className="table-pagination"><span>{table.getFilteredRowModel().rows.length} van {allVehicles.length} auto’s</span>{table.getPageCount() > 1 ? <div><button type="button" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>Vorige</button><span>Pagina {table.getState().pagination.pageIndex + 1} van {table.getPageCount()}</span><button type="button" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>Volgende</button></div> : null}</div>
   </>;
 }

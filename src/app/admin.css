@@ -407,7 +407,7 @@ button.admin-badge:hover { filter: brightness(0.96); }
 @media (max-width: 1100px) {
   .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-workspace { grid-template-columns: minmax(0, 1fr) minmax(260px, .7fr); }
-  .vehicle-editor { grid-template-columns: 1fr; }
+  .vehicle-editor { grid-template-columns: minmax(0, 1fr); }
   .editor-side { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -568,3 +568,41 @@ button.admin-badge:hover { filter: brightness(0.96); }
 .catalog-photos-add { display: grid; place-content: center; justify-items: center; gap: 6px; border: 1.5px dashed var(--line-strong); background: var(--surface); color: var(--muted); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
 .catalog-photos-add:hover, .catalog-photos-add:focus-within { border-color: var(--brand); color: var(--brand); }
 .catalog-photos-add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Editor: "Snel invullen" is a fold-out, so the photos are the first thing on the page */
+.editor-template-panel:not([open]) { gap: 0; }
+.editor-quickstart-summary { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; list-style: none; }
+.editor-quickstart-summary::-webkit-details-marker { display: none; }
+.editor-quickstart-summary::after { content: "+"; display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 30px; margin-left: auto; border-radius: 50%; background: #fff; color: var(--brand); font-size: 1.25rem; font-weight: 600; box-shadow: 0 0 0 1px #b9d5e9; }
+.editor-template-panel[open] > .editor-quickstart-summary::after { content: "−"; }
+.editor-quickstart-summary span { display: grid; gap: 2px; }
+.editor-quickstart-summary strong { color: var(--ink); font-size: 1.0625rem; }
+.editor-quickstart-summary small { color: var(--ink-2); font-size: var(--fs-sm); }
+.admin-topline-actions form { display: contents; }
+
+/* Voorraad: quick filter for cars that still need something */
+.table-filters select.is-attention { border-color: #f0c983; background-color: var(--warn-soft); }
+
+/* Website-instellingen: jump to a section of the long form */
+.settings-jump { position: sticky; top: 0; z-index: 6; display: flex; gap: 6px; overflow-x: auto; margin: -4px 0 0; padding: 10px 0; background: var(--surface); scrollbar-width: none; }
+.settings-jump::-webkit-scrollbar { display: none; }
+.settings-jump a { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
+.settings-jump a:hover { border-color: var(--brand); color: var(--brand); }
+.admin-form > .admin-form-section[id] { scroll-margin-top: 72px; }
+@media (max-width: 860px) {
+  .settings-jump { top: 56px; }
+  .admin-form > .admin-form-section[id] { scroll-margin-top: 128px; }
+}
+/* Desktop table: secondary row actions are icons with a tooltip, so all of them fit next to Bewerken. */
+.inventory-table .admin-row-actions > :not(:first-child) .row-action-label { display: none; }
+.inventory-table .admin-row-actions { flex-wrap: nowrap; }
+/* Laptop widths: drop the "Bijgewerkt" date so every row action stays visible without sideways scrolling. */
+@media (max-width: 1440px) {
+  .inventory-table .col-updated_at { display: none; }
+  .inventory-table .col-title { min-width: 220px; }
+}
+.editor-template-panel { min-width: 0; }
+@media (max-width: 600px) {
+  .vehicle-editor .admin-form-footer .admin-row-actions { flex-wrap: wrap; width: 100%; }
+  .vehicle-editor .admin-form-footer .admin-row-actions .button { flex: 1 1 auto; }
+}

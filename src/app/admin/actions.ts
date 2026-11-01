@@ -217,7 +217,7 @@ export async function duplicateVehicleAction(form: FormData) {
   if (data) {
     const { data: features } = await supabase.from("vehicle_features").select("feature_id").eq("vehicle_id", id);
     if (features?.length) await supabase.from("vehicle_features").insert(features.map((feature) => ({ vehicle_id: data.id, feature_id: feature.feature_id })));
-    redirect(`/admin/inventory/${data.id}`);
+    redirect(`/admin/inventory/${data.id}?opgeslagen=kopie`);
   }
 }
 
