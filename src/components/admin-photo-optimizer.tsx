@@ -24,16 +24,20 @@ export function AdminPhotoOptimizer() {
     const failed: string[] = []; let done = 0; let saved = 0;
     setProgress({ done: 0, total: count, saved: 0 });
     for (let round = 0; round < 200; round += 1) {
-      const step = await optimizePhotosAction(failed);
+      let step: Awaited<ReturnType<typeof optimizePhotosAction>>;
+      // A dropped connection or a server timeout must not leave the button spinning; what was done is kept.
+      try { step = await optimizePhotosAction(failed); }
+      catch { setResult({ text: `Onderbroken na ${done} foto’s (verbinding of time-out). Tik nogmaals op “Foto’s verkleinen” om verder te gaan.`, error: true }); break; }
       if (step.error) { setResult({ text: step.error, error: true }); break; }
       done += step.optimized; saved += step.savedBytes; failed.push(...step.failedIds);
       setProgress({ done: done + failed.length, total: count, saved });
       if (!step.remaining || (!step.optimized && !step.failedIds.length)) break;
     }
     setRunning(false);
-    setCount(failed.length);
-    if (!failed.length) setResult((current) => current ?? { text: `${done} foto’s verkleind, ${megabytes(saved)} bespaard. Foto’s laden nu veel sneller.` });
-    else setResult({ text: `${done} foto’s verkleind; ${failed.length} konden niet worden verwerkt en blijven zoals ze zijn.`, error: true });
+    const left = await countLargePhotosAction().then((value) => value.count).catch(() => failed.length);
+    setCount(left);
+    if (!failed.length && !left) setResult((current) => current ?? { text: `${done} foto’s verkleind, ${megabytes(saved)} bespaard. Foto’s laden nu veel sneller.` });
+    else if (failed.length) setResult({ text: `${done} foto’s verkleind; ${failed.length} konden niet worden verwerkt en blijven zoals ze zijn.`, error: true });
     router.refresh();
   }
 
