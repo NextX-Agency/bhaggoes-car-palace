@@ -9,9 +9,9 @@ import { buildWhatsAppLink } from "@/lib/domain";
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   return {
-    title: "Financing",
+    title: "Car financing in Suriname",
     description: settings.financing_enabled
-      ? "Explore the financing options listed by Bhaggoes Car Palace and ask the team about current terms."
+      ? "Explore car financing options at Bhaggoes Car Palace in Suriname. Ask our team about current terms for your chosen vehicle."
       : "Ask Bhaggoes Car Palace about current vehicle financing options.",
     alternates: { canonical: "/financing" },
     robots: { index: settings.financing_enabled, follow: true },
@@ -27,7 +27,7 @@ export default async function FinancingPage() {
     <section className="finance-hero" aria-labelledby="finance-title">
       <div className="finance-hero-copy">
         <p className="finance-eyebrow">Bhaggoes Car Palace · Buying options</p>
-        <h1 id="finance-title">A way forward for your next car.</h1>
+        <h1 id="finance-title">Financing for your next car.</h1>
         <p>See the options currently listed, then talk with our team about the car and terms that work for you.</p>
         {whatsapp ? <a className="button finance-hero-button" href={whatsapp} target="_blank" rel="noopener noreferrer"><SocialIcon platform="whatsapp" /> Ask us about financing</a> : <Link className="button finance-hero-button" href="/contact">Talk to our team <ArrowRight size={18} /></Link>}
       </div>

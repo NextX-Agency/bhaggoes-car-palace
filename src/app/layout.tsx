@@ -3,7 +3,7 @@ import { Archivo, Inter } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getSettings } from "@/lib/data";
-import { defaultShareImage } from "@/lib/seo";
+import { defaultShareImage, effectiveSeoDescription, effectiveSeoTitle } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
 import "./admin.css";
@@ -19,12 +19,8 @@ export const viewport: Viewport = { themeColor: "#ffffff", viewportFit: "cover" 
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
-  // Existing installations may still have the original generic defaults in the database.
-  const title = settings.seo_title === "Bhaggoes Car Palace | Vehicle Inventory"
-    ? "Bhaggoes Car Palace | Autodealer in Suriname" : settings.seo_title;
-  const description = settings.seo_description === "Browse the Bhaggoes Car Palace vehicle inventory and contact the dealership about a car."
-    ? "Bhaggoes Car Palace is een autodealer in Suriname. Bekijk onze auto's of vraag via WhatsApp naar de actuele voorraad en bezoek onze locaties."
-    : settings.seo_description;
+  const title = effectiveSeoTitle(settings);
+  const description = effectiveSeoDescription(settings);
   return {
     metadataBase: new URL(siteUrl()),
     title: { default: title, template: `%s | ${settings.business_name}` },

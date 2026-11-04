@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 import { getFaqs } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Frequently Asked Questions", description: "Answers about browsing, visiting and buying a car at Bhaggoes Car Palace.", alternates: { canonical: "/faq" } };
+export const metadata: Metadata = { title: "Questions about buying a car in Suriname", description: "Answers to common questions about finding a car, visiting Bhaggoes Car Palace and buying a vehicle in Suriname.", alternates: { canonical: "/faq" } };
 export default async function FAQPage() {
   const publishedFaqs = await getFaqs();
 

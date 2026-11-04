@@ -7,8 +7,8 @@ import { dealerJsonLd } from "@/lib/seo";
 import { buildWhatsAppLink, mapEmbedUrl, parseLocations, safeExternalUrl } from "@/lib/domain";
 
 export const metadata: Metadata = {
-  title: "Contact & Locations",
-  description: "Visit Bhaggoes Car Palace in Suriname. See both locations on the map or contact the team directly.",
+  title: "Contact and locations in Suriname",
+  description: "Find Bhaggoes Car Palace in Suriname. View our locations, get directions, or contact the team by phone or WhatsApp before your visit.",
   alternates: { canonical: "/contact" },
 };
 
@@ -27,8 +27,8 @@ export default async function ContactPage() {
     <header className="contact-heading">
       <div>
         <p className="contact-eyebrow">Bhaggoes Car Palace · Suriname</p>
-        <h1>Come see us.</h1>
-        <p>Find the location that works for you, or speak with our team before you visit.</p>
+        <h1>Visit Bhaggoes Car Palace.</h1>
+        <p>Find our locations in Suriname, get directions, or speak with our team before you visit.</p>
       </div>
       <div className="contact-heading-actions">
         {whatsapp ? <a className="button button-primary" href={whatsapp} target="_blank" rel="noopener noreferrer"><SocialIcon platform="whatsapp" /> Message on WhatsApp</a> : null}

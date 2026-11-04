@@ -42,11 +42,11 @@ export default async function HomePage() {
       <div className="hero-visual"><picture><source media="(min-width: 641px)" srcSet={desktopHero} /><img {...heroImgProps} alt={imageProps.alt} srcSet={mobileHero} className="hero-photo" /></picture></div>
       <div className="hero-shade" />
       <div className="container hero-content">
-        <p className="hero-kicker">Welcome to</p>
+        <p className="hero-kicker">Car dealer in Suriname</p>
         <h1 id="hero-title">{settings.business_name}</h1>
         {settings.homepage_title !== "Browse Our Cars" ? <p className="hero-heading-tagline">{settings.homepage_title}</p> : null}
         {settings.slogan ? <p className="hero-slogan">{settings.slogan}</p> : null}
-        <p className="hero-copy">{settings.homepage_subtitle || "See the cars we have listed, then ask our team about the one you want to visit."}</p>
+        <p className="hero-copy">{settings.homepage_subtitle || "Explore cars at Bhaggoes Car Palace in Suriname. Ask our team about current availability or visit one of our locations."}</p>
         <div className="hero-actions">
           <Link className="button button-primary" href="/cars">Explore the cars <ArrowRight size={18} aria-hidden="true" /></Link>
           {whatsappHref ? <a className="button button-hero-outline" href={whatsappHref} target="_blank" rel="noreferrer"><SocialIcon platform="whatsapp" /> Ask us on WhatsApp</a> : null}

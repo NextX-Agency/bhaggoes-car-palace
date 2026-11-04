@@ -20,13 +20,13 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const keys = Object.keys(params).filter((key) => one(params[key]));
   const requestedMake = one(params.make)?.trim();
-  const base = { title: "Browse Cars", description: "Browse Bhaggoes Car Palace vehicle listings by make, price, year, and more.", alternates: { canonical: "/cars" } };
+  const base = { title: "Cars for sale in Suriname", description: "Explore the current car listings at Bhaggoes Car Palace in Suriname. Filter by make, price, year and more, then ask us about availability.", alternates: { canonical: "/cars" } };
   if ((await getSettings()).catalog_hidden) return { ...base, title: "Cars", robots: { index: false, follow: true } };
   if (!keys.length) return base;
   if (requestedMake && keys.length === 1) {
     const { makes, makeCounts } = await getVehicleFilterOptions();
     const make = makes.find((item) => item.toLowerCase() === requestedMake.toLowerCase() && makeCounts[item]);
-    if (make) return { title: `${make} cars for sale in Suriname`, description: `Browse ${makeCounts[make]} ${make} ${makeCounts[make] === 1 ? "car" : "cars"} at Bhaggoes Car Palace, with photos, prices and details.`, alternates: { canonical: `/cars?make=${encodeURIComponent(make)}` } };
+    if (make) return { title: `${make} cars for sale in Suriname`, description: `Explore ${makeCounts[make]} ${make} ${makeCounts[make] === 1 ? "car" : "cars"} at Bhaggoes Car Palace in Suriname. View photos and details, then ask about availability.`, alternates: { canonical: `/cars?make=${encodeURIComponent(make)}` } };
   }
   return { ...base, robots: { index: false, follow: true } };
 }
@@ -48,6 +48,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
     sort: sort && sort in sortLabels ? sort as VehicleFilters["sort"] : "newest", page: numberValue(params.page) ?? 1,
   };
   const [{ vehicles, total, page, pageSize }, options, settings] = await Promise.all([getVehicles(filters), getVehicleFilterOptions(), getSettings()]);
+  const selectedMake = options.makes.find((make) => make.toLowerCase() === filters.make?.toLowerCase() && options.makeCounts[make]);
   if (settings.catalog_hidden) return <div className="catalog-page"><CatalogNotice settings={settings} headingLevel={1} /></div>;
 
   const active = filterKeys.flatMap((key) => filters[key] ? [[key, String(filters[key])] as [string, string]] : []);
@@ -70,7 +71,8 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
   return <div className="container page-wrap inventory-page">
     <div className="inventory-head">
       <div>
-        <h1>Browse cars</h1>
+        <h1>{selectedMake ? `${selectedMake} cars for sale in Suriname` : "Cars for sale in Suriname"}</h1>
+        <p className="inventory-intro">Browse the current listings at {settings.business_name}. Contact our team to confirm availability or arrange a visit.</p>
       </div>
       {compareCarsEnabled ? <Link href="/compare" className="text-link">Compare cars <ArrowRight size={16} /></Link> : null}
     </div>

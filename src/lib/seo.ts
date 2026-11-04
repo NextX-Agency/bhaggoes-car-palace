@@ -3,6 +3,17 @@ import { absoluteUrl, shareImageUrl } from "@/lib/site-url";
 
 export const defaultShareImage = { url: "/images/og-default.jpg", width: 1200, height: 630, alt: "Bhaggoes Car Palace, car dealership in Suriname" };
 
+export function effectiveSeoTitle(settings: Pick<SiteSettings, "seo_title">) {
+  return settings.seo_title === "Bhaggoes Car Palace | Vehicle Inventory"
+    ? "Bhaggoes Car Palace | Autodealer in Suriname" : settings.seo_title;
+}
+
+export function effectiveSeoDescription(settings: Pick<SiteSettings, "seo_description">) {
+  return settings.seo_description === "Browse the Bhaggoes Car Palace vehicle inventory and contact the dealership about a car."
+    ? "Bhaggoes Car Palace is een autodealer in Suriname. Bekijk onze auto's of vraag via WhatsApp naar de actuele voorraad en bezoek onze locaties."
+    : settings.seo_description;
+}
+
 export const vehicleName = vehicleDisplayName;
 
 // Cuts at a word boundary so search snippets and link previews never end mid-word.
@@ -22,7 +33,7 @@ export function vehicleDescription(vehicle: Vehicle, settings: Pick<SiteSettings
     vehicle.transmission, vehicle.fuel_type,
     vehicle.price != null ? `${currency ? `${currency} ` : ""}${new Intl.NumberFormat("en-US").format(vehicle.price)}` : null,
   ].filter(Boolean).join(", ");
-  return trimDescription(`${vehicleName(vehicle)}${facts ? `: ${facts}` : ""}. See photos and ask ${settings.business_name} about this car.`);
+  return trimDescription(`Explore the ${vehicleName(vehicle)} at ${settings.business_name} in Suriname${facts ? `: ${facts}` : ""}. View photos and ask about availability.`);
 }
 
 export function vehicleShareImages(vehicle: Vehicle, limit = 1) {
@@ -54,7 +65,7 @@ export function dealerJsonLd(settings: SiteSettings, { website = true }: { websi
     "@type": "AutoDealer",
     name: location.name ? `${settings.business_name} ${location.name}` : settings.business_name,
     telephone: settings.phone ?? undefined,
-    hasMap: location.mapUrl,
+    hasMap: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.address)}`,
     address: { "@type": "PostalAddress", streetAddress: location.address.replace(/,?\s*Suriname$/i, ""), addressCountry: "SR" },
   }));
   return {
@@ -63,9 +74,9 @@ export function dealerJsonLd(settings: SiteSettings, { website = true }: { websi
       {
         ...dealerBase(settings),
         "@id": absoluteUrl("/#dealer"),
-        description: settings.seo_description,
+        description: effectiveSeoDescription(settings),
         slogan: settings.slogan || undefined,
-        logo: absoluteUrl("/images/bhaggoes-logo-approved.png"),
+        logo: absoluteUrl(settings.logo_url || "/images/bhaggoes-logo-approved.png"),
         image: absoluteUrl(defaultShareImage.url),
         areaServed: { "@type": "Country", name: "Suriname" },
         address: branches.length === 1 ? branches[0].address : undefined,

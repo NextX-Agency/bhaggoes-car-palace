@@ -452,6 +452,7 @@ body:has(.mobile-cta) .action-toast { bottom: calc(84px + env(safe-area-inset-bo
    ========================================================================== */
 .inventory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
 .inventory-head h1 { font-size: var(--fs-h1); }
+.inventory-intro { max-width: 66ch; margin-top: 10px; color: var(--ink-2); line-height: 1.6; }
 .inventory-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); align-items: start; gap: 40px; }
 .filter-panel { min-width: 0; }
 .filter-heading { padding-bottom: 14px; border-bottom: 1px solid var(--line); font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0; }

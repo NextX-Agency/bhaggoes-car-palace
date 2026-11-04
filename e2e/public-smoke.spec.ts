@@ -10,11 +10,11 @@ test("responses include baseline security headers", async ({ page }) => {
 test("homepage and inventory show a complete empty state", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bhaggoes Car Palace");
-  await expect(page.getByText("Welcome to", { exact: true })).toBeVisible();
+  await expect(page.getByText("Car dealer in Suriname", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "No cars are listed right now" })).toBeVisible();
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Inventory" }).click();
   await expect(page).toHaveURL(/\/cars$/);
-  await expect(page.getByRole("heading", { name: "Browse cars" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cars for sale in Suriname" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Inventory" }).first()).toHaveAttribute("aria-current", "page");
 });
 
@@ -30,7 +30,7 @@ test("homepage vehicle search sends all selected filters to inventory", async ({
   await expect(page).toHaveURL(/\/cars\?.*model=Corolla/);
   await expect(page).toHaveURL(/year=2022/);
   await expect(page).toHaveURL(/maxPrice=25000/);
-  await expect(page.getByRole("heading", { name: "Browse cars" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cars for sale in Suriname" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Remove filter Corolla" })).toBeVisible();
 });
 
