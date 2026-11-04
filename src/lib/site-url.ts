@@ -1,5 +1,7 @@
-// Canonical origin used for metadata, sitemap, robots and JSON-LD. Set NEXT_PUBLIC_SITE_URL to the public domain in production.
+// Keep every production SEO signal on the public domain, even when a Vercel
+// deployment URL was configured as NEXT_PUBLIC_SITE_URL by mistake.
 export function siteUrl() {
+  if (process.env.NODE_ENV === "production") return "https://www.bhaggoescarpalace.com";
   const configured = process.env.NEXT_PUBLIC_SITE_URL
     ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined)
     ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");

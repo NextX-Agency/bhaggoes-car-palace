@@ -35,6 +35,8 @@ const nextConfig: NextConfig = {
     },
   ],
   redirects: async () => [
+    { source: "/:path*", has: [{ type: "host", value: "bhaggoescarpalace.com" }], destination: "https://www.bhaggoescarpalace.com/:path*", permanent: true },
+    { source: "/:path*", has: [{ type: "host", value: "bhaggoes-car-palace.vercel.app" }], destination: "https://www.bhaggoescarpalace.com/:path*", permanent: true },
     { source: "/about", destination: "/contact", permanent: true },
     { source: "/cars/demo-toyota-rav4", destination: "/cars/2021-toyota-rav4", permanent: true },
     { source: "/cars/demo-honda-fit", destination: "/cars/2018-honda-fit", permanent: true },
