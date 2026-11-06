@@ -92,7 +92,7 @@ export default async function CarsPage({ searchParams }: { searchParams: SearchP
           <Link className="chip chip-clear" href={query(sortEntry)}>Clear all</Link>
         </div> : null}
         {vehicles.length
-          ? <VehicleGrid vehicles={vehicles} priorityCount={3} defaultCurrency={settings.currency} />
+          ? <VehicleGrid vehicles={vehicles} priorityCount={1} defaultCurrency={settings.currency} />
           : active.length
             ? <EmptyState title="No cars match your filters" href={query(sortEntry)} action="Clear filters" />
             : total > 0

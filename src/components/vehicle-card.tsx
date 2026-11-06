@@ -5,6 +5,7 @@ import type { Vehicle } from "@/lib/domain";
 import { coverImage, formatAmount, formatMileage, isDemoVehicle } from "@/lib/domain";
 import { VehicleActions } from "@/components/vehicle-actions";
 import { BrandLogo } from "@/components/brand-logo";
+import { vehicleThumbUrl } from "@/lib/vehicle-image-url";
 
 export function VehicleCard({ vehicle, priority = false, defaultCurrency }: { vehicle: Vehicle; priority?: boolean; defaultCurrency?: string | null }) {
   const image = coverImage(vehicle.images);
@@ -16,7 +17,7 @@ export function VehicleCard({ vehicle, priority = false, defaultCurrency }: { ve
   return <article className="vcard">
     <div className="vcard-media">
       {image?.url
-        ? <Image src={image.url} alt={image.alt_text ?? vehicle.title} fill sizes="(max-width: 600px) 100vw, (max-width: 1080px) 50vw, 400px" loading={priority ? "eager" : "lazy"} />
+        ? <Image src={vehicleThumbUrl(image.url, 800)} alt={image.alt_text ?? vehicle.title} fill sizes="(max-width: 600px) 100vw, (max-width: 1080px) 50vw, 400px" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} unoptimized />
         : <div className="vcard-noimage"><Camera size={26} aria-hidden="true" /><span>No photos yet</span></div>}
       <VehicleActions vehicleId={vehicle.id} name={vehicle.title} compact />
     </div>
