@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
 import { VEHICLE_THUMB_WIDTHS } from "@/lib/vehicle-image-url";
 
@@ -24,14 +25,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
   const requested = Number(new URL(request.url).searchParams.get("w"));
   const width = VEHICLE_THUMB_WIDTHS.find((allowed) => allowed === requested);
   try {
-    const supabase = await createClient();
-    const { data: image } = await supabase.from("vehicle_images").select("id").eq("storage_path", path).maybeSingle();
-    if (!image) return new NextResponse(null, { status: 404 });
+    const signedIn = /(?:^|;\s*)sb-[^=]*-auth-token/.test(request.headers.get("cookie") ?? "");
+    const supabase = signedIn ? await createClient() : createPublicClient();
+    if (!supabase) return new NextResponse(null, { status: 404 });
+    // Storage's vehicle_images_visible_select policy checks the linked car's publication,
+    // archive state and catalog switch. A second vehicle_images query added a network hop per photo.
     const { data, error } = await supabase.storage.from("vehicle-images").download(path);
     if (error || !data || !IMAGE_TYPES.has(data.type)) return new NextResponse(null, { status: 404 });
-    // Access was already checked by row level security above; the session cookie only decides who may cache it.
-    // (No auth.getUser() here: it is a network round trip per photo, and dashboard pages load fifteen at once.)
-    const signedIn = /(?:^|;\s*)sb-[^=]*-auth-token/.test(request.headers.get("cookie") ?? "");
+    // The session cookie only decides who may cache this response.
     let body: BodyInit = data.stream();
     let type = data.type;
     if (width) { body = new Uint8Array(await resize(await data.arrayBuffer(), width, 72)); type = "image/webp"; }
