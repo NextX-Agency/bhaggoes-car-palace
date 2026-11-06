@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, CircleAlert, ImagePlus, LoaderCircle, Star, Trash2 } from "lucide-react";
 import type { Vehicle } from "@/lib/domain";
-import { deleteVehicleAction, deleteVehicleTemplateAction, refreshPublicInventoryAction, saveVehicleAction, saveVehicleTemplateAction } from "@/app/admin/actions";
+import { deleteVehicleAction, deleteVehicleTemplateAction, refreshPublicInventoryAction, saveVehicleAction, saveVehicleTemplateAction, updateVehicleAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
 import { photoAccept } from "@/lib/photo-optimize";
@@ -37,6 +37,9 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const [savedId, setSavedId] = useState(vehicle?.id ?? "");
   const [photos, setPhotos] = useState(vehicle?.images ?? []); const [featureText, setFeatureText] = useState((vehicle?.features ?? []).join("\n")); const [uploading, setUploading] = useState(false); const [message, setMessage] = useState<Notice | null>(notice ? { text: notice } : null);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const uploadLock = useRef(false);
+  const saveLock = useRef(false);
+  const pendingPublish = useRef(false);
   const [failedFiles, setFailedFiles] = useState<File[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -52,11 +55,11 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const notify = (text: string, error = false) => setMessage({ text, error });
   // Closing the tab, reloading or going back with unsaved changes asks first, like the Annuleren button does.
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !uploading && !pending && !photoBusy) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [dirty, uploading, pending, photoBusy]);
   // Ctrl+S / Cmd+S saves, as in any other program.
   useEffect(() => {
     const save = (event: KeyboardEvent) => {
@@ -151,47 +154,71 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (pending || uploading) return;
+    event.preventDefault(); if (saveLock.current || uploadLock.current || photoBusy) return;
     const next = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "next";
     const form = event.currentTarget; const formData = new FormData(form); formData.set("features", featureText);
     const files = Array.from(form.querySelector<HTMLInputElement>('input[name="photos"]')?.files ?? []);
+    if (pendingPublish.current && failedFiles.length && !files.length && formData.get("published") === "on") {
+      notify("Probeer eerst de mislukte foto’s opnieuw te uploaden. De auto blijft intussen als concept opgeslagen.", true);
+      return;
+    }
+    const publishAfterUpload = !vehicle && files.length > 0 && (!savedId || pendingPublish.current) && formData.get("published") === "on";
+    if (publishAfterUpload) formData.delete("published");
     formData.delete("photos");
     if (photos.length + files.length > maxPhotos) { notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je hebt er al ${photos.length} en hebt er ${files.length} gekozen.`, true); return; }
+    saveLock.current = true;
     startTransition(async () => {
-      setMessage(null);
-      const result = await saveVehicleAction({}, formData);
-      if (result.error) { notify(result.error, true); return; }
-      if (!result.id) { notify("De auto kon niet worden opgeslagen.", true); return; }
-      setSavedId(result.id); setDirty(false);
-      const saved = vehicle ? "Wijzigingen opgeslagen." : "Auto opgeslagen.";
-      // A new car moves on to its own page once everything is in; when a photo failed it stays here so the retry button and the reason stay visible.
-      const complete = files.length ? await uploadFiles(result.id, files, `${saved} `) : (notify(saved), true);
-      if (!vehicle && complete && next) { resetForNextCar(); notify(`${saved} Je kunt nu de volgende auto toevoegen.`); router.refresh(); }
-      else if (!vehicle && complete) router.replace(`/admin/inventory/${result.id}?opgeslagen=1`);
+      try {
+        setMessage(null);
+        const result = await saveVehicleAction({}, formData);
+        if (result.error) { if (result.id) { setSavedId(result.id); pendingPublish.current = publishAfterUpload; } notify(result.error, true); return; }
+        if (!result.id) { notify("De auto kon niet worden opgeslagen.", true); return; }
+        setSavedId(result.id); setDirty(false);
+        if (!vehicle) pendingPublish.current = publishAfterUpload;
+        const saved = vehicle ? "Wijzigingen opgeslagen." : "Auto opgeslagen.";
+        // A new car moves on to its own page once everything is in; when a photo failed it stays here so the retry button and the reason stay visible.
+        const complete = files.length ? await uploadFiles(result.id, files, `${saved} `) : (notify(saved), true);
+        if (!vehicle && complete && next) { resetForNextCar(); notify(`${saved} Je kunt nu de volgende auto toevoegen.`); router.refresh(); }
+        else if (!vehicle && complete) router.replace(`/admin/inventory/${result.id}?opgeslagen=1`);
+      } catch { notify("Opslaan is onderbroken. Controleer je verbinding en probeer opnieuw.", true); }
+      finally { saveLock.current = false; }
     });
   }
   /** Uploads photos several at a time; returns true when every photo made it. Photos that failed on the connection are kept for the retry button. */
   async function uploadFiles(vehicleId: string, files: File[], prefix = ""): Promise<boolean> {
-    if (uploading) return false;
+    if (uploadLock.current) return false;
     if (photos.length + files.length > maxPhotos) { notify(`${prefix}Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${Math.max(0, maxPhotos - photos.length)} toevoegen.`, true); return false; }
+    uploadLock.current = true;
     setUploading(true); setMessage(null); setFailedFiles([]);
     try {
       const title = (formRef.current?.elements.namedItem("title") as HTMLInputElement | null)?.value || vehicle?.title || "Vehicle";
-      const { uploaded, issues, retry } = await uploadVehiclePhotos({ client: createClient(), vehicleId, files, existing: photos, altBase: title, onProgress: (done, total) => setUploadProgress({ done, total }) });
+      const { uploaded, issues, retry, ordered } = await uploadVehiclePhotos({ client: createClient(), vehicleId, files, existing: photos, altBase: title, onProgress: (done, total) => setUploadProgress({ done, total }) });
       for (const photo of uploaded) previewUrls.current.add(photo.url);
-      setPhotos((current) => [...current, ...uploaded].map((item, index) => ({ ...item, sort_order: index, is_cover: index === 0 })));
+      setPhotos((current) => { const combined = [...current, ...uploaded]; return ordered ? combined.map((item, index) => ({ ...item, sort_order: index, is_cover: index === 0 })) : combined; });
       const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.value = "";
       setFailedFiles(retry);
       if (uploaded.length) void refreshPublicInventoryAction(); // photos are written straight to Supabase, so refresh the public site cache
       if (issues.length) notify(`${prefix}${uploaded.length} van ${files.length} foto’s geüpload. ${issues.join(" ")}${retry.length ? " Gebruik “Opnieuw proberen” om de mislukte foto’s nog eens te uploaden." : ""}`, true);
-      else notify(`${prefix}${photoCount(uploaded.length)} geüpload.`);
+      else if (pendingPublish.current) {
+        try {
+          const form = new FormData(); form.set("id", vehicleId); form.set("published", "true");
+          await updateVehicleAction(form);
+          pendingPublish.current = false;
+          notify(`${prefix}${photoCount(uploaded.length)} geüpload. De auto staat nu online.`);
+        } catch { notify(`${prefix}Foto’s geüpload, maar publiceren is niet gelukt. Sla de auto nogmaals op om hem online te zetten.`, true); return false; }
+      } else notify(`${prefix}${photoCount(uploaded.length)} geüpload.`);
       return !issues.length;
-    } catch { notify(`${prefix}Foto-opslag is niet ingesteld. Controleer de Supabase-verbinding.`, true); return false; }
-    finally { setUploading(false); setUploadProgress(null); }
+    } catch {
+      setFailedFiles(files);
+      const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.value = "";
+      notify(`${prefix}Upload onderbroken. Je gekozen foto’s zijn bewaard op deze pagina; probeer opnieuw.`, true);
+      return false;
+    }
+    finally { uploadLock.current = false; setUploading(false); setUploadProgress(null); }
   }
   // One photo change at a time: a second tap while the first is saving would race on the photo order.
   async function photoTask(task: () => Promise<void>) {
-    if (photoBusy) return;
+    if (photoBusy || uploadLock.current) return;
     setPhotoBusy(true);
     try { await task(); } catch { notify("De wijziging aan de foto’s is niet gelukt. Controleer je verbinding en probeer het opnieuw.", true); } finally { setPhotoBusy(false); }
   }
@@ -260,23 +287,23 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
     </details>
     <div className="editor-main">
       <section className="admin-form-section" aria-labelledby="photos-heading"><div className="admin-section-head"><div><h2 id="photos-heading">Foto’s</h2><p className="muted">Voeg maximaal {maxPhotos} foto’s toe: voorkant, zijkanten, achterkant, interieur en details. De eerste foto is de omslagfoto. Verplaats foto’s met de pijltjes of sleep ze naar een andere plek.</p></div><span className="muted">{photos.length} / {maxPhotos}</span></div>
-        {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Foto’s van de auto" aria-busy={photoBusy || undefined}>{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}${photoBusy ? " is-busy" : ""}`} key={photo.id} role="listitem" draggable={!photoBusy} onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); setDraggingPhoto(null); void reorderPhoto(Number(event.dataTransfer.getData("text/plain")), index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Foto ${index + 1}${index === 0 ? ", omslagfoto" : ""}`}>
+        {photos.length ? <div className="admin-photo-grid" role="list" aria-label="Foto’s van de auto" aria-busy={photoBusy || uploading || undefined}>{photos.map((photo, index) => <div className={`admin-photo${index === 0 ? " cover" : ""}${draggingPhoto === index ? " is-dragging" : ""}${photoBusy ? " is-busy" : ""}`} key={photo.id} role="listitem" draggable={!photoBusy && !busy} onDragStart={(event) => { setDraggingPhoto(index); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); setDraggingPhoto(null); void reorderPhoto(Number(event.dataTransfer.getData("text/plain")), index); }} onDragEnd={() => setDraggingPhoto(null)} aria-label={`Foto ${index + 1}${index === 0 ? ", omslagfoto" : ""}`}>
           {photo.url ? <Image src={vehicleThumbUrl(photo.url, 400)} alt={`Foto ${index + 1}`} fill sizes="200px" unoptimized /> : <span className="photo-no-preview">Foto opgeslagen</span>}
           {index === 0 ? <span className="cover-label">Omslag</span> : null}
-          <button className="photo-remove" type="button" disabled={photoBusy} onClick={() => { if (window.confirm("Deze foto verwijderen?")) void removePhoto(photo); }} aria-label={`Verwijder foto ${index + 1}`} title="Foto verwijderen"><Trash2 size={16} aria-hidden="true" /></button>
+          <button className="photo-remove" type="button" disabled={photoBusy || busy} onClick={() => { if (window.confirm("Deze foto verwijderen?")) void removePhoto(photo); }} aria-label={`Verwijder foto ${index + 1}`} title="Foto verwijderen"><Trash2 size={16} aria-hidden="true" /></button>
           <div className="photo-actions">
-            <button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Verplaats foto ${index + 1} naar voren`} title="Naar voren" disabled={photoBusy || index === 0}><ArrowLeft size={16} aria-hidden="true" /></button>
-            {index > 0 ? <button type="button" className="photo-cover-button" onClick={() => void reorderPhoto(index, 0)} disabled={photoBusy} aria-label={`Maak foto ${index + 1} de omslagfoto`} title="Als omslagfoto instellen"><Star size={16} aria-hidden="true" /></button> : null}
-            <button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Verplaats foto ${index + 1} naar achteren`} title="Naar achteren" disabled={photoBusy || index === photos.length - 1}><ArrowRight size={16} aria-hidden="true" /></button>
+            <button type="button" onClick={() => void movePhoto(index, -1)} aria-label={`Verplaats foto ${index + 1} naar voren`} title="Naar voren" disabled={photoBusy || busy || index === 0}><ArrowLeft size={16} aria-hidden="true" /></button>
+            {index > 0 ? <button type="button" className="photo-cover-button" onClick={() => void reorderPhoto(index, 0)} disabled={photoBusy || busy} aria-label={`Maak foto ${index + 1} de omslagfoto`} title="Als omslagfoto instellen"><Star size={16} aria-hidden="true" /></button> : null}
+            <button type="button" onClick={() => void movePhoto(index, 1)} aria-label={`Verplaats foto ${index + 1} naar achteren`} title="Naar achteren" disabled={photoBusy || busy || index === photos.length - 1}><ArrowRight size={16} aria-hidden="true" /></button>
           </div>
         </div>)}</div> : null}
-        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const files = Array.from(event.dataTransfer.files); if (!files.length) return; if (photos.length + files.length > maxPhotos) { notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); return; } if (savedId) { void uploadFiles(savedId, files); return; } const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.files = event.dataTransfer.files; warmPhotos(files); setDirty(true); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); }}>
+        <div className={`drop-zone${uploading ? " is-uploading" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); if (busy || photoBusy) { notify("Wacht tot de huidige opslag klaar is voordat je meer foto’s toevoegt.", true); return; } const files = Array.from(event.dataTransfer.files); if (!files.length) return; if (photos.length + files.length > maxPhotos) { notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); return; } if (savedId) { void uploadFiles(savedId, files); return; } const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.files = event.dataTransfer.files; warmPhotos(files); setDirty(true); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); }}>
           <ImagePlus size={24} aria-hidden="true" />
-          <label className="photo-file-picker">Foto’s kiezen<input type="file" name="photos" accept={photoAccept} multiple disabled={photos.length >= maxPhotos || uploading} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (!files.length) return; if (photos.length + files.length > maxPhotos) { input.value = ""; notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); } else if (savedId) { input.value = ""; void uploadFiles(savedId, files); } else { warmPhotos(files); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); } }} /></label>
+          <label className="photo-file-picker">Foto’s kiezen<input type="file" name="photos" accept={photoAccept} multiple disabled={photos.length >= maxPhotos || busy || photoBusy} onChange={(event) => { const input = event.currentTarget; const files = Array.from(input.files ?? []); if (!files.length) return; if (photos.length + files.length > maxPhotos) { input.value = ""; notify(`Een auto kan maximaal ${maxPhotos} foto’s hebben. Je kunt er nog ${maxPhotos - photos.length} toevoegen.`, true); } else if (savedId) { input.value = ""; void uploadFiles(savedId, files); } else { warmPhotos(files); notify(`${photoCount(files.length)} gekozen. Ze worden alvast klaargemaakt en geüpload zodra je de auto opslaat.`); } }} /></label>
           <p><span className="drop-hint-drag">Of sleep foto’s hierheen. </span>JPEG, PNG, WebP, AVIF of HEIC. Grote foto’s worden automatisch verkleind{savedId ? "" : " en geüpload zodra je de auto opslaat"}.</p>
         </div>
         {uploadProgress ? <div className="upload-progress" role="status" aria-live="polite"><div className="upload-progress-bar"><span style={{ width: `${Math.max(progress, 6)}%` }} /></div><p><LoaderCircle size={14} className="spin" aria-hidden="true" /> {uploadProgress.done} van {photoCount(uploadProgress.total)} klaar…</p></div> : null}
-        {failedFiles.length && !uploading ? <div className="upload-retry"><button className="button button-outline button-sm" type="button" onClick={() => void uploadFiles(savedId, failedFiles)}>Opnieuw proberen ({photoCount(failedFiles.length)})</button></div> : null}
+        {failedFiles.length && !uploading ? <div className="upload-retry"><button className="button button-outline button-sm" type="button" disabled={busy || photoBusy} onClick={() => void uploadFiles(savedId, failedFiles)}>Opnieuw proberen ({photoCount(failedFiles.length)})</button></div> : null}
       </section>
 
       <section className="admin-form-section" aria-labelledby="basic-heading"><h2 id="basic-heading">Basisgegevens</h2><div className="admin-form-grid">
@@ -319,7 +346,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
         <label className="admin-field">Valuta<ComboField name="currency" label="Valuta" options={currencies} defaultValue={defaults.currency || "USD"} placeholder="USD" maxLength={8} autoCapitalize="characters" /></label>
         <p className="help-text">Nog geen prijs? Laat de velden leeg: de website toont dan “Price on request”.</p>
         <label className="admin-field">Beschikbaarheid<select name="availability" defaultValue={vehicle?.availability ?? "available"}><option value="available">Beschikbaar</option><option value="on_the_way">Onderweg</option><option value="reserved">Gereserveerd</option><option value="sold">Verkocht</option><option value="rental">Verhuur</option></select></label>
-        <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} maxLength={80} placeholder="Automatisch bij opslaan" /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer je eigen nummer in.</span></label>
+        <label className="admin-field">Stocknummer<input name="stock_number" defaultValue={defaults.stock_number} maxLength={80} placeholder="Automatisch bij opslaan" autoCapitalize="characters" autoCorrect="off" spellCheck={false} /><span className="help-text">Laat leeg voor een uniek BCP-nummer, of voer je eigen nummer in. Controleer de letter O en het cijfer 0.</span></label>
         <div className="admin-switches">
           <label className="admin-checkbox"><input type="checkbox" name="published" defaultChecked={vehicle?.published ?? true} disabled={archived} /><span><strong>Tonen op de website</strong><small>{archived ? "Herstel deze auto eerst in de voorraad" : "Bezoekers kunnen deze advertentie openen"}</small></span></label>
           <label className="admin-checkbox"><input type="checkbox" name="featured" defaultChecked={vehicle?.featured ?? false} /><span><strong>Tonen op de homepage</strong><small>Verschijnt in het autogedeelte van de homepage</small></span></label>
@@ -332,6 +359,6 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
       </div></section>
     </div>
 
-    <div className="admin-form-footer"><div className="admin-form-message" role="status" aria-live="polite">{message ? <p className={`admin-feedback${message.error ? " admin-error" : ""}`} role={message.error ? "alert" : undefined}>{message.error ? <CircleAlert size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />} {message.text}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={busy || photoBusy} onClick={deleteVehicle}>{deleting ? "Verwijderen…" : "Permanent verwijderen"}</button> : null}<Link className="button button-ghost" href="/admin/inventory" onClick={(event) => { if (dirty && !window.confirm("Je hebt wijzigingen die nog niet zijn opgeslagen. Toch weggaan?")) event.preventDefault(); }}>Annuleren</Link>{!vehicle && !savedId ? <button className="button button-outline" type="submit" name="intent" value="next" disabled={busy || photoBusy}>Opslaan &amp; volgende</button> : null}<button className="button button-primary" type="submit" disabled={busy || photoBusy} aria-busy={pending || undefined}>{pending || uploading ? <><LoaderCircle size={16} className="spin" aria-hidden="true" />{deleting ? "Verwijderen…" : uploading ? "Foto’s uploaden…" : "Opslaan…"}</> : savedId ? "Wijzigingen opslaan" : "Auto opslaan"}</button></div></div>
+    <div className="admin-form-footer"><div className="admin-form-message" role="status" aria-live="polite">{message ? <p className={`admin-feedback${message.error ? " admin-error" : ""}`} role={message.error ? "alert" : undefined}>{message.error ? <CircleAlert size={14} aria-hidden="true" /> : <Check size={14} aria-hidden="true" />} {message.text}</p> : null}</div><div className="admin-row-actions">{savedId ? <button className="danger-button" type="button" disabled={busy || photoBusy} onClick={deleteVehicle}>{deleting ? "Verwijderen…" : "Permanent verwijderen"}</button> : null}<Link className="button button-ghost" href="/admin/inventory" onClick={(event) => { if (busy || photoBusy) { event.preventDefault(); notify("Wacht tot de huidige opslag klaar is.", true); } else if (dirty && !window.confirm("Je hebt wijzigingen die nog niet zijn opgeslagen. Toch weggaan?")) event.preventDefault(); }}>Annuleren</Link>{!vehicle && !savedId ? <button className="button button-outline" type="submit" name="intent" value="next" disabled={busy || photoBusy}>Opslaan &amp; volgende</button> : null}<button className="button button-primary" type="submit" disabled={busy || photoBusy} aria-busy={pending || undefined}>{pending || uploading ? <><LoaderCircle size={16} className="spin" aria-hidden="true" />{deleting ? "Verwijderen…" : uploading ? "Foto’s uploaden…" : "Opslaan…"}</> : savedId ? "Wijzigingen opslaan" : "Auto opslaan"}</button></div></div>
   </form>;
 }

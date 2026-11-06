@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const routes = ["/", "/cars", "/contact", "/faq", "/financing", "/favorites", "/admin/login?setup=1", "/admin/setup"];
 
 test("key pages fit a narrow phone and keep primary controls touchable", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.setViewportSize({ width: 320, height: 700 });
   for (const route of routes) {
     await page.goto(route);

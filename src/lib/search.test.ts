@@ -11,6 +11,9 @@ describe("searchTermGroups", () => {
   it("keeps at most eight words", () => {
     expect(searchTermGroups("a b c d e f g h i j")).toHaveLength(8);
   });
+  it("also searches a handwritten stock number with O and zero swapped", () => {
+    expect(searchTermGroups("SIN-06")).toEqual([["sin-06", "sin-o6"]]);
+  });
 });
 
 describe("matchesSearch", () => {

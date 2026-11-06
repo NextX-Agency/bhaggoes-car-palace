@@ -67,7 +67,7 @@ Apply every file in `supabase/migrations/` in order (Supabase SQL editor or `sup
 - All migrations in `supabase/migrations/` applied, including the catalog switch, banner photos and user management.
 - Supabase Authentication → *Leaked password protection* switched on.
 - Vercel environment variables set: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL` (the public domain; without it the Vercel production URL is used).
-- After the first deploy: run **Foto’s verkleinen** on Overzicht once, so older full-size photos are shrunk.
+- Older full-size photos are optimized automatically when an administrator opens **Overzicht**; keep the page open until its progress finishes.
 - `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` and `npm run test:e2e` pass (the GitHub workflow runs them on every push).
 
 ## Deployment

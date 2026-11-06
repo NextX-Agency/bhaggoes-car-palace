@@ -164,16 +164,24 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
     if (!title && !existingId && "stock_number" in result.data && result.data.stock_number && !value.stock_number) {
       await supabase.from("vehicles").update({ title: photoOnlyTitle(result.data.stock_number as string) }).eq("id", result.data.id);
     }
+    const savedWithError = (error: string) => {
+      expirePublicCache("vehicles"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+      return { id: result.data.id, slug: result.data.slug, error };
+    };
     const { error: privateError } = await supabase.from("vehicle_private").upsert({ vehicle_id: result.data.id, vin: nullable(value.vin), admin_notes: nullable(value.admin_notes) }, { onConflict: "vehicle_id" });
-    if (privateError) return { error: "De auto is opgeslagen, maar het chassisnummer en de interne notities niet. Sla opnieuw op om het nog eens te proberen." };
+    if (privateError) return savedWithError("De auto is opgeslagen, maar het chassisnummer en de interne notities niet. Sla opnieuw op om het nog eens te proberen.");
     const names = [...new Set(value.features.map((name) => name.trim()).filter(Boolean))];
     if (names.length) {
       const featureRows = await supabase.from("features").upsert(names.map((name) => ({ name, category: "other" })), { onConflict: "name" }).select("id");
-      if (featureRows.error || !featureRows.data) return { error: "De auto is opgeslagen, maar de kenmerken niet." };
-      await supabase.from("vehicle_features").delete().eq("vehicle_id", result.data.id);
+      if (featureRows.error || !featureRows.data) return savedWithError("De auto is opgeslagen, maar de kenmerken niet.");
+      const { error: removeFeaturesError } = await supabase.from("vehicle_features").delete().eq("vehicle_id", result.data.id);
+      if (removeFeaturesError) return savedWithError("De auto is opgeslagen, maar de kenmerken niet.");
       const links = await supabase.from("vehicle_features").insert(featureRows.data.map((feature) => ({ vehicle_id: result.data.id, feature_id: feature.id })));
-      if (links.error) return { error: "De auto is opgeslagen, maar de kenmerken niet." };
-    } else await supabase.from("vehicle_features").delete().eq("vehicle_id", result.data.id);
+      if (links.error) return savedWithError("De auto is opgeslagen, maar de kenmerken niet.");
+    } else {
+      const { error: removeFeaturesError } = await supabase.from("vehicle_features").delete().eq("vehicle_id", result.data.id);
+      if (removeFeaturesError) return savedWithError("De auto is opgeslagen, maar de kenmerken niet.");
+    }
     expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath(`/cars/${result.data.slug}`); revalidatePath("/admin"); revalidatePath("/admin/inventory");
     return { ok: true, id: result.data.id, slug: result.data.slug };
   } catch (error) { return { error: error instanceof Error ? error.message : "De auto kon niet worden opgeslagen." }; }
@@ -422,26 +430,30 @@ async function findLargePhotos(supabase: SupabaseServer) {
   const stored = rows.filter((row) => !row.storage_path.startsWith("/images/"));
   const folders = [...new Set(stored.map((row) => row.storage_path.split("/")[0]))];
   const sizes = new Map<string, number>();
-  await Promise.all(folders.map(async (folder) => {
-    const { data } = await supabase.storage.from("vehicle-images").list(folder, { limit: 100 });
-    for (const object of data ?? []) sizes.set(`${folder}/${object.name}`, Number(object.metadata?.size ?? 0));
-  }));
+  for (let index = 0; index < folders.length; index += 8) {
+    await Promise.all(folders.slice(index, index + 8).map(async (folder) => {
+      const { data, error: listError } = await supabase.storage.from("vehicle-images").list(folder, { limit: 100 });
+      if (listError) throw new Error("De foto’s konden niet worden gecontroleerd.");
+      for (const object of data ?? []) sizes.set(`${folder}/${object.name}`, Number(object.metadata?.size ?? 0));
+    }));
+  }
   return stored.filter((row) => (sizes.get(row.storage_path) ?? 0) > LARGE_PHOTO_BYTES);
 }
 
-export async function countLargePhotosAction(): Promise<{ count: number; error?: string }> {
-  try { return { count: (await findLargePhotos(await verifyAdmin())).length }; }
-  catch (error) { return { count: 0, error: error instanceof Error ? error.message : "De foto’s konden niet worden gecontroleerd." }; }
+export async function countLargePhotosAction(): Promise<{ count: number; ids: string[]; error?: string }> {
+  try { const photos = await findLargePhotos(await verifyAdmin()); return { count: photos.length, ids: photos.map((photo) => photo.id) }; }
+  catch (error) { return { count: 0, ids: [], error: error instanceof Error ? error.message : "De foto’s konden niet worden gecontroleerd." }; }
 }
 
-/** Shrinks a handful of large photos per call; the dashboard calls it repeatedly until `remaining` is 0. */
-export async function optimizePhotosAction(skip: string[] = []): Promise<{ optimized: number; remaining: number; savedBytes: number; failedIds: string[]; error?: string }> {
+/** Shrinks one known batch; the dashboard scans storage once rather than again after every four photos. */
+export async function optimizePhotosAction(ids: string[]): Promise<{ optimized: number; savedBytes: number; failedIds: string[]; error?: string }> {
   try {
     const supabase = await verifyAdmin();
-    const skipped = new Set(z.array(z.string().uuid()).max(500).catch([]).parse(skip));
-    const large = (await findLargePhotos(supabase)).filter((photo) => !skipped.has(photo.id));
+    const selected = z.array(z.string().uuid()).min(1).max(OPTIMIZE_BATCH).parse(ids);
+    const { data: large, error: queryError } = await supabase.from("vehicle_images").select("id, vehicle_id, storage_path").in("id", selected);
+    if (queryError || !large) throw new Error("De foto’s konden niet worden gecontroleerd.");
     let optimized = 0; let savedBytes = 0; const failedIds: string[] = [];
-    await Promise.all(large.slice(0, OPTIMIZE_BATCH).map(async (photo) => {
+    await Promise.all(large.filter((photo) => !photo.storage_path.startsWith("/images/")).map(async (photo) => {
       try {
         const { data: original, error: downloadError } = await supabase.storage.from("vehicle-images").download(photo.storage_path);
         if (downloadError || !original) throw new Error("download");
@@ -460,8 +472,8 @@ export async function optimizePhotosAction(skip: string[] = []): Promise<{ optim
     }));
     if (optimized) { expirePublicCache("vehicles"); revalidatePath("/admin"); revalidatePath("/admin/inventory"); }
     // Photos that failed stay as they are; the caller skips them next time, so the loop always ends.
-    return { optimized, failedIds, savedBytes, remaining: Math.max(0, large.length - optimized - failedIds.length) };
-  } catch (error) { return { optimized: 0, failedIds: [], savedBytes: 0, remaining: 0, error: error instanceof Error ? error.message : "De foto’s konden niet worden geoptimaliseerd." }; }
+    return { optimized, failedIds, savedBytes };
+  } catch (error) { return { optimized: 0, failedIds: [], savedBytes: 0, error: error instanceof Error ? error.message : "De foto’s konden niet worden geoptimaliseerd." }; }
 }
 
 // ---- Gebruikers -------------------------------------------------------------------------------------------

@@ -6,7 +6,8 @@ const MAX_EDGE = 2000;
 export const photoAccept = "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif";
 
 export const isHeicPhoto = (file: File) => /^image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
-export const isSupportedPhoto = (file: File) => /^image\/(jpeg|png|webp|avif)$/.test(file.type) || isHeicPhoto(file);
+const mimeFromName = (name: string) => /\.jpe?g$/i.test(name) ? "image/jpeg" : /\.png$/i.test(name) ? "image/png" : /\.webp$/i.test(name) ? "image/webp" : /\.avif$/i.test(name) ? "image/avif" : "";
+export const isSupportedPhoto = (file: File) => /^image\/(jpeg|png|webp|avif)$/.test(file.type) || isHeicPhoto(file) || (!file.type && Boolean(mimeFromName(file.name)));
 
 function encode(canvas: HTMLCanvasElement, type: string, quality: number) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
@@ -38,6 +39,10 @@ async function decode(file: File): Promise<Decoded> {
 }
 
 export async function preparePhoto(file: File): Promise<File> {
+  if (!file.type) {
+    const inferred = mimeFromName(file.name);
+    if (inferred) file = new File([file], file.name, { type: inferred, lastModified: file.lastModified });
+  }
   const heic = isHeicPhoto(file);
   if (!heic && file.size < 450_000 && !/\.png$/i.test(file.name)) return file;
   let decoded: Decoded | null = null;

@@ -31,7 +31,16 @@ export function compactSearch(value: string) {
  */
 export function searchTermGroups(query: string): string[][] {
   const words = normalizeSearch(query).split(/\s+/).map((word) => word.replace(/[%_*,()"'\\:;]/g, "").trim()).filter(Boolean);
-  return [...new Set(words)].slice(0, 8).map((word) => synonyms.get(word) ?? [word]);
+  return [...new Set(words)].slice(0, 8).map((word) => {
+    const known = synonyms.get(word);
+    if (known) return known;
+    // Handwritten stock numbers often confuse the letter O with zero.
+    if (/^[a-z0-9]+-[a-z0-9]+$/.test(word) && /\d/.test(word) && /[o0]/.test(word)) {
+      const alternate = word.replace(/[o0]/g, (character) => character === "o" ? "0" : "o");
+      if (alternate !== word) return [word, alternate];
+    }
+    return [word];
+  });
 }
 
 /** In-browser variant: true when every word of the query appears in one of the given values. */

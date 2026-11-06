@@ -4,24 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Check, CircleAlert, ClipboardPaste, ImagePlus, LoaderCircle, Merge, Plus, Trash2, X } from "lucide-react";
-import { refreshPublicInventoryAction, saveVehicleAction } from "@/app/admin/actions";
+import { refreshPublicInventoryAction, saveVehicleAction, updateVehicleAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
-import { photoAccept } from "@/lib/photo-optimize";
+import { isSupportedPhoto, photoAccept } from "@/lib/photo-optimize";
 import { vehicleMakes } from "@/lib/vehicle-catalog";
 import { modelsForMake } from "@/lib/vehicle-models";
-import { maxPhotosPerVehicle, uploadVehiclePhotos, warmPhotos } from "@/lib/vehicle-photo-upload";
+import { maxPhotosPerVehicle, uploadVehiclePhotos } from "@/lib/vehicle-photo-upload";
 
 type Status = "idle" | "saving" | "done" | "error";
 type DraftFields = { make: string; model: string; year: string; price: string; cash_price: string; stock_number: string; availability: string };
-type Draft = DraftFields & { key: string; files: File[]; previews: string[]; listing: string; status: Status; message?: string; id?: string; progress?: { done: number; total: number } };
+type Draft = DraftFields & { key: string; files: File[]; previews: string[]; listing: string; status: Status; message?: string; id?: string; savedPhotos?: number; progress?: { done: number; total: number } };
 type GroupMode = "together" | "each";
 
 const emptyFields: DraftFields = { make: "", model: "", year: "", price: "", cash_price: "", stock_number: "", availability: "available" };
 const statusOptions = [["available", "Beschikbaar"], ["on_the_way", "Onderweg"], ["reserved", "Gereserveerd"], ["rental", "Verhuur"], ["sold", "Verkocht"]] as const;
 const photoCount = (count: number) => `${count} ${count === 1 ? "foto" : "foto’s"}`;
 const carCount = (count: number) => `${count} ${count === 1 ? "auto" : "auto’s"}`;
-const CAR_CONCURRENCY = 2;
+const CAR_CONCURRENCY = 1;
 
 let keySeed = 0;
 const newDraft = (files: File[]): Draft => ({ ...emptyFields, key: `draft-${Date.now()}-${keySeed++}`, files, previews: files.map((file) => URL.createObjectURL(file)), listing: "", status: "idle" });
@@ -36,6 +36,7 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
   const [notice, setNotice] = useState<{ text: string; error?: boolean } | null>(null);
   const [dragging, setDragging] = useState(false);
   const draftsRef = useRef(drafts);
+  const runningRef = useRef(false);
   useEffect(() => { draftsRef.current = drafts; }, [drafts]);
   // Free the photo previews when leaving the page.
   useEffect(() => () => draftsRef.current.forEach((draft) => draft.previews.forEach((url) => URL.revokeObjectURL(url))), []);
@@ -51,13 +52,13 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
     setDrafts((current) => current.map((draft) => draft.key === key ? { ...draft, ...(typeof change === "function" ? change(draft) : change) } : draft));
 
   function addFiles(list: FileList | File[] | null, into?: string) {
-    const files = Array.from(list ?? []).filter((file) => file.type.startsWith("image/") || /\.(hei[cf]|jpe?g|png|webp|avif)$/i.test(file.name));
+    if (runningRef.current) { setNotice({ text: "Wacht tot de huidige opslag klaar is voordat je meer foto’s toevoegt.", error: true }); return; }
+    const files = Array.from(list ?? []).filter(isSupportedPhoto);
     if (!files.length) { setNotice({ text: "Kies foto’s (JPEG, PNG, WebP, AVIF of HEIC).", error: true }); return; }
-    warmPhotos(files);
     setNotice(null);
     if (into) {
       const target = drafts.find((draft) => draft.key === into);
-      const room = maxPhotosPerVehicle - (target?.files.length ?? 0);
+      const room = maxPhotosPerVehicle - (target?.savedPhotos ?? 0) - (target?.files.length ?? 0);
       const accepted = files.slice(0, Math.max(room, 0));
       if (accepted.length < files.length) setNotice({ text: `Een auto kan maximaal ${maxPhotosPerVehicle} foto’s hebben; ${photoCount(files.length - accepted.length)} niet toegevoegd.`, error: true });
       update(into, (draft) => ({ files: [...draft.files, ...accepted], previews: [...draft.previews, ...accepted.map((file) => URL.createObjectURL(file))], status: draft.status === "error" ? "idle" : draft.status }));
@@ -75,6 +76,7 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
     update(key, (draft) => { URL.revokeObjectURL(draft.previews[index]); return { files: draft.files.filter((_, item) => item !== index), previews: draft.previews.filter((_, item) => item !== index) }; });
   }
   function removeDraft(key: string) {
+    if (runningRef.current) return;
     const draft = drafts.find((item) => item.key === key);
     draft?.previews.forEach((url) => URL.revokeObjectURL(url));
     setDrafts((current) => current.filter((item) => item.key !== key));
@@ -109,44 +111,59 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
       for (const field of Object.keys(emptyFields) as (keyof DraftFields)[]) form.set(field, draft[field].trim());
       form.set("currency", draft.price || draft.cash_price ? currency.trim().toUpperCase() : "");
       form.set("condition", "used");
-      if (publish) form.set("published", "on");
+      if (publish && !draft.files.length) form.set("published", "on");
       const result = await saveVehicleAction({}, form);
-      if (result.error || !result.id) { update(draft.key, { status: "error", message: result.error ?? "De auto kon niet worden opgeslagen.", progress: undefined }); return false; }
+      if (result.error || !result.id) { update(draft.key, { id: result.id, status: "error", message: result.error ?? "De auto kon niet worden opgeslagen.", progress: undefined }); return false; }
       id = result.id;
       update(draft.key, { id });
     }
-    if (!draft.files.length) { update(draft.key, { status: "done", files: [], progress: undefined }); return true; }
+    const finish = async () => {
+      if (publish) { const form = new FormData(); form.set("id", id); form.set("published", "true"); await updateVehicleAction(form); }
+      update(draft.key, { status: "done", files: [], previews: [], progress: undefined, message: undefined });
+      return true;
+    };
+    if (!draft.files.length) return finish();
+    const { data: existing, error: readError } = await client.from("vehicle_images").select("id, sort_order").eq("vehicle_id", id).order("sort_order");
+    if (readError || !existing) { update(draft.key, { status: "error", message: "De opgeslagen foto’s konden niet worden gecontroleerd. Probeer opnieuw.", progress: undefined }); return false; }
+    if (existing.length + draft.files.length > maxPhotosPerVehicle) { update(draft.key, { status: "error", savedPhotos: existing.length, message: `Deze auto heeft al ${photoCount(existing.length)}. Verwijder foto’s of kies er minder dan ${maxPhotosPerVehicle - existing.length}.`, progress: undefined }); return false; }
     const altBase = [draft.year, draft.make, draft.model].filter(Boolean).join(" ") || "Vehicle";
-    const { uploaded, issues, retry } = await uploadVehiclePhotos({ client, vehicleId: id, files: draft.files, existing: [], altBase, onProgress: (done, total) => update(draft.key, { progress: { done, total } }) });
+    const { uploaded, issues, retry } = await uploadVehiclePhotos({ client, vehicleId: id, files: draft.files, existing, altBase, onProgress: (done, total) => update(draft.key, { progress: { done, total } }) });
     uploaded.forEach((photo) => URL.revokeObjectURL(photo.url));
+    update(draft.key, { savedPhotos: existing.length + uploaded.length });
     if (issues.length) {
       // The car exists; keep only the photos that still have to go up, so "Opnieuw" uploads just those.
-      update(draft.key, (current) => ({ status: "error", message: `Auto opgeslagen, ${uploaded.length} van ${photoCount(draft.files.length)} geüpload. ${issues.join(" ")}`, files: retry, previews: retry.map((file) => current.previews[current.files.indexOf(file)] ?? URL.createObjectURL(file)), progress: undefined }));
+      const retrySet = new Set(retry);
+      draft.files.forEach((file, index) => { if (!retrySet.has(file)) URL.revokeObjectURL(draft.previews[index]); });
+      update(draft.key, (current) => ({ status: "error", message: `Auto als concept opgeslagen. ${existing.length + uploaded.length} foto’s aanwezig; ${retry.length} opnieuw te proberen. ${issues.join(" ")}`, files: retry, previews: retry.map((file) => current.previews[current.files.indexOf(file)] ?? URL.createObjectURL(file)), progress: undefined }));
       return false;
     }
-    update(draft.key, { status: "done", progress: undefined });
-    return true;
+    draft.previews.forEach((url) => URL.revokeObjectURL(url));
+    update(draft.key, { files: [], previews: [], progress: undefined });
+    return finish();
   }
 
   async function saveAll() {
     const queue = drafts.filter((draft) => draft.status !== "done" && draft.status !== "saving");
-    if (!queue.length || running) return;
+    if (!queue.length || runningRef.current) return;
+    runningRef.current = true;
     setRunning(true); setNotice(null);
-    const client = createClient();
-    let saved = 0; let failed = 0;
-    const worker = async () => {
-      for (let draft = queue.shift(); draft; draft = queue.shift()) {
-        // Read the latest version of the card: fields may have been edited after the queue was built.
-        const latest = draftsRef.current.find((item) => item.key === draft!.key) ?? draft;
-        try { if (await saveDraft(latest, client)) saved += 1; else failed += 1; }
-        catch { failed += 1; update(latest.key, { status: "error", message: "Er ging iets mis. Controleer je verbinding en probeer het opnieuw.", progress: undefined }); }
-      }
-    };
-    await Promise.all(Array.from({ length: CAR_CONCURRENCY }, worker));
-    if (saved) void refreshPublicInventoryAction();
-    setRunning(false);
-    setNotice(failed ? { text: `${carCount(saved)} opgeslagen, ${failed} met een probleem. Bekijk de rode kaarten en probeer het opnieuw.`, error: true } : { text: `${carCount(saved)} opgeslagen${publish ? " en online gezet" : " als concept"}.` });
-    router.refresh();
+    try {
+      const client = createClient();
+      let saved = 0; let failed = 0;
+      const worker = async () => {
+        for (let draft = queue.shift(); draft; draft = queue.shift()) {
+          // Read the latest version of the card: fields may have been edited after the queue was built.
+          const latest = draftsRef.current.find((item) => item.key === draft!.key) ?? draft;
+          try { if (await saveDraft(latest, client)) saved += 1; else failed += 1; }
+          catch { failed += 1; update(latest.key, { status: "error", message: "Er ging iets mis. Controleer je verbinding en probeer het opnieuw.", progress: undefined }); }
+        }
+      };
+      await Promise.all(Array.from({ length: CAR_CONCURRENCY }, worker));
+      if (saved) void refreshPublicInventoryAction();
+      setNotice(failed ? { text: `${carCount(saved)} opgeslagen, ${failed} met een probleem. Bekijk de rode kaarten en probeer het opnieuw.`, error: true } : { text: `${carCount(saved)} opgeslagen${publish ? " en online gezet" : " als concept"}.` });
+      router.refresh();
+    } catch { setNotice({ text: "Opslaan is onderbroken. Je kaarten staan nog hier; probeer opnieuw.", error: true }); }
+    finally { runningRef.current = false; setRunning(false); }
   }
 
   function clearDone() {
@@ -161,8 +178,8 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
     <section className="admin-form-section bulk-intro" aria-labelledby="bulk-start-heading">
       <h2 id="bulk-start-heading">Foto’s kiezen</h2>
       <div className="editor-mode-switch" role="group" aria-label="Hoe worden de foto’s verdeeld?">
-        <button type="button" aria-pressed={mode === "together"} onClick={() => setMode("together")}>Elke keuze is één auto</button>
-        <button type="button" aria-pressed={mode === "each"} onClick={() => setMode("each")}>Elke foto is een aparte auto</button>
+        <button type="button" aria-pressed={mode === "together"} onClick={() => setMode("together")} disabled={running}>Elke keuze is één auto</button>
+        <button type="button" aria-pressed={mode === "each"} onClick={() => setMode("each")} disabled={running}>Elke foto is een aparte auto</button>
       </div>
       <p className="help-text">{mode === "together" ? "Kies de foto’s van één auto, daarna die van de volgende auto. Elke keer komt er een kaart bij." : "Handig voor advertentiefoto’s of flyers: van elke foto wordt een eigen auto gemaakt."}</p>
       <div className={`drop-zone bulk-drop${dragging ? " is-dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); addFiles(event.dataTransfer.files); }}>
@@ -180,12 +197,12 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
         return <article key={draft.key} className={`bulk-card is-${draft.status}`} aria-label={`Auto ${index + 1}`}>
           <header className="bulk-card-head">
             <strong>Auto {index + 1}</strong>
-            <span className="muted">{photoCount(draft.files.length)}</span>
+            <span className="muted">{photoCount((draft.savedPhotos ?? 0) + draft.files.length)}{draft.savedPhotos ? ` (${draft.savedPhotos} opgeslagen)` : ""}</span>
             {draft.status === "done" ? <span className="bulk-state is-done"><Check size={14} aria-hidden="true" /> Opgeslagen</span> : draft.status === "saving" ? <span className="bulk-state"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {draft.progress ? `${draft.progress.done}/${draft.progress.total} foto’s` : "Opslaan…"}</span> : null}
             <div className="bulk-card-tools">
               {draft.id ? <Link className="text-link" href={`/admin/inventory/${draft.id}`} target="_blank">Bewerken</Link> : null}
               {index > 0 && !locked && !drafts[index - 1].id ? <button type="button" className="row-action" onClick={() => mergeWithPrevious(draft.key)} title="Deze foto’s bij de vorige auto voegen"><Merge size={15} aria-hidden="true" /><span className="row-action-label">Bij vorige auto</span></button> : null}
-              {draft.status !== "saving" && draft.status !== "done" ? <button type="button" className="row-action" onClick={() => removeDraft(draft.key)} aria-label={`Auto ${index + 1} weghalen`} title="Weghalen"><Trash2 size={15} aria-hidden="true" /></button> : null}
+              {!draft.id && draft.status !== "saving" && draft.status !== "done" ? <button type="button" className="row-action" onClick={() => removeDraft(draft.key)} disabled={running} aria-label={`Auto ${index + 1} weghalen`} title="Weghalen"><Trash2 size={15} aria-hidden="true" /></button> : null}
             </div>
           </header>
           {draft.status === "done" ? null : <>
@@ -205,7 +222,7 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
               <label className="admin-field">Bouwjaar<input value={draft.year} onChange={(event) => update(draft.key, { year: event.target.value.replace(/\D/g, "").slice(0, 4) })} disabled={locked} inputMode="numeric" placeholder="Optioneel" /></label>
               <label className="admin-field">Interne prijs<input value={draft.price} onChange={(event) => update(draft.key, { price: event.target.value.replace(/[^\d.]/g, "") })} disabled={locked} inputMode="decimal" placeholder="Op aanvraag" /></label>
               <label className="admin-field">Cashprijs<input value={draft.cash_price} onChange={(event) => update(draft.key, { cash_price: event.target.value.replace(/[^\d.]/g, "") })} disabled={locked} inputMode="decimal" placeholder="Op aanvraag" /></label>
-              <label className="admin-field">Stocknummer<input value={draft.stock_number} onChange={(event) => update(draft.key, { stock_number: event.target.value })} disabled={locked} placeholder="Automatisch" maxLength={80} /></label>
+              <label className="admin-field">Stocknummer<input value={draft.stock_number} onChange={(event) => update(draft.key, { stock_number: event.target.value.toUpperCase() })} disabled={locked} placeholder="Automatisch" maxLength={80} autoCapitalize="characters" autoCorrect="off" spellCheck={false} /></label>
               <label className="admin-field">Beschikbaarheid<select value={draft.availability} onChange={(event) => update(draft.key, { availability: event.target.value })} disabled={locked}>{statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             </div>
             {!locked ? <details className="bulk-listing"><summary><ClipboardPaste size={15} aria-hidden="true" /> Advertentietekst plakken</summary>
