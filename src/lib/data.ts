@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { defaultSettings, normalizeSiteSettings, type SiteSettings, type Vehicle, type VehicleFilters } from "@/lib/domain";
@@ -9,6 +8,7 @@ import { searchTermGroups } from "@/lib/search";
 import type { VehicleTemplate } from "@/lib/vehicle-templates";
 
 const PAGE_SIZE = 12;
+const VEHICLE_WITH_MEDIA_SELECT = "*,vehicle_images(id, storage_path, alt_text, sort_order, is_cover),vehicle_features(features(name))";
 
 export async function getAdminVehicleTemplates(): Promise<VehicleTemplate[]> {
   const client = await clientOrNull();
@@ -64,40 +64,18 @@ function withoutSearchColumns(row: Record<string, unknown>) {
   return copy;
 }
 
-async function attachVehicleMedia(rows: Record<string, unknown>[], client: SupabaseClient, strict = false) {
-  if (!rows.length) return [] as Vehicle[];
-  const ids = rows.map((row) => row.id as string);
-  const [imageResult, featureResult] = await Promise.all([
-    client.from("vehicle_images").select("id, vehicle_id, storage_path, alt_text, sort_order, is_cover")
-      .in("vehicle_id", ids).order("sort_order", { ascending: true }),
-    client.from("vehicle_features").select("vehicle_id, feature_id, features(name)")
-      .in("vehicle_id", ids),
-  ]);
-
-  if (strict && (imageResult.error || featureResult.error)) throw new Error("Unable to load vehicle media");
-  const images = imageResult.data ?? [];
-  const byVehicle = new Map<string, typeof images>();
-  for (const image of images) byVehicle.set(image.vehicle_id, [...(byVehicle.get(image.vehicle_id) ?? []), image]);
-  const byFeature = new Map<string, string[]>();
-  for (const row of featureResult.data ?? []) {
-    const relation = row.features as unknown as { name: string } | null;
-    if (relation?.name) byFeature.set(row.vehicle_id, [...(byFeature.get(row.vehicle_id) ?? []), relation.name]);
-  }
-
-  return rows.map((row) => ({
-    ...withoutSearchColumns(row),
-    images: (byVehicle.get(row.id as string) ?? []).map((image) => ({
-      id: image.id,
-      storage_path: image.storage_path,
-      alt_text: image.alt_text,
-      sort_order: image.sort_order,
-      is_cover: image.is_cover,
-      url: image.storage_path.startsWith("/images/")
+function withEmbeddedMedia(rows: Record<string, unknown>[]): Vehicle[] {
+  return rows.map((row) => {
+    const { vehicle_images, vehicle_features, ...fields } = withoutSearchColumns(row);
+    const images = ((vehicle_images ?? []) as { id: string; storage_path: string; alt_text: string | null; sort_order: number; is_cover: boolean }[])
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((image) => ({ ...image, url: image.storage_path.startsWith("/images/")
         ? image.storage_path
-        : `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}`,
-    })),
-    features: byFeature.get(row.id as string) ?? [],
-  })) as unknown as Vehicle[];
+        : `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}` }));
+    const features = ((vehicle_features ?? []) as { features: { name: string } | null }[])
+      .map((item) => item.features?.name).filter((name): name is string => Boolean(name));
+    return { ...fields, images, features } as unknown as Vehicle;
+  });
 }
 
 async function queryVehicles(filters: VehicleFilters) {
@@ -114,7 +92,7 @@ async function runVehicleQuery(filters: VehicleFilters, useSearchText: boolean) 
   const pageSize = Math.min(Math.max(filters.pageSize ?? PAGE_SIZE, 1), 48);
   const page = Math.max(filters.page ?? 1, 1);
   const start = (page - 1) * pageSize;
-  let query = client.from("vehicles").select("*", { count: "exact" })
+  let query = client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT, { count: "exact" })
     .eq("published", true).is("archived_at", null);
 
   // Every word has to appear somewhere in the car's details (stock number, year, colour, options, price …).
@@ -148,7 +126,7 @@ async function runVehicleQuery(filters: VehicleFilters, useSearchText: boolean) 
   const { data, count, error } = await query;
   if (error?.code === "42703" && useSearchText) throw new Error("search_text missing");
   if (error || !data) throw new Error("Unable to load vehicles");
-  return { vehicles: await attachVehicleMedia(data, client, true), total: count ?? 0, page, pageSize };
+  return { vehicles: withEmbeddedMedia(data), total: count ?? 0, page, pageSize };
 }
 
 const loadVehicles = unstable_cache(queryVehicles, ["vehicle-list"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
@@ -164,11 +142,11 @@ export async function getVehicles(filters: VehicleFilters = {}) {
 
 const loadFeaturedVehicles = unstable_cache(async (limit: number) => {
   const client = publicClient();
-  const { data, error } = await client.from("vehicles").select("*")
+  const { data, error } = await client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT)
     .eq("published", true).eq("featured", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(limit);
   if (error || !data) throw new Error("Unable to load featured vehicles");
-  return attachVehicleMedia(data, client, true);
+  return withEmbeddedMedia(data);
 }, ["vehicles-featured"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getFeaturedVehicles(limit = 4) {
@@ -177,11 +155,11 @@ export async function getFeaturedVehicles(limit = 4) {
 
 const loadRecentVehicles = unstable_cache(async (limit: number) => {
   const client = publicClient();
-  const { data, error } = await client.from("vehicles").select("*")
+  const { data, error } = await client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT)
     .eq("published", true).is("archived_at", null)
     .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
   if (error || !data) throw new Error("Unable to load recent vehicles");
-  return attachVehicleMedia(data, client, true);
+  return withEmbeddedMedia(data);
 }, ["vehicles-recent"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getRecentVehicles(limit = 4) {
@@ -190,11 +168,11 @@ export async function getRecentVehicles(limit = 4) {
 
 const loadVehicleBySlug = unstable_cache(async (slug: string) => {
   const client = publicClient();
-  const { data, error } = await client.from("vehicles").select("*").eq("slug", slug)
+  const { data, error } = await client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT).eq("slug", slug)
     .eq("published", true).is("archived_at", null).maybeSingle();
   if (error) throw new Error("Unable to load vehicle");
   if (!data) return null;
-  const [vehicle] = await attachVehicleMedia([data], client, true);
+  const [vehicle] = withEmbeddedMedia([data]);
   return vehicle;
 }, ["vehicle-by-slug"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
@@ -203,11 +181,11 @@ export const getVehicleBySlug = cache(async (slug: string): Promise<Vehicle | nu
 
 const loadRelatedVehicles = unstable_cache(async (make: string, excludeId: string, limit: number) => {
   const client = publicClient();
-  const { data, error } = await client.from("vehicles").select("*")
+  const { data, error } = await client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT)
     .eq("published", true).is("archived_at", null).ilike("make", make).neq("id", excludeId)
     .order("created_at", { ascending: false }).limit(Math.min(Math.max(limit, 1), 12));
   if (error || !data) throw new Error("Unable to load related vehicles");
-  return attachVehicleMedia(data, client, true);
+  return withEmbeddedMedia(data);
 }, ["vehicles-related"], { tags: [CACHE_TAGS.vehicles], revalidate: REVALIDATE_SECONDS });
 
 export async function getRelatedVehicles(make: string | null, excludeId: string, limit = 3) {
@@ -218,9 +196,9 @@ export async function getVehiclesByIds(ids: string[]) {
   const client = await clientOrNull();
   const safeIds = ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id)).slice(0, 100);
   if (!client || !safeIds.length || await catalogHidden()) return [] as Vehicle[];
-  const { data, error } = await client.from("vehicles").select("*").in("id", safeIds)
+  const { data, error } = await client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT).in("id", safeIds)
     .eq("published", true).is("archived_at", null);
-  return error || !data ? [] : attachVehicleMedia(data, client);
+  return error || !data ? [] : withEmbeddedMedia(data);
 }
 
 const loadVehicleFilterOptions = unstable_cache(async () => {
@@ -293,13 +271,13 @@ export async function getAdminVehicles() {
   const client = await clientOrNull();
   if (!client) return [];
   const [{ data, error }, privateRows] = await Promise.all([
-    client.from("vehicles").select("*").order("updated_at", { ascending: false }),
+    client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT).order("updated_at", { ascending: false }),
     client.from("vehicle_private").select("vehicle_id, vin"),
   ]);
   if (error || !data) return [];
   // The chassis number is staff-only; it is added here so the inventory search can find it.
   const vins = new Map((privateRows.data ?? []).map((row) => [row.vehicle_id as string, row.vin as string | null]));
-  return (await attachVehicleMedia(data, client)).map((vehicle) => ({ ...vehicle, vin: vins.get(vehicle.id) ?? null }));
+  return withEmbeddedMedia(data).map((vehicle) => ({ ...vehicle, vin: vins.get(vehicle.id) ?? null }));
 }
 
 export async function getAdminDashboardVehicles() {
@@ -325,11 +303,11 @@ export async function getAdminVehicle(id: string) {
   const client = await clientOrNull();
   if (!client) return null;
   const [vehicleResult, privateResult] = await Promise.all([
-    client.from("vehicles").select("*").eq("id", id).maybeSingle(),
+    client.from("vehicles").select(VEHICLE_WITH_MEDIA_SELECT).eq("id", id).maybeSingle(),
     client.from("vehicle_private").select("vin, admin_notes").eq("vehicle_id", id).maybeSingle(),
   ]);
   if (vehicleResult.error || !vehicleResult.data) return null;
-  const [vehicle] = await attachVehicleMedia([vehicleResult.data], client);
+  const [vehicle] = withEmbeddedMedia([vehicleResult.data]);
   return { vehicle, privateDetails: privateResult.data ?? { vin: null, admin_notes: null } };
 }
 
