@@ -14,7 +14,7 @@ export function AdminFrame({ active, email, title, actions, children }: { active
     <AdminMobileNav active={active} email={email} />
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <Link href="/admin" className="admin-sidebar-brand" aria-label="Naar het overzicht"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="140px" loading="eager" /></Link>
+        <Link href="/admin" className="admin-sidebar-brand" aria-label="Naar het overzicht"><Image src="/images/bhaggoes-logo.webp" alt="Bhaggoes Car Palace" width={316} height={108} sizes="140px" loading="eager" /></Link>
         <nav className="admin-nav" aria-label="Beheernavigatie">
           {items.map(([label, href, Icon]) => <AdminNavLink active={active === href} href={href} key={href}><Icon size={18} aria-hidden="true" />{label}</AdminNavLink>)}
         </nav>

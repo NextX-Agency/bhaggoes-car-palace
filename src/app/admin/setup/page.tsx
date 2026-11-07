@@ -55,7 +55,7 @@ export default function StaffSetupPage() {
   }
 
   return <div className="admin-login-wrap"><section className="admin-login">
-    <Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={220} height={76} loading="eager" />
+    <Image src="/images/bhaggoes-logo.webp" alt="Bhaggoes Car Palace" width={220} height={76} loading="eager" />
     <h1>Wachtwoord instellen</h1>
     {!ready ? <p role="status">Je uitnodiging wordt gecontroleerd…</p> : authorized ? <form onSubmit={setPassword}>
       <label className="admin-field">Wachtwoord<span className="help-text">Minstens 12 tekens.</span><input name="password" type="password" autoComplete="new-password" minLength={12} required /></label>
