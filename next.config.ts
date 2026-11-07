@@ -44,11 +44,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   images: {
-    formats: ["image/avif", "image/webp"],
-    // Vehicle photo paths contain a random UUID and are never overwritten, so optimized copies can be kept for a week.
-    minimumCacheTTL: 60 * 60 * 24 * 7,
-    qualities: [30, 75],
-    remotePatterns: [{ protocol: "https", hostname: "**.supabase.co", pathname: "/storage/v1/object/public/site-assets/**" }],
+    // All images use our own loader (src/lib/image-loader.ts) instead of Vercel Image Optimization, so the site never
+    // spends the plan's image transformation quota and photos keep loading if that quota would run out.
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
   },
 };
 

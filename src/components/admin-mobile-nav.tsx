@@ -31,7 +31,7 @@ export function AdminMobileNav({ active, email }: { active: string; email: strin
 
   return <Dialog.Root open={open} onOpenChange={setOpen}>
     <div className="admin-mobile-bar">
-      <Link href="/admin" className="admin-mobile-brand" aria-label="Naar het overzicht"><Image src="/images/bhaggoes-logo-approved.png" alt="Bhaggoes Car Palace" width={316} height={108} sizes="110px" loading="eager" /></Link>
+      <Link href="/admin" className="admin-mobile-brand" aria-label="Naar het overzicht"><Image src="/images/bhaggoes-logo.webp" alt="Bhaggoes Car Palace" width={316} height={108} sizes="110px" loading="eager" /></Link>
       <Dialog.Trigger asChild>
         <button className="admin-menu-button" type="button" aria-label="Menu openen"><Menu size={20} aria-hidden="true" /> Menu</button>
       </Dialog.Trigger>

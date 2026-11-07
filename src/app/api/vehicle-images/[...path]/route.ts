@@ -21,7 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
   const { path: parts } = await params;
   const path = parts.join("/");
   if (!path || path.split("/").some((part) => !part || part === "." || part === "..") || path.length > 500 || /[\u0000-\u001f\\]/.test(path)) return new NextResponse(null, { status: 400 });
-  // ?w= asks for a small version (dashboard thumbnails); only a few fixed widths, so nobody can make the server render arbitrary sizes.
+  // ?w= asks for a smaller version (thumbnails and the next/image loader); only a few fixed widths, so nobody can make the server render arbitrary sizes.
   const requested = Number(new URL(request.url).searchParams.get("w"));
   const width = VEHICLE_THUMB_WIDTHS.find((allowed) => allowed === requested);
   try {
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     const headers = new Headers({ "content-type": type, "x-content-type-options": "nosniff", "content-disposition": "inline", "content-security-policy": "default-src 'none'; sandbox" });
     // A photo's path holds a random id and is never reused, so staff browsers may keep it; the public copy stays
     // short-lived because the catalog switch or a status change can hide the car at any moment.
-    headers.set("cache-control", signedIn ? "private, max-age=86400, immutable" : "public, max-age=300, stale-while-revalidate=3600");
+    headers.set("cache-control", signedIn ? "private, max-age=86400, immutable" : "public, max-age=300, s-maxage=300, stale-while-revalidate=3600");
     return new Response(body, { status: 200, headers });
   } catch { return new NextResponse(null, { status: 404 }); }
 }
