@@ -267,7 +267,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
   const templateValues = templatePreview ? templateFieldNames.filter((name) => name !== "condition" && templatePreview.fields[name]) : [];
   const progress = uploadProgress ? Math.round((uploadProgress.done / uploadProgress.total) * 100) : 0;
   const busy = pending || uploading || templatePending;
-  return <form ref={formRef} className="admin-form vehicle-editor" onSubmit={handleSubmit} onInvalidCapture={dutchValidation.onInvalidCapture} onInput={(event) => { dutchValidation.onInput(event); setDirty(true); }} onChange={(event) => { dutchValidation.onChange(event); setDirty(true); }}>
+  return <form ref={formRef} className="admin-form vehicle-editor" data-unsaved={dirty || undefined} onSubmit={handleSubmit} onInvalidCapture={dutchValidation.onInvalidCapture} onInput={(event) => { dutchValidation.onInput(event); setDirty(true); }} onChange={(event) => { dutchValidation.onChange(event); setDirty(true); }}>
     <input type="hidden" name="id" value={savedId} />
     <details className="admin-form-section editor-template-panel">
       <summary className="editor-quickstart-summary"><span><strong id="template-heading">{vehicle ? "Gegevens hergebruiken" : "Snel invullen"}</strong><small>Plak een advertentietekst of kies een bewaarde uitvoering, dan wordt het formulier voor je ingevuld.</small></span></summary>

@@ -6,7 +6,11 @@ import sharp from "sharp";
 import { z } from "zod";
 import { safeExternalUrl, slugify } from "@/lib/domain";
 import { listingTitle } from "@/lib/vehicle-templates";
+import { getAdminVehicle, getSettings } from "@/lib/data";
 import { clearFailures, clientAddress, isThrottled, recordFailure } from "@/lib/rate-limit";
+import { siteUrl } from "@/lib/site-url";
+import { buildWindowSticker, type WindowStickerData } from "@/lib/window-sticker";
+import { claimStickerUse, STICKER_BUCKET, stickerUsesLeft } from "@/lib/window-sticker-quota";
 import { createClient } from "@/lib/supabase/server";
 
 type ActionState = { error?: string; ok?: boolean };
@@ -226,6 +230,24 @@ export async function duplicateVehicleAction(form: FormData) {
     const { data: features } = await supabase.from("vehicle_features").select("feature_id").eq("vehicle_id", id);
     if (features?.length) await supabase.from("vehicle_features").insert(features.map((feature) => ({ vehicle_id: data.id, feature_id: feature.feature_id })));
     redirect(`/admin/inventory/${data.id}?opgeslagen=kopie`);
+  }
+}
+
+// Opening a window sticker uses one of the limited uses (lib/window-sticker-quota.ts). The sticker is built
+// from the car as it is saved right now, and is only returned after a use was claimed.
+export async function openWindowStickerAction(id: string): Promise<{ sticker?: WindowStickerData; usesLeft?: number | null; locked?: boolean; error?: string }> {
+  if (!z.string().uuid().safeParse(id).success) return { error: "Deze auto kon niet worden herkend." };
+  try {
+    const supabase = await verifyAdmin();
+    const [result, settings] = await Promise.all([getAdminVehicle(id), getSettings()]);
+    if (!result) return { error: "Deze auto bestaat niet meer. Vernieuw de pagina." };
+    const storage = supabase.storage.from(STICKER_BUCKET);
+    const claim = await claimStickerUse(storage);
+    if (claim === "exhausted") return { locked: true, usesLeft: 0 };
+    if (claim === "error") return { error: "De raamsticker kon niet worden geopend. Controleer je verbinding en probeer het opnieuw; er is niets verbruikt." };
+    return { sticker: buildWindowSticker(result.vehicle, settings, siteUrl()), usesLeft: await stickerUsesLeft(storage) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "De raamsticker kon niet worden geopend." };
   }
 }
 
