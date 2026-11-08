@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 
 // Public pages are prerendered, so scripts cannot carry a per-request nonce; inline scripts stay allowed and everything else is pinned to our own origin, Supabase and the Google Maps embed.
 const supabase = (() => { try { return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin; } catch { return "https://*.supabase.co"; } })();
@@ -51,4 +52,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Smaller copies of public/images for the image loader, made on every production build whatever command runs it.
+export default async function config(phase: string): Promise<NextConfig> {
+  if (phase === PHASE_PRODUCTION_BUILD) await (await import("./scripts/static-image-variants.mjs")).buildStaticImageVariants();
+  return nextConfig;
+}
