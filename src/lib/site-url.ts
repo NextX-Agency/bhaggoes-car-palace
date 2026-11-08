@@ -1,3 +1,5 @@
+import imageLoader from "./image-loader";
+
 // Keep every production SEO signal on the public domain, even when a Vercel
 // deployment URL was configured as NEXT_PUBLIC_SITE_URL by mistake.
 export function siteUrl() {
@@ -12,8 +14,8 @@ export function absoluteUrl(path: string) {
   return /^https?:\/\//i.test(path) ? path : `${siteUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-// Optimized (resized, WebP/AVIF) variant of a site or vehicle image, for social previews and structured data.
-// Raw vehicle photos can be several MB; link previews such as WhatsApp drop images that are too large.
+// Resized WebP variant of a site or vehicle image, for social previews and structured data. Raw vehicle photos can be
+// several MB; link previews such as WhatsApp drop images that are too large. Uses the same resize routes as next/image.
 export function shareImageUrl(path: string, width = 1200) {
-  return absoluteUrl(`/_next/image?url=${encodeURIComponent(path)}&w=${width}&q=75`);
+  return absoluteUrl(imageLoader({ src: path, width }));
 }
