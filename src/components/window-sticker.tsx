@@ -41,8 +41,13 @@ export function WindowSticker({ data }: { data: WindowStickerData }) {
     </section> : null}
     </div>
 
-    <footer className="ws-foot">
+    <footer className={`ws-foot${data.qr ? " has-qr" : ""}`}>
       <div><strong>{business.name}</strong>{business.locations.map((location) => <span key={location}>{location}</span>)}</div>
+      {data.qr ? <figure className="ws-qr">
+        {/* Four modules of white around the code (the quiet zone scanners need). */}
+        <svg viewBox={`-4 -4 ${data.qr.size + 8} ${data.qr.size + 8}`} role="img" aria-label={`QR code: ${data.qr.url}`} shapeRendering="crispEdges"><path d={data.qr.path} fill="#000" /></svg>
+        <figcaption>Scan for photos<br />&amp; details</figcaption>
+      </figure> : null}
       <div className="ws-foot-contact">{contact.map((line) => <span key={line}>{line}</span>)}<span className="ws-web">{business.website}</span></div>
     </footer>
   </article>;

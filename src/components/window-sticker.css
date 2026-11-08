@@ -44,6 +44,10 @@
 .ws-foot div { display: grid; gap: 0.6mm; }
 .ws-foot-contact { justify-items: end; text-align: right; }
 .ws-web { font-weight: 700; }
+.ws-foot.has-qr { align-items: flex-end; }
+.ws-qr { display: grid; justify-items: center; gap: 1mm; margin: 0; flex: none; }
+.ws-qr svg { display: block; width: 27mm; height: 27mm; }
+.ws-qr figcaption { font-size: 7.5pt; font-weight: 700; line-height: 1.2; text-align: center; letter-spacing: 0.04em; text-transform: uppercase; }
 
 @page window-sticker { size: A4 portrait; margin: 0; }
 
