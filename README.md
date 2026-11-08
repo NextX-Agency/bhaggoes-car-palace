@@ -48,6 +48,16 @@ These actions run through the admin-only database functions in `supabase/migrati
 
 The dashboard and public catalog rely on the database. The two test listings retain `DEMO-` stock numbers internally; archive them when verified real inventory is ready. Their public pages are excluded from search indexing and the sitemap. Financing estimates are not offers, and financing is hidden from the homepage and vehicle pages until enabled in settings. A price without a currency uses the currency from the settings.
 
+## Window sticker (Print Window Sticker)
+
+Every car has a printable A4 window sticker, built from the car's saved data when it is opened: **Voorraad → a car → Print Window Sticker**. Nothing is stored per sticker, so there are no duplicates and the sticker always shows the latest saved specifications and prices ("Intern prijs", and the cash price highlighted with the saving when it is lower).
+
+The feature is limited to **3 openings in total** for the whole dashboard. Each opening is confirmed first and uses one; after printing (or saving as PDF) the sticker closes and printing again uses another. When the uses are gone the button shows a lock with a link to contact NextX.
+
+- The count is kept as three slot files (`_system/window-sticker/use-1.png` … `use-3.png`) in the private `vehicle-images` bucket; storage refuses to create a file that exists, so simultaneous clicks cannot get past the limit. No database table is involved (`src/lib/window-sticker-quota.ts`).
+- **Unlock permanently:** set the Vercel environment variable `WINDOW_STICKER_UNLOCKED=true` and redeploy.
+- **Give new free uses:** delete the files in `vehicle-images/_system/window-sticker/` in Supabase Storage.
+
 ## Database and access model
 
 Apply every file in `supabase/migrations/` in order (Supabase SQL editor or `supabase db push`). The base migration `20261015182531_dealership_platform.sql` creates inventory, private vehicle fields, media metadata, settings, FAQs, policy pages, profiles, and inquiries. Row Level Security is enabled on every application table. Anonymous visitors can read published public content; the inquiry function is currently disabled for public roles. Only administrator profiles can manage dealership content. VINs and staff notes live in a separate restricted table.
