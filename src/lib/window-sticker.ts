@@ -1,3 +1,4 @@
+import imageLoader from "./image-loader";
 import { formatAmount, parseLocations, vehicleHeading, vehicleSpecifications, type SiteSettings, type Vehicle } from "./domain";
 
 /** Everything printed on a car's window sticker, built from the car's saved data at the moment it is opened. */
@@ -15,6 +16,8 @@ export interface WindowStickerData {
   specifications: [string, string][];
   features: string[];
   benefits: string[];
+  /** "8 November 2026": prices on a printed sticker are only valid on the day it was printed. */
+  priceDate: string;
   business: { name: string; slogan: string; phone: string | null; whatsapp: string | null; email: string | null; locations: string[]; website: string; logo: string };
 }
 
@@ -22,7 +25,7 @@ export interface WindowStickerData {
 export const STICKER_MAX_FEATURES = 24;
 export const STICKER_MAX_BENEFITS = 8;
 
-export function buildWindowSticker(vehicle: Vehicle, settings: SiteSettings, website: string): WindowStickerData {
+export function buildWindowSticker(vehicle: Vehicle, settings: SiteSettings, website: string, now = new Date()): WindowStickerData {
   const currency = vehicle.currency ?? settings.currency;
   const regular = vehicle.price ?? null;
   const cash = vehicle.cash_price ?? null;
@@ -38,6 +41,7 @@ export function buildWindowSticker(vehicle: Vehicle, settings: SiteSettings, web
     specifications: vehicleSpecifications(vehicle).filter(([label]) => label !== "Year"),
     features: vehicle.features.map((feature) => feature.trim()).filter(Boolean).slice(0, STICKER_MAX_FEATURES),
     benefits: settings.sales_terms.benefits.map((benefit) => benefit.trim()).filter(Boolean).slice(0, STICKER_MAX_BENEFITS),
+    priceDate: new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Paramaribo" }).format(now),
     business: {
       name: settings.business_name,
       slogan: settings.slogan,
@@ -46,7 +50,8 @@ export function buildWindowSticker(vehicle: Vehicle, settings: SiteSettings, web
       email: settings.email,
       locations: parseLocations(settings.address).map((location) => location.name ? `${location.name}: ${location.address}` : location.address),
       website: website.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
-      logo: settings.logo_url || "/images/bhaggoes-logo.webp",
+      // A small copy of the logo (uploaded logos can be several MB), sharp enough for print at its printed size.
+      logo: imageLoader({ src: settings.logo_url || "/images/bhaggoes-logo.webp", width: 800 }),
     },
   };
 }

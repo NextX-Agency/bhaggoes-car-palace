@@ -51,6 +51,14 @@ describe("window sticker content", () => {
     expect(sticker.features).toHaveLength(STICKER_MAX_FEATURES);
   });
 
+  it("dates the prices in Suriname time and uses a small copy of the logo", () => {
+    const sticker = buildWindowSticker(base, settings, "x", new Date("2026-11-08T02:30:00Z"));
+    expect(sticker.priceDate).toBe("7 November 2026"); // 23:30 the evening before in Paramaribo
+    expect(sticker.business.logo).toBe("/_w/828/images/bhaggoes-logo.webp");
+    const uploaded = buildWindowSticker(base, { ...settings, logo_url: "https://abc.supabase.co/storage/v1/object/public/site-assets/brand/logo.png" }, "x");
+    expect(uploaded.business.logo).toBe("/api/site-assets/brand/logo.png?w=800");
+  });
+
   it("never prints staff-only data", () => {
     const text = JSON.stringify(buildWindowSticker({ ...base, description: "secret" } as Vehicle & { vin: string }, settings, "x"));
     expect(text).not.toContain("secret");

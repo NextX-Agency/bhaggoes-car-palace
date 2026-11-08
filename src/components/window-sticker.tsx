@@ -25,6 +25,7 @@ export function WindowSticker({ data }: { data: WindowStickerData }) {
       {data.cashPrice ? <div className={`ws-price${discounted || !data.price ? " ws-price-main" : ""}`}><span>Cash price · bank transfer</span><strong>{data.cashPrice}</strong>{data.savings ? <em>You save {data.savings}</em> : null}</div> : null}
       {!data.price && !data.cashPrice ? <div className="ws-price ws-price-main"><span>Price</span><strong>Price on request</strong></div> : null}
     </section>
+    {data.price || data.cashPrice ? <p className="ws-price-note">Prices as of {data.priceDate}. Ask us about the current price and availability.</p> : null}
 
     <div className="ws-body">
     {data.specifications.length ? <section className="ws-block"><h2>Specifications</h2>

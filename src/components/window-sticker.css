@@ -8,7 +8,7 @@
 .wsticker h1, .wsticker h2, .wsticker p, .wsticker dl, .wsticker dd, .wsticker ul { margin: 0; padding: 0; }
 .ws-head, .ws-title, .ws-prices { flex: none; }
 .ws-head { display: flex; align-items: center; justify-content: space-between; gap: 8mm; padding-bottom: 4mm; border-bottom: 0.6mm solid #000; }
-.ws-logo { width: 58mm; height: auto; max-height: 22mm; object-fit: contain; object-position: left center; }
+.ws-logo { display: block; width: 58mm; height: auto; max-height: 22mm; object-fit: contain; object-position: left center; }
 .ws-head-text { display: grid; justify-items: end; text-align: right; gap: 1mm; }
 .ws-head-text strong { font-family: var(--font-display), Arial, sans-serif; font-size: 13pt; letter-spacing: 0.02em; text-transform: uppercase; }
 .ws-head-text span { font-size: 8.5pt; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -29,6 +29,7 @@
    (--ws-fit, set by the sticker overlay). Whatever still does not fit is cut off here, never on a second sheet. */
 .ws-body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 1.6em; font-size: calc(10.5pt * var(--ws-fit, 1)); }
 .ws-block { display: grid; gap: 0.7em; }
+.ws-price-note { flex: none; margin-top: -3mm !important; font-size: 8.5pt; }
 .ws-block h2 { font-size: 0.95em; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding-bottom: 0.45em; border-bottom: 0.3mm solid #000; }
 .ws-specs { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; }
 .ws-specs div { display: flex; justify-content: space-between; gap: 1.2em; padding: 0.45em 0; border-bottom: 0.2mm solid #999; break-inside: avoid; }
@@ -63,7 +64,9 @@
   html.ws-printing .ws-toolbar { display: none !important; }
   html.ws-printing .ws-stage { padding: 0; overflow: visible; }
   html.ws-printing .ws-sheet { margin: 0; box-shadow: none; width: auto !important; height: auto !important; }
-  html.ws-printing .ws-sheet .wsticker { transform: none !important; }
+  /* The sheet fills whatever printable area the paper and margins leave (A4 without margins is 210 x 297 mm, but a
+     browser may add its own margins or use Letter paper), so it always stays on one page. */
+  html.ws-printing .ws-sheet .wsticker { transform: none !important; width: 100% !important; height: 100vh !important; max-height: 296mm; }
 }
 
 /* Dashboard button and the screen shown when the free uses are gone. */
