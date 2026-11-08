@@ -59,6 +59,10 @@ function dealerBase(settings: SiteSettings) {
 }
 
 // AutoDealer (a LocalBusiness) for the home and contact pages; every location becomes its own branch with an address.
+// Other spellings people search for (the Facebook page and Google profile use "Bhaggoe's car palace N.V."), so Google
+// links them to this site.
+const alternateNames = ["Bhaggoe's Car Palace", "Bhaggoe's Car Palace N.V.", "Bhaggoes Car Palace N.V.", "Bhaggoes"];
+
 export function dealerJsonLd(settings: SiteSettings, { website = true }: { website?: boolean } = {}) {
   const locations = parseLocations(settings.address);
   const branches = locations.map((location) => ({
@@ -74,6 +78,7 @@ export function dealerJsonLd(settings: SiteSettings, { website = true }: { websi
       {
         ...dealerBase(settings),
         "@id": absoluteUrl("/#dealer"),
+        alternateName: alternateNames,
         description: effectiveSeoDescription(settings),
         slogan: settings.slogan || undefined,
         logo: absoluteUrl(settings.logo_url || "/images/bhaggoes-logo-approved.png"),
@@ -87,6 +92,7 @@ export function dealerJsonLd(settings: SiteSettings, { website = true }: { websi
         "@id": absoluteUrl("/#website"),
         url: absoluteUrl("/"),
         name: settings.business_name,
+        alternateName: alternateNames,
         publisher: { "@id": absoluteUrl("/#dealer") },
         potentialAction: settings.catalog_hidden ? undefined : { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${absoluteUrl("/cars")}?search={search_term_string}` }, "query-input": "required name=search_term_string" },
       }] : []),
