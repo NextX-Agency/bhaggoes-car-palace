@@ -70,7 +70,9 @@ function StickerOverlay({ data, onClose }: { data: WindowStickerData; onClose: (
   const stage = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const printed = useRef(false);
+  const printButton = useRef<HTMLButtonElement>(null);
   const [printOpened, setPrintOpened] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
     const fit = () => setScale(Math.min(1, ((stage.current?.clientWidth ?? SHEET_WIDTH_PX) - 32) / SHEET_WIDTH_PX));
@@ -78,7 +80,8 @@ function StickerOverlay({ data, onClose }: { data: WindowStickerData; onClose: (
     return () => window.removeEventListener("resize", fit);
   }, []);
 
-  // Shrinks the middle of the sheet until it fits one A4 page (window-sticker.css, --ws-fit).
+  // Sizes the middle of the sheet to fill it: as large as fits, up to 150% (window-sticker.css, --ws-fit). It is measured on A4 with the
+  // browser's default margins, so it also fits when a browser adds margins; on A4 without margins there is room left.
   useLayoutEffect(() => {
     const sheet = stage.current?.querySelector<HTMLElement>(".wsticker");
     const body = sheet?.querySelector<HTMLElement>(".ws-body");
@@ -86,42 +89,59 @@ function StickerOverlay({ data, onClose }: { data: WindowStickerData; onClose: (
     let cancelled = false;
     const fit = () => {
       if (cancelled) return;
-      for (let size = 1; size >= 0.6; size -= 0.05) {
+      sheet.style.width = "190mm"; sheet.style.height = "275mm";
+      for (let size = 1.5; size >= 0.6; size -= 0.05) {
         sheet.style.setProperty("--ws-fit", size.toFixed(2));
         if (body.scrollHeight <= body.clientHeight + 1) break;
       }
+      sheet.style.width = ""; sheet.style.height = "";
     };
+    // Printing waits for the fonts and the logo, so the sheet never comes out without them. A logo that cannot load
+    // is left out instead of printing a broken image; the business name is in the header as well.
+    const logo = sheet.querySelector<HTMLImageElement>(".ws-logo");
+    const logoReady = !logo || logo.complete ? Promise.resolve() : new Promise<void>((resolve) => { logo.addEventListener("load", () => resolve(), { once: true }); logo.addEventListener("error", () => resolve(), { once: true }); });
+    const giveUp = new Promise<void>((resolve) => window.setTimeout(resolve, 6000));
     fit();
-    void document.fonts?.ready.then(fit);
+    void Promise.race([Promise.all([document.fonts?.ready, logoReady]), giveUp]).then(() => {
+      if (cancelled) return;
+      if (logo && !(logo.complete && logo.naturalWidth > 0)) logo.hidden = true;
+      fit(); setReady(true);
+    });
     return () => { cancelled = true; };
   }, [data]);
+
+  useEffect(() => { if (ready) printButton.current?.focus(); }, [ready]);
 
   // Only the sticker is printed (window-sticker.css); the dashboard is hidden while the class is set.
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add("ws-printing");
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const done = () => onClose();
     window.addEventListener("afterprint", done);
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", escape);
-    return () => { root.classList.remove("ws-printing"); window.removeEventListener("afterprint", done); window.removeEventListener("keydown", escape); };
-  }, [onClose]);
+    return () => { root.classList.remove("ws-printing"); document.body.style.overflow = overflow; window.removeEventListener("afterprint", done); window.removeEventListener("keydown", escape); };
+  }, [onClose, ready]);
 
   // One print dialog per opening. Most desktop browsers pause here until the dialog is closed; then the sticker is
   // removed straight away. Browsers that return at once remove it on "afterprint" (above).
   const print = useCallback(() => {
-    if (printed.current) return;
+    if (printed.current || !ready) return;
     printed.current = true; setPrintOpened(true);
     const started = Date.now();
     window.print();
     if (Date.now() - started > 400) onClose();
-  }, [onClose]);
+  }, [onClose, ready]);
 
   return createPortal(<div className="ws-print-root" role="dialog" aria-modal="true" aria-label="Raamsticker" lang="nl">
+    {/* Only while the sticker is open: A4 without margins, also for browsers that ignore the named page rule. */}
+    <style>{"@page { size: A4 portrait; margin: 0; }"}</style>
     <div className="ws-toolbar">
       <p>{printOpened ? "Sluit dit venster als het afdrukken klaar is." : <>Klik op <strong>Afdrukken</strong> en kies je printer of <strong>Opslaan als PDF</strong>. Papier: A4, staand.</>}</p>
       <div className="ws-toolbar-actions">
-        {printOpened ? null : <button className="button button-primary button-sm" type="button" onClick={print}><Printer size={15} aria-hidden="true" /> Afdrukken</button>}
+        {printOpened ? null : <button ref={printButton} className="button button-primary button-sm" type="button" onClick={print} disabled={!ready} aria-busy={!ready || undefined}>{ready ? <Printer size={15} aria-hidden="true" /> : <LoaderCircle size={15} className="spin" aria-hidden="true" />} {ready ? "Afdrukken" : "Voorbereiden…"}</button>}
         <button className="button button-ghost button-sm" type="button" onClick={onClose}><X size={15} aria-hidden="true" /> Sluiten</button>
       </div>
     </div>

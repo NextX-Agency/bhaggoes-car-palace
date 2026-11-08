@@ -51,6 +51,25 @@ describe("window sticker content", () => {
     expect(sticker.features).toHaveLength(STICKER_MAX_FEATURES);
   });
 
+  it("dates the prices in Suriname time and uses a small copy of the logo", () => {
+    const sticker = buildWindowSticker(base, settings, "x", new Date("2026-11-08T02:30:00Z"));
+    expect(sticker.priceDate).toBe("7 November 2026"); // 23:30 the evening before in Paramaribo
+    expect(sticker.business.logo).toBe("/_w/828/images/bhaggoes-logo.webp");
+    const uploaded = buildWindowSticker(base, { ...settings, logo_url: "https://abc.supabase.co/storage/v1/object/public/site-assets/brand/logo.png" }, "x");
+    expect(uploaded.business.logo).toBe("/api/site-assets/brand/logo.png?w=800");
+  });
+
+  it("adds a QR code to the car's page only while that page is online", () => {
+    const online = buildWindowSticker(base, settings, "https://www.bhaggoescarpalace.com/");
+    expect(online.qr?.url).toBe("https://www.bhaggoescarpalace.com/cars/2018-toyota-harrier");
+    expect(online.qr?.size).toBeGreaterThanOrEqual(21);
+    expect(online.qr?.path).toMatch(/^(M\d+ \d+h1v1h-1z)+$/);
+    expect(buildWindowSticker({ ...base, published: false }, settings, "x").qr).toBeNull();
+    expect(buildWindowSticker({ ...base, archived_at: "2026-11-01T00:00:00Z" }, settings, "x").qr).toBeNull();
+    expect(buildWindowSticker({ ...base, stock_number: "DEMO-1" }, settings, "x").qr).toBeNull();
+    expect(buildWindowSticker(base, { ...settings, catalog_hidden: true }, "x").qr).toBeNull();
+  });
+
   it("never prints staff-only data", () => {
     const text = JSON.stringify(buildWindowSticker({ ...base, description: "secret" } as Vehicle & { vin: string }, settings, "x"));
     expect(text).not.toContain("secret");
