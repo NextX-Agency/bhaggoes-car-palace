@@ -1,7 +1,8 @@
 import type { WindowStickerData } from "@/lib/window-sticker";
 
-// The specifications shown large at the top (first four that are filled in); the rest go in the table.
-const KEY_SPECS = ["Mileage", "Transmission", "Fuel", "Engine", "Drivetrain"];
+// The row at the top always shows the first four specifications that are filled in, in this order; whatever is left
+// goes in the table, which is left out when nothing is left. Body style and stock number are shown above the title.
+const KEY_SPECS = ["Mileage", "Transmission", "Fuel", "Engine", "Drivetrain", "Exterior", "Interior", "Seats", "Doors"];
 
 /**
  * The printed window sticker: one page, black on white only (the dealership prints in black and white), thin lines,
@@ -13,7 +14,7 @@ export function WindowSticker({ data }: { data: WindowStickerData }) {
   const specs = new Map(data.specifications);
   const keys = KEY_SPECS.filter((label) => specs.has(label)).slice(0, 4);
   const stock = specs.get("Stock number");
-  const table = data.specifications.filter(([label]) => !keys.includes(label) && label !== "Stock number");
+  const table = data.specifications.filter(([label]) => !keys.includes(label) && label !== "Stock number" && label !== "Body style");
   const contact = [business.phone ? `Tel. ${business.phone}` : null, business.whatsapp ? `WhatsApp ${business.whatsapp}` : null, business.email].filter(Boolean);
   const mainPrice = discounted ? data.cashPrice : data.price ?? data.cashPrice;
   const mainLabel = discounted || (!data.price && data.cashPrice) ? "Cash price · bank transfer" : data.price ? "Intern prijs" : "Price";

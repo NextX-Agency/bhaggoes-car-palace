@@ -80,7 +80,7 @@ function StickerOverlay({ data, onClose }: { data: WindowStickerData; onClose: (
     return () => window.removeEventListener("resize", fit);
   }, []);
 
-  // Sizes the middle of the sheet to fill it: as large as fits, up to 125% (window-sticker.css, --ws-fit). It is measured on A4 with the
+  // Sizes the middle of the sheet to fill it: as large as fits, up to 150% (window-sticker.css, --ws-fit). It is measured on A4 with the
   // browser's default margins, so it also fits when a browser adds margins; on A4 without margins there is room left.
   useLayoutEffect(() => {
     const sheet = stage.current?.querySelector<HTMLElement>(".wsticker");
@@ -90,7 +90,7 @@ function StickerOverlay({ data, onClose }: { data: WindowStickerData; onClose: (
     const fit = () => {
       if (cancelled) return;
       sheet.style.width = "190mm"; sheet.style.height = "275mm";
-      for (let size = 1.25; size >= 0.6; size -= 0.05) {
+      for (let size = 1.5; size >= 0.6; size -= 0.05) {
         sheet.style.setProperty("--ws-fit", size.toFixed(2));
         if (body.scrollHeight <= body.clientHeight + 1) break;
       }

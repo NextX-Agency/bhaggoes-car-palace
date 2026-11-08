@@ -45,7 +45,7 @@
 
 /* Specifications, options and inclusions: sized in em so the block can be scaled to fill the page (--ws-fit, set by
    the sticker overlay). Whatever still does not fit is cut off here, never on a second sheet. */
-.ws-body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: space-evenly; gap: 1.4em; font-size: calc(10.5pt * var(--ws-fit, 1)); }
+.ws-body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 1.6em; font-size: calc(10.5pt * var(--ws-fit, 1)); }
 .ws-block { display: grid; gap: 0.6em; }
 .ws-block h2 { font-size: 0.9em; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding-bottom: 0.35em; border-bottom: 0.3mm solid #000; }
 .ws-specs { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; }
