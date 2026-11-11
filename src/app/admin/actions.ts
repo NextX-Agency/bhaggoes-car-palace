@@ -12,6 +12,7 @@ import { siteUrl } from "@/lib/site-url";
 import { buildWindowSticker, type WindowStickerData } from "@/lib/window-sticker";
 import { claimStickerUse, STICKER_BUCKET, stickerUsesLeft } from "@/lib/window-sticker-quota";
 import { createClient } from "@/lib/supabase/server";
+import { mirrorSiteAsset, mirrorVehicleImage, r2Configured } from "@/lib/r2-images";
 
 type ActionState = { error?: string; ok?: boolean };
 const AVAILABILITY = ["available", "on_the_way", "reserved", "sold", "rental"];
@@ -45,7 +46,15 @@ function expirePublicCache(...tags: ("settings" | "vehicles" | "faqs" | "pages")
 
 // The photo editor writes images straight to Supabase from the browser, so it calls this once its changes are done.
 export async function refreshPublicInventoryAction(): Promise<ActionState> {
-  try { await verifyAdmin(); expirePublicCache("vehicles"); return { ok: true }; }
+  try {
+    const supabase = await verifyAdmin();
+    if (r2Configured) {
+      const { data } = await supabase.from("vehicle_images").select("id, vehicle_id, storage_path, r2_ready")
+        .eq("r2_ready", false).limit(4);
+      if (data?.length) await syncR2ImageRows(supabase, data);
+    }
+    expirePublicCache("vehicles"); return { ok: true };
+  }
   catch (error) { return { error: error instanceof Error ? error.message : "De website kon niet worden bijgewerkt." }; }
 }
 
@@ -327,18 +336,29 @@ export async function saveSettingsAction(_previous: ActionState, form: FormData)
     };
     let catalogImages: unknown = [];
     try { catalogImages = JSON.parse(text(form, "catalog_images") || "[]"); } catch { return { error: "De foto’s voor de banner konden niet worden gelezen." }; }
-    const images = z.array(z.string().regex(/^catalog\/[0-9a-f-]{36}\.(webp|jpg|png|avif)$/)).max(6).safeParse(catalogImages);
+    const images = z.array(z.string().regex(/^(catalog\/[0-9a-f-]{36}\.(webp|jpg|png|avif)|https:\/\/media\.bhaggoescarpalace\.com\/site-assets\/catalog\/[0-9a-f-]{36}\.(webp|jpg|png|avif)\.webp)$/)).max(6).safeParse(catalogImages);
     if (!images.success) return { error: "Gebruik maximaal 6 foto’s voor de banner." };
     const catalog = { catalog_hidden: text(form, "catalog_hidden") === "on", catalog_hidden_message: nullable(text(form, "catalog_hidden_message")), catalog_images: images.data };
     if (catalog.catalog_hidden_message && catalog.catalog_hidden_message.length > 600) return { error: "Het bericht bij de verborgen catalogus mag maximaal 600 tekens zijn." };
     const settings = { business_name: text(form, "business_name"), slogan: text(form, "slogan"), phone: nullable(text(form, "phone")), whatsapp: nullable(text(form, "whatsapp")), email: nullable(text(form, "email")), address: nullable(text(form, "address")), currency: nullable(text(form, "currency")), homepage_title: text(form, "homepage_title"), homepage_subtitle: text(form, "homepage_subtitle"), seo_title: text(form, "seo_title"), seo_description: text(form, "seo_description"), about_text: nullable(text(form, "about_text")), financing_enabled: text(form, "financing_enabled") === "on", financing_notes: nullable(text(form, "financing_notes")), sales_terms: salesTerms, show_sold: text(form, "show_sold") === "on", business_hours: businessHours, social_links: socialLinks, logo_path: nullable(text(form, "logo_path")) };
-    const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).refine((value) => /^\d{7,15}$/.test(value.replace(/\D/g, "")), { message: "WhatsApp-nummer: gebruik landnummer plus nummer, bijvoorbeeld +597 866-8777." }).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(1500).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), sales_terms: z.object({ benefits: z.array(z.string().min(2).max(160)).max(15), internal_down_percent: z.number().int().min(0).max(100), internal_max_months: z.number().int().min(1).max(120), bank_down_percent: z.number().int().min(0).max(100), trade_in: z.boolean(), promo_text: z.string().max(300) }), show_sold: z.boolean(), business_hours: z.record(z.string().max(60), z.string().max(120)).refine((hours) => Object.keys(hours).length <= 14, { message: "Gebruik maximaal 14 regels voor de openingstijden." }), social_links: z.record(z.string(), z.string().max(300)), logo_path: z.string().max(300).regex(/^(?!.*\.\.)([A-Za-z0-9][A-Za-z0-9._\/-]*|https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/site-assets\/[A-Za-z0-9._\/-]+)$/).nullable() }).safeParse(settings);
+    const parsed = z.object({ business_name: z.string().min(2).max(120), slogan: z.string().max(180), phone: z.string().max(40).nullable(), whatsapp: z.string().max(40).refine((value) => /^\d{7,15}$/.test(value.replace(/\D/g, "")), { message: "WhatsApp-nummer: gebruik landnummer plus nummer, bijvoorbeeld +597 866-8777." }).nullable(), email: z.union([z.string().email(), z.literal("")]).nullable(), address: z.string().max(1500).nullable(), currency: z.string().max(8).nullable(), homepage_title: z.string().min(2).max(180), homepage_subtitle: z.string().max(350), seo_title: z.string().min(1).max(120), seo_description: z.string().min(1).max(320), about_text: z.string().max(10000).nullable(), financing_enabled: z.boolean(), financing_notes: z.string().max(2000).nullable(), sales_terms: z.object({ benefits: z.array(z.string().min(2).max(160)).max(15), internal_down_percent: z.number().int().min(0).max(100), internal_max_months: z.number().int().min(1).max(120), bank_down_percent: z.number().int().min(0).max(100), trade_in: z.boolean(), promo_text: z.string().max(300) }), show_sold: z.boolean(), business_hours: z.record(z.string().max(60), z.string().max(120)).refine((hours) => Object.keys(hours).length <= 14, { message: "Gebruik maximaal 14 regels voor de openingstijden." }), social_links: z.record(z.string(), z.string().max(300)), logo_path: z.string().max(300).regex(/^(?!.*\.\.)([A-Za-z0-9][A-Za-z0-9._\/-]*|https:\/\/media\.bhaggoescarpalace\.com\/site-assets\/[A-Za-z0-9._\/-]+|https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/site-assets\/[A-Za-z0-9._\/-]+)$/).nullable() }).safeParse(settings);
     if (!parsed.success) return { error: fieldError(parsed.error.issues[0], settingsFieldLabels, "Controleer de website-instellingen en probeer het opnieuw.") };
     const { data: previous } = await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle();
+    const originalCatalogPaths = [...catalog.catalog_images];
+    if (r2Configured && process.env.NEXT_PUBLIC_R2_IMAGE_BASE_URL) {
+      const mirror = async (path: string) => {
+        const { data, error: downloadError } = await supabase.storage.from("site-assets").download(path);
+        if (downloadError || !data) return path;
+        try { return await mirrorSiteAsset(path, Buffer.from(await data.arrayBuffer())) ?? path; }
+        catch { return path; }
+      };
+      if (parsed.data.logo_path?.startsWith("brand/")) parsed.data.logo_path = await mirror(parsed.data.logo_path);
+      catalog.catalog_images = await Promise.all(catalog.catalog_images.map((path) => path.startsWith("catalog/") ? mirror(path) : path));
+    }
     let { error } = await supabase.from("site_settings").update({ ...parsed.data, ...(form.has("catalog_hidden_message") ? catalog : {}) }).eq("id", 1);
     // Banner photos that were taken out are deleted from storage, so they do not pile up.
     const before = Array.isArray(previous?.catalog_images) ? previous.catalog_images as string[] : [];
-    const dropped = before.filter((path) => path.startsWith("catalog/") && !catalog.catalog_images.includes(path));
+    const dropped = before.filter((path) => path.startsWith("catalog/") && !originalCatalogPaths.includes(path));
     if (!error && dropped.length && form.has("catalog_hidden_message")) await supabase.storage.from("site-assets").remove(dropped);
     // Older databases do not have the catalog columns yet: save everything else and say what is missing.
     // Older databases may miss the newest columns: save what fits and say what is missing.
@@ -445,6 +465,58 @@ export async function saveContentPageAction(_previous: ActionState, form: FormDa
 const LARGE_PHOTO_BYTES = 450 * 1024;
 const OPTIMIZE_BATCH = 4; // small enough to finish well within a serverless time limit
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+
+type R2ImageRow = { id: string; vehicle_id: string; storage_path: string; r2_ready: boolean };
+
+async function syncR2ImageRows(supabase: SupabaseServer, rows: R2ImageRow[]) {
+  let copied = 0;
+  const failedIds: string[] = [];
+  for (const row of rows) {
+    try {
+      if (row.storage_path.startsWith("/images/")) continue;
+      const { data: vehicle, error: vehicleError } = await supabase.from("vehicles")
+        .select("published, archived_at").eq("id", row.vehicle_id).single();
+      if (vehicleError || !vehicle?.published || vehicle.archived_at) continue;
+      const { data: original, error: downloadError } = await supabase.storage.from("vehicle-images").download(row.storage_path);
+      if (downloadError || !original) throw new Error("download");
+      await mirrorVehicleImage(row.storage_path, Buffer.from(await original.arrayBuffer()));
+      const { error: updateError } = await supabase.from("vehicle_images").update({ r2_ready: true })
+        .eq("id", row.id).eq("storage_path", row.storage_path);
+      if (updateError) throw new Error("database update");
+      copied++;
+    } catch { failedIds.push(row.id); }
+  }
+  if (copied) expirePublicCache("vehicles");
+  return { copied, failedIds };
+}
+
+export async function countR2ImagesAction(): Promise<{ ids: string[]; error?: string }> {
+  try {
+    if (!r2Configured) return { ids: [] };
+    const supabase = await verifyAdmin();
+    const { data: vehicles, error: vehicleError } = await supabase.from("vehicles")
+      .select("id").eq("published", true).is("archived_at", null);
+    if (vehicleError || !vehicles) throw new Error("Published cars could not be checked.");
+    const vehicleIds = vehicles.map((vehicle) => vehicle.id);
+    if (!vehicleIds.length) return { ids: [] };
+    const { data, error } = await supabase.from("vehicle_images").select("id, storage_path")
+      .in("vehicle_id", vehicleIds).eq("r2_ready", false).limit(2000);
+    if (error || !data) throw new Error("Photos could not be checked.");
+    return { ids: data.filter((row) => !row.storage_path.startsWith("/images/")).map((row) => row.id) };
+  } catch (error) { return { ids: [], error: error instanceof Error ? error.message : "Photos could not be checked." }; }
+}
+
+export async function syncR2ImagesAction(ids: string[]): Promise<{ copied: number; failedIds: string[]; error?: string }> {
+  try {
+    if (!r2Configured) throw new Error("R2 is not configured.");
+    const selected = z.array(z.string().uuid()).min(1).max(2).parse(ids);
+    const supabase = await verifyAdmin();
+    const { data, error } = await supabase.from("vehicle_images")
+      .select("id, vehicle_id, storage_path, r2_ready").in("id", selected).eq("r2_ready", false);
+    if (error || !data) throw new Error("Photos could not be loaded.");
+    return await syncR2ImageRows(supabase, data);
+  } catch (error) { return { copied: 0, failedIds: [], error: error instanceof Error ? error.message : "Photos could not be mirrored." }; }
+}
 
 async function findLargePhotos(supabase: SupabaseServer) {
   const { data: rows, error } = await supabase.from("vehicle_images").select("id, vehicle_id, storage_path");

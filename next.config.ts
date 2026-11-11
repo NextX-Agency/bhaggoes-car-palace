@@ -8,7 +8,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${supabase}`,
+  `img-src 'self' data: blob: ${supabase} https://media.bhaggoescarpalace.com`,
   "font-src 'self' data:",
   `connect-src 'self' ${supabase} ${supabaseSocket}${process.env.NODE_ENV === "development" ? " ws://localhost:* ws://127.0.0.1:* ws://0.0.0.0:*" : ""}`,
   "frame-src https://www.google.com",

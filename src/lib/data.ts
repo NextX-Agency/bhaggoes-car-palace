@@ -6,9 +6,10 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
 import { searchTermGroups } from "@/lib/search";
 import type { VehicleTemplate } from "@/lib/vehicle-templates";
+import { r2VehicleImageUrl } from "@/lib/vehicle-image-url";
 
 const PAGE_SIZE = 12;
-const VEHICLE_WITH_MEDIA_SELECT = "*,vehicle_images(id, storage_path, alt_text, sort_order, is_cover),vehicle_features(features(name))";
+const VEHICLE_WITH_MEDIA_SELECT = "*,vehicle_images(id, storage_path, alt_text, sort_order, is_cover, r2_ready),vehicle_features(features(name))";
 
 export async function getAdminVehicleTemplates(): Promise<VehicleTemplate[]> {
   const client = await clientOrNull();
@@ -64,14 +65,14 @@ function withoutSearchColumns(row: Record<string, unknown>) {
   return copy;
 }
 
-function withEmbeddedMedia(rows: Record<string, unknown>[]): Vehicle[] {
+function withEmbeddedMedia(rows: Record<string, unknown>[], publicImages = true): Vehicle[] {
   return rows.map((row) => {
     const { vehicle_images, vehicle_features, ...fields } = withoutSearchColumns(row);
-    const images = ((vehicle_images ?? []) as { id: string; storage_path: string; alt_text: string | null; sort_order: number; is_cover: boolean }[])
+    const images = ((vehicle_images ?? []) as { id: string; storage_path: string; alt_text: string | null; sort_order: number; is_cover: boolean; r2_ready: boolean }[])
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((image) => ({ ...image, url: image.storage_path.startsWith("/images/")
         ? image.storage_path
-        : `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}` }));
+        : (publicImages && image.r2_ready && r2VehicleImageUrl(image.storage_path)) || `/api/vehicle-images/${image.storage_path.split("/").map(encodeURIComponent).join("/")}` }));
     const features = ((vehicle_features ?? []) as { features: { name: string } | null }[])
       .map((item) => item.features?.name).filter((name): name is string => Boolean(name));
     return { ...fields, images, features } as unknown as Vehicle;
@@ -277,7 +278,7 @@ export async function getAdminVehicles() {
   if (error || !data) return [];
   // The chassis number is staff-only; it is added here so the inventory search can find it.
   const vins = new Map((privateRows.data ?? []).map((row) => [row.vehicle_id as string, row.vin as string | null]));
-  return withEmbeddedMedia(data).map((vehicle) => ({ ...vehicle, vin: vins.get(vehicle.id) ?? null }));
+  return withEmbeddedMedia(data, false).map((vehicle) => ({ ...vehicle, vin: vins.get(vehicle.id) ?? null }));
 }
 
 export async function getAdminDashboardVehicles() {
@@ -307,7 +308,7 @@ export async function getAdminVehicle(id: string) {
     client.from("vehicle_private").select("vin, admin_notes").eq("vehicle_id", id).maybeSingle(),
   ]);
   if (vehicleResult.error || !vehicleResult.data) return null;
-  const [vehicle] = withEmbeddedMedia([vehicleResult.data]);
+  const [vehicle] = withEmbeddedMedia([vehicleResult.data], false);
   return { vehicle, privateDetails: privateResult.data ?? { vin: null, admin_notes: null } };
 }
 

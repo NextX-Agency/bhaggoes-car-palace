@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import imageLoader from "./image-loader";
+import { vehicleThumbUrl } from "./vehicle-image-url";
 
 describe("imageLoader", () => {
   it("picks the smallest pre-built copy that covers the requested width", () => {
@@ -12,5 +13,10 @@ describe("imageLoader", () => {
   });
   it("uses the resize route for vehicle photos", () => {
     expect(imageLoader({ src: "/api/vehicle-images/a/b.webp", width: 750 })).toBe("/api/vehicle-images/a/b.webp?w=800");
+  });
+  it("selects a prebuilt Cloudflare copy without a Vercel or Supabase request", () => {
+    const full = "https://media.bhaggoescarpalace.com/vehicles/a/b.webp/1600.webp";
+    expect(imageLoader({ src: full, width: 750 })).toBe("https://media.bhaggoescarpalace.com/vehicles/a/b.webp/800.webp");
+    expect(vehicleThumbUrl(full, 160)).toBe("https://media.bhaggoescarpalace.com/vehicles/a/b.webp/160.webp");
   });
 });
