@@ -11,6 +11,7 @@ import { isSupportedPhoto, photoAccept } from "@/lib/photo-optimize";
 import { vehicleMakes } from "@/lib/vehicle-catalog";
 import { modelsForMake } from "@/lib/vehicle-models";
 import { maxPhotosPerVehicle, uploadVehiclePhotos } from "@/lib/vehicle-photo-upload";
+import { syncPublishedVehicleImages } from "@/lib/admin-r2-sync";
 
 type Status = "idle" | "saving" | "done" | "error";
 type DraftFields = { make: string; model: string; year: string; price: string; cash_price: string; stock_number: string; availability: string };
@@ -118,7 +119,7 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
       update(draft.key, { id });
     }
     const finish = async () => {
-      if (publish) { const form = new FormData(); form.set("id", id); form.set("published", "true"); await updateVehicleAction(form); }
+      if (publish) { const form = new FormData(); form.set("id", id); form.set("published", "true"); await updateVehicleAction(form); await syncPublishedVehicleImages(id); }
       update(draft.key, { status: "done", files: [], previews: [], progress: undefined, message: undefined });
       return true;
     };
