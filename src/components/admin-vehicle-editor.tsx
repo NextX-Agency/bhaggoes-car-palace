@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
 import { photoAccept } from "@/lib/photo-optimize";
 import { maxPhotosPerVehicle, uploadVehiclePhotos, warmPhotos } from "@/lib/vehicle-photo-upload";
+import { syncPublishedVehicleImages } from "@/lib/admin-r2-sync";
 import { bodyTypes, currencies, driveTypes, fuelTypes, transmissionTypes, vehicleColors, vehicleMakes } from "@/lib/vehicle-catalog";
 import { BrandLogo } from "@/components/brand-logo";
 import { ComboField } from "@/components/combo-field";
@@ -197,12 +198,13 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
       setPhotos((current) => { const combined = [...current, ...uploaded]; return ordered ? combined.map((item, index) => ({ ...item, sort_order: index, is_cover: index === 0 })) : combined; });
       const input = formRef.current?.querySelector<HTMLInputElement>('input[name="photos"]'); if (input) input.value = "";
       setFailedFiles(retry);
-      if (uploaded.length) void refreshPublicInventoryAction(); // photos are written straight to Supabase, so refresh the public site cache
+      if (uploaded.length && !pendingPublish.current) void syncPublishedVehicleImages(vehicleId);
       if (issues.length) notify(`${prefix}${uploaded.length} van ${files.length} foto’s geüpload. ${issues.join(" ")}${retry.length ? " Gebruik “Opnieuw proberen” om de mislukte foto’s nog eens te uploaden." : ""}`, true);
       else if (pendingPublish.current) {
         try {
           const form = new FormData(); form.set("id", vehicleId); form.set("published", "true");
           await updateVehicleAction(form);
+          await syncPublishedVehicleImages(vehicleId);
           pendingPublish.current = false;
           notify(`${prefix}${photoCount(uploaded.length)} geüpload. De auto staat nu online.`);
         } catch { notify(`${prefix}Foto’s geüpload, maar publiceren is niet gelukt. Sla de auto nogmaals op om hem online te zetten.`, true); return false; }

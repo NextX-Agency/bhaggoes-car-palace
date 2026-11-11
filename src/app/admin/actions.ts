@@ -45,15 +45,34 @@ function expirePublicCache(...tags: ("settings" | "vehicles" | "faqs" | "pages")
 }
 
 // The photo editor writes images straight to Supabase from the browser, so it calls this once its changes are done.
-export async function refreshPublicInventoryAction(): Promise<ActionState> {
+export async function refreshPublicInventoryAction(vehicleId?: string): Promise<ActionState & { remaining?: number }> {
   try {
     const supabase = await verifyAdmin();
+    let remaining = 0;
     if (r2Configured) {
-      const { data } = await supabase.from("vehicle_images").select("id, vehicle_id, storage_path, r2_ready")
-        .eq("r2_ready", false).limit(4);
-      if (data?.length) await syncR2ImageRows(supabase, data);
+      if (vehicleId && !z.string().uuid().safeParse(vehicleId).success) throw new Error("Ongeldige auto.");
+      const { data: vehicles, error: vehicleError } = await (vehicleId
+        ? supabase.from("vehicles").select("id").eq("id", vehicleId).eq("published", true).is("archived_at", null)
+        : supabase.from("vehicles").select("id").eq("published", true).is("archived_at", null));
+      if (vehicleError) throw vehicleError;
+      const ids = (vehicles ?? []).map((vehicle) => vehicle.id);
+      if (ids.length) {
+        const { data, error } = await supabase.from("vehicle_images").select("id, vehicle_id, storage_path, r2_ready")
+          .in("vehicle_id", ids).eq("r2_ready", false).not("storage_path", "like", "/images/%").limit(4);
+        if (error) throw error;
+        if (data?.length) {
+          const result = await syncR2ImageRows(supabase, data);
+          if (result.failedIds.length) throw new Error("Enkele foto’s konden nog niet via Cloudflare worden geladen. Ze blijven voorlopig via de bestaande route beschikbaar.");
+        }
+        if (vehicleId) {
+          const count = await supabase.from("vehicle_images").select("id", { count: "exact", head: true })
+            .eq("vehicle_id", vehicleId).eq("r2_ready", false).not("storage_path", "like", "/images/%");
+          if (count.error) throw count.error;
+          remaining = count.count ?? 0;
+        }
+      }
     }
-    expirePublicCache("vehicles"); return { ok: true };
+    expirePublicCache("vehicles"); return { ok: true, remaining };
   }
   catch (error) { return { error: error instanceof Error ? error.message : "De website kon niet worden bijgewerkt." }; }
 }
