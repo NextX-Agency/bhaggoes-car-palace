@@ -61,11 +61,15 @@ export async function preparePhoto(file: File): Promise<File> {
     let blob = await encode(canvas, "image/webp", 0.75);
     if (!blob || blob.type !== "image/webp") blob = await encode(canvas, "image/jpeg", 0.78);
     if (!blob || !/^image\/(webp|jpeg)$/.test(blob.type)) throw new Error("encode");
-    if (!heic && blob.size >= file.size) return file;
+    if (!heic && blob.size >= file.size) {
+      if (file.size > 900 * 1024) throw new Error("too large");
+      return file;
+    }
     const baseName = file.name.replace(/\.[^.]+$/, "") || "vehicle-photo";
     return new File([blob], `${baseName}.${blob.type === "image/webp" ? "webp" : "jpg"}`, { type: blob.type, lastModified: file.lastModified });
   } catch {
     if (heic) throw new Error("is een HEIC-foto en kon niet worden omgezet. Kies de foto als JPEG, of probeer Safari.");
+    if (file.size > 900 * 1024) throw new Error("kon niet worden verkleind. Probeer een kleinere JPEG- of WebP-foto.");
     return file;
   } finally {
     decoded?.close();
