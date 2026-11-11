@@ -441,8 +441,8 @@ export async function saveContentPageAction(_previous: ActionState, form: FormDa
 }
 
 // Photos uploaded before the browser-side shrinking (or from a browser that could not shrink them) are often
-// 2–5 MB. These are re-encoded once to at most 1600px WebP to lower repeat bandwidth.
-const LARGE_PHOTO_BYTES = 900 * 1024;
+// 2–5 MB. These are re-encoded once to match the browser upload cap.
+const LARGE_PHOTO_BYTES = 450 * 1024;
 const OPTIMIZE_BATCH = 4; // small enough to finish well within a serverless time limit
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
@@ -479,9 +479,14 @@ export async function optimizePhotosAction(ids: string[]): Promise<{ optimized: 
       try {
         const { data: original, error: downloadError } = await supabase.storage.from("vehicle-images").download(photo.storage_path);
         if (downloadError || !original) throw new Error("download");
-        const smaller = await sharp(Buffer.from(await original.arrayBuffer()), { failOn: "none" }).rotate()
-          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).webp({ quality: 74 }).toBuffer();
-        if (smaller.length >= original.size) throw new Error("not smaller");
+        const source = Buffer.from(await original.arrayBuffer());
+        let smaller: Buffer | null = null;
+        for (const [edge, quality] of [[1600, 76], [1600, 64], [1280, 68], [1024, 58]]) {
+          const candidate = await sharp(source, { failOn: "none" }).rotate()
+            .resize({ width: edge, height: edge, fit: "inside", withoutEnlargement: true }).webp({ quality }).toBuffer();
+          if (candidate.length <= LARGE_PHOTO_BYTES) { smaller = candidate; break; }
+        }
+        if (!smaller) throw new Error("not small enough");
         // New file first, then point the listing at it, then remove the old file: the car never shows a broken photo.
         const path = `${photo.vehicle_id}/${crypto.randomUUID()}.webp`;
         const { error: uploadError } = await supabase.storage.from("vehicle-images").upload(path, smaller, { contentType: "image/webp", upsert: false });

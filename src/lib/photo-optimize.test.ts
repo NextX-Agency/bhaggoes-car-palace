@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { isHeicPhoto, isSupportedPhoto, preparePhoto } from "./photo-optimize";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { isHeicPhoto, isSupportedPhoto, maxPhotoBytes, preparePhoto } from "./photo-optimize";
 
 const file = (name: string, type: string) => new File(["x"], name, { type });
+afterEach(() => vi.unstubAllGlobals());
 
 describe("photo type checks", () => {
   it("recognises HEIC/HEIF by type or by extension (iPad files often have no type)", () => {
@@ -18,5 +19,18 @@ describe("photo type checks", () => {
   });
   it("restores a missing MIME type before uploading a camera JPEG", async () => {
     expect((await preparePhoto(file("camera.JPG", ""))).type).toBe("image/jpeg");
+  });
+  it("retries compression and never returns an oversized upload", async () => {
+    vi.stubGlobal("createImageBitmap", async () => ({ width: 2400, height: 1600, close() {} }));
+    const sizes = [600_000, 400_000];
+    vi.stubGlobal("document", { createElement: () => ({
+      width: 0, height: 0,
+      getContext: () => ({ drawImage() {} }),
+      toBlob: (done: (blob: Blob) => void) => done(new Blob([new Uint8Array(sizes.shift() ?? 400_000)], { type: "image/webp" })),
+    }) });
+    const result = await preparePhoto(new File([new Uint8Array(1_000_000)], "large.jpg", { type: "image/jpeg" }));
+    expect(result.type).toBe("image/webp");
+    expect(result.size).toBeLessThanOrEqual(maxPhotoBytes);
+    expect(result.size).toBe(400_000);
   });
 });
