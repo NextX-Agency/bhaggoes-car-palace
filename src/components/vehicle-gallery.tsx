@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { Camera, ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import type { VehicleImage } from "@/lib/domain";
 import { sortedImages } from "@/lib/domain";
+import { vehicleThumbUrl } from "@/lib/vehicle-image-url";
 
 function useSwipe(onSwipe: (direction: -1 | 1) => void) {
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -26,6 +27,7 @@ function useSwipe(onSwipe: (direction: -1 | 1) => void) {
 
 export function VehicleGallery({ images, title }: { images: VehicleImage[]; title: string }) {
   const [active, setActive] = useState(0);
+  const [previous, setPrevious] = useState<number | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const openerRef = useRef<HTMLButtonElement>(null);
@@ -33,7 +35,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   const hasSelectedThumbnail = useRef(false);
   const usable = sortedImages(images);
   const count = usable.length;
-  const move = (direction: -1 | 1) => setActive((current) => (current + direction + count) % count);
+  const move = (direction: -1 | 1) => { setPrevious(active); setActive((current) => (current + direction + count) % count); };
   const stageSwipe = useSwipe(move);
   const viewerSwipe = useSwipe(move);
 
@@ -61,8 +63,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       <button ref={openerRef} className="gallery-main" type="button" onClick={() => { if (!stageSwipe.consumeSwipe()) setFullscreen(true); }} aria-label={`Open full-screen photos of ${title}`}>
         <div className="gallery-track" style={{ transform: `translate3d(${current * -100}%, 0, 0)` }}>
           {usable.map((image, index) => <div className="gallery-slide" key={image.id} aria-hidden={index === current ? undefined : "true"}>
-            <Image className="gallery-backdrop" src={image.url!} alt="" aria-hidden="true" fill quality={30} sizes="96px" />
-            <Image src={image.url!} alt={index === current ? image.alt_text ?? title : ""} fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 960px) 100vw, 820px" />
+            {index === current || index === previous ? <Image src={vehicleThumbUrl(image.url!, 800)} alt={index === current ? image.alt_text ?? title : ""} fill loading="eager" fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 960px) 100vw, 820px" unoptimized /> : null}
           </div>)}
         </div>
       </button>
@@ -74,8 +75,8 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       <button className="gallery-expand" type="button" onClick={() => setFullscreen(true)}><Expand size={14} aria-hidden="true" /> Full screen</button>
     </div>
     {count > 1 ? <div className="gallery-thumbs" ref={thumbsRef} role="group" aria-label="Choose a photo">
-      {usable.map((image, index) => <button type="button" className={index === active ? "selected" : ""} key={image.id} onClick={() => setActive(index)} aria-label={`Show photo ${index + 1} of ${count}`} aria-current={index === active ? "true" : undefined}>
-        <Image src={image.url!} alt="" fill sizes="140px" />
+      {usable.map((image, index) => <button type="button" className={index === active ? "selected" : ""} key={image.id} onClick={() => { setPrevious(active); setActive(index); }} aria-label={`Show photo ${index + 1} of ${count}`} aria-current={index === active ? "true" : undefined}>
+        <Image src={vehicleThumbUrl(image.url!, 160)} alt="" fill sizes="140px" unoptimized />
       </button>)}
     </div> : null}
     {fullscreen ? <dialog ref={dialogRef} className="image-lightbox" aria-label={`${title} photos`} onClose={() => { setFullscreen(false); openerRef.current?.focus(); }}>
@@ -83,7 +84,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       <div className="lightbox-image" {...viewerSwipe.handlers}>
         <div className="gallery-track" style={{ transform: `translate3d(${current * -100}%, 0, 0)` }}>
           {usable.map((image, index) => <div className="gallery-slide" key={image.id} aria-hidden={index === current ? undefined : "true"}>
-            <Image src={image.url!} alt={index === current ? image.alt_text ?? title : ""} fill sizes="100vw" />
+            {index === current || index === previous ? <Image src={vehicleThumbUrl(image.url!, 800)} alt={index === current ? image.alt_text ?? title : ""} fill sizes="100vw" unoptimized /> : null}
           </div>)}
         </div>
       </div>

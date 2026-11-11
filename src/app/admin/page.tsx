@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Camera, CheckCircle2, Images, CircleAlert, ClipboardList, Files, Globe2, Plus, Settings2, CarFront, EyeOff, ExternalLink } from "lucide-react";
 import { AdminCatalogSwitch } from "@/components/admin-catalog-switch";
+import { AdminPhotoOptimizer } from "@/components/admin-photo-optimizer";
 import { AdminFrame } from "@/components/admin-frame";
 import { getAdminDashboardNewInquiryCount, getAdminDashboardVehicles, getSettings } from "@/lib/data";
 import { formatAmount } from "@/lib/domain";
@@ -42,6 +43,7 @@ export default async function AdminDashboardPage() {
 
   return <AdminFrame active="/admin" email={user.email ?? "Beheerder"} actions={<><Link className="button button-outline" href="/admin/inventory/bulk"><Images size={17} aria-hidden="true" /> Snel uploaden</Link><Link className="button button-primary" href="/admin/inventory/new"><Plus size={17} /> Nieuwe auto</Link></>}>
     <AdminCatalogSwitch hidden={settings.catalog_hidden} />
+    <AdminPhotoOptimizer />
     <div className="dashboard-intro"><div><p className="dashboard-eyebrow">BEHEER IN ÉÉN OOGOPSLAG</p><p>Houd je voorraad actueel en zie direct wat nog aandacht nodig heeft.</p></div><Link href="/" target="_blank" rel="noopener noreferrer">Bekijk website <ExternalLink size={15} aria-hidden="true" /></Link></div>
     <div className="dashboard-metrics" role="group" aria-label="Voorraadoverzicht">
       <Link href="/admin/inventory" className="dashboard-metric"><span><CarFront size={18} aria-hidden="true" /> Voorraad</span><strong>{inventory.length}</strong><small>Auto’s in beheer <ArrowRight size={15} aria-hidden="true" /></small></Link>

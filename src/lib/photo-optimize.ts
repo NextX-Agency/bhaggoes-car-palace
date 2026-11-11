@@ -2,7 +2,7 @@
 export const maxPhotoBytes = 15 * 1024 * 1024;
 // Originals may be larger than the storage limit because they are shrunk before upload; anything beyond this is not worth decoding.
 export const maxSourcePhotoBytes = 40 * 1024 * 1024;
-const MAX_EDGE = 2000;
+const MAX_EDGE = 1600;
 export const photoAccept = "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif";
 
 export const isHeicPhoto = (file: File) => /^image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
@@ -14,8 +14,8 @@ function encode(canvas: HTMLCanvasElement, type: string, quality: number) {
 }
 
 /**
- * Returns a photo that storage accepts (JPEG, PNG, WebP or AVIF, at most 2000px on the long side when it was re-encoded).
- * 2000px is still sharp in the full-screen gallery and keeps uploads small on a phone connection.
+ * Returns a photo that storage accepts (JPEG, PNG, WebP or AVIF, at most 1600px on the long side when it was re-encoded).
+ * 1600px is sharp in the gallery and keeps uploads small on a phone connection.
  * Throws an Error with a Dutch message for photos this browser cannot convert.
  */
 type Decoded = { source: CanvasImageSource; width: number; height: number; close: () => void };
@@ -50,7 +50,7 @@ export async function preparePhoto(file: File): Promise<File> {
     decoded = await decode(file);
     if (!decoded.width || !decoded.height) throw new Error("decode");
     const scale = Math.min(1, MAX_EDGE / Math.max(decoded.width, decoded.height));
-    if (!heic && scale === 1 && file.type === "image/webp" && file.size < 1_500_000) return file;
+    if (!heic && scale === 1 && file.type === "image/webp" && file.size < 450_000) return file;
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(decoded.width * scale));
     canvas.height = Math.max(1, Math.round(decoded.height * scale));
@@ -58,14 +58,18 @@ export async function preparePhoto(file: File): Promise<File> {
     if (!context) throw new Error("canvas");
     context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
     // Not every browser can encode WebP (Safari may hand back a PNG instead), so check the type we actually got.
-    let blob = await encode(canvas, "image/webp", 0.82);
-    if (!blob || blob.type !== "image/webp") blob = await encode(canvas, "image/jpeg", 0.84);
+    let blob = await encode(canvas, "image/webp", 0.75);
+    if (!blob || blob.type !== "image/webp") blob = await encode(canvas, "image/jpeg", 0.78);
     if (!blob || !/^image\/(webp|jpeg)$/.test(blob.type)) throw new Error("encode");
-    if (!heic && blob.size >= file.size) return file;
+    if (!heic && blob.size >= file.size) {
+      if (file.size > 900 * 1024) throw new Error("too large");
+      return file;
+    }
     const baseName = file.name.replace(/\.[^.]+$/, "") || "vehicle-photo";
     return new File([blob], `${baseName}.${blob.type === "image/webp" ? "webp" : "jpg"}`, { type: blob.type, lastModified: file.lastModified });
   } catch {
     if (heic) throw new Error("is een HEIC-foto en kon niet worden omgezet. Kies de foto als JPEG, of probeer Safari.");
+    if (file.size > 900 * 1024) throw new Error("kon niet worden verkleind. Probeer een kleinere JPEG- of WebP-foto.");
     return file;
   } finally {
     decoded?.close();

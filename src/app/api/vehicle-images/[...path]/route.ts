@@ -38,9 +38,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     if (width) { body = new Uint8Array(await resize(await data.arrayBuffer(), width, 72)); type = "image/webp"; }
     else if (data.size > MAX_PASSTHROUGH_BYTES) { body = new Uint8Array(await resize(await data.arrayBuffer(), 2000, 80)); type = "image/webp"; }
     const headers = new Headers({ "content-type": type, "x-content-type-options": "nosniff", "content-disposition": "inline", "content-security-policy": "default-src 'none'; sandbox" });
-    // A photo's path holds a random id and is never reused, so staff browsers may keep it; the public copy stays
-    // short-lived because the catalog switch or a status change can hide the car at any moment.
-    headers.set("cache-control", signedIn ? "private, max-age=86400, immutable" : "public, max-age=300, s-maxage=300, stale-while-revalidate=3600");
+    // Photos have immutable UUID paths. Keep browser caching short so publication changes take effect soon,
+    // while the shared CDN can reuse the expensive Storage download for an hour.
+    headers.set("cache-control", signedIn ? "private, max-age=86400, immutable" : "public, max-age=300, s-maxage=3600, stale-while-revalidate=300");
     return new Response(body, { status: 200, headers });
   } catch { return new NextResponse(null, { status: 404 }); }
 }
