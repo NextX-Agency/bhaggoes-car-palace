@@ -35,7 +35,9 @@ for (let from = 0; ; from += 500) {
 }
 const allPending = rows.filter((row) => published.has(row.vehicle_id) && row.r2_ready && !done.has(row.id));
 const limit = process.env.R2_REFRESH_LIMIT ? Number(process.env.R2_REFRESH_LIMIT) : allPending.length;
-if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("R2_REFRESH_LIMIT must be a positive integer.");
+if (!Number.isSafeInteger(limit) || limit < 0 || (process.env.R2_REFRESH_LIMIT && limit === 0)) {
+  throw new Error("R2_REFRESH_LIMIT must be a positive integer.");
+}
 const pending = allPending.slice(0, limit);
 console.log(`Refreshing ${pending.length} published photos from R2; ${done.size} already completed.`);
 let index = 0;
