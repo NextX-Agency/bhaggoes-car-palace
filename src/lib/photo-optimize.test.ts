@@ -22,15 +22,15 @@ describe("photo type checks", () => {
   });
   it("retries compression and never returns an oversized upload", async () => {
     vi.stubGlobal("createImageBitmap", async () => ({ width: 2400, height: 1600, close() {} }));
-    const sizes = [700_000, 500_000];
+    const sizes = [1_000_000, 700_000];
     vi.stubGlobal("document", { createElement: () => ({
       width: 0, height: 0,
       getContext: () => ({ drawImage() {} }),
-      toBlob: (done: (blob: Blob) => void) => done(new Blob([new Uint8Array(sizes.shift() ?? 500_000)], { type: "image/webp" })),
+      toBlob: (done: (blob: Blob) => void) => done(new Blob([new Uint8Array(sizes.shift() ?? 700_000)], { type: "image/webp" })),
     }) });
     const result = await preparePhoto(new File([new Uint8Array(1_000_000)], "large.jpg", { type: "image/jpeg" }));
     expect(result.type).toBe("image/webp");
     expect(result.size).toBeLessThanOrEqual(maxPhotoBytes);
-    expect(result.size).toBe(500_000);
+    expect(result.size).toBe(700_000);
   });
 });

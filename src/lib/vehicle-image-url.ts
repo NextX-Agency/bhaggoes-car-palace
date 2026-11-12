@@ -5,7 +5,7 @@ export type VehicleThumbWidth = (typeof VEHICLE_THUMB_WIDTHS)[number];
 
 /** Small version of a stored vehicle photo; local demo images and browser previews are returned unchanged. */
 export function vehicleThumbUrl(url: string, width: VehicleThumbWidth) {
-  if (/^https:\/\/media\.bhaggoescarpalace\.com\/vehicles\/.+\/1600\.webp$/.test(url)) return url.replace(/1600\.webp$/, `${width}.webp`);
+  if (/^https:\/\/media\.bhaggoescarpalace\.com\/vehicles\/.+\/1600\.webp(?:\?v=2)?$/.test(url)) return url.replace(/1600\.webp(?=\?v=2$|$)/, `${width}.webp`);
   return url.startsWith("/api/vehicle-images/") ? `${url}?w=${width}` : url;
 }
 
@@ -13,7 +13,7 @@ export function vehicleThumbUrl(url: string, width: VehicleThumbWidth) {
 export function r2VehicleImageUrl(path: string) {
   const base = process.env.NEXT_PUBLIC_R2_IMAGE_BASE_URL;
   if (!base || !/^https:\/\/media\.bhaggoescarpalace\.com\/?$/.test(base)) return null;
-  return `${base.replace(/\/$/, "")}/vehicles/${path.split("/").map(encodeURIComponent).join("/")}/1600.webp`;
+  return `${base.replace(/\/$/, "")}/vehicles/${path.split("/").map(encodeURIComponent).join("/")}/1600.webp?v=2`;
 }
 
 /** Smallest rendered width that still covers the requested one, or null when only the full photo is big enough. */

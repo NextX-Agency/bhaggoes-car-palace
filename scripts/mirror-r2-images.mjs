@@ -42,7 +42,8 @@ async function worker() {
       const source = Buffer.from(await data.arrayBuffer());
       for (const width of widths) {
         const body = await sharp(source, { failOn: "error" }).rotate().resize({ width, withoutEnlargement: true })
-          .webp({ quality: width <= 400 ? 78 : 84, effort: 4 }).toBuffer();
+          .sharpen({ sigma: width <= 400 ? 0.4 : 0.6 })
+          .webp({ quality: width <= 400 ? 84 : 90, effort: 4 }).toBuffer();
         await r2.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET, Key: `vehicles/${row.storage_path}/${width}.webp`,
           Body: body, ContentType: "image/webp", CacheControl: "public, max-age=300, s-maxage=300" }));
       }

@@ -21,7 +21,9 @@ export async function mirrorVehicleImage(path: string, source: Buffer) {
   try {
     for (const width of VEHICLE_THUMB_WIDTHS) {
       const body = await sharp(source, { failOn: "error" }).rotate()
-        .resize({ width, withoutEnlargement: true }).webp({ quality: width <= 400 ? 78 : 84, effort: 4 }).toBuffer();
+        .resize({ width, withoutEnlargement: true })
+        .sharpen({ sigma: width <= 400 ? 0.4 : 0.6 })
+        .webp({ quality: width <= 400 ? 84 : 90, effort: 4 }).toBuffer();
       await r2.send(new PutObjectCommand({ Bucket: bucket!, Key: `vehicles/${path}/${width}.webp`, Body: body,
         ContentType: "image/webp", CacheControl: "public, max-age=300, s-maxage=300" }));
     }
@@ -33,7 +35,7 @@ export async function mirrorSiteAsset(path: string, source: Buffer) {
   const r2 = client();
   try {
     const body = await sharp(source, { failOn: "error" }).rotate()
-      .resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 75, effort: 4 }).toBuffer();
+      .resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 88, effort: 4 }).toBuffer();
     const key = `site-assets/${path}.webp`;
     await r2.send(new PutObjectCommand({ Bucket: bucket!, Key: key, Body: body,
       ContentType: "image/webp", CacheControl: "public, max-age=300, s-maxage=300" }));
