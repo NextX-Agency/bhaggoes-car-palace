@@ -5,7 +5,6 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { Camera, ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import type { VehicleImage } from "@/lib/domain";
 import { sortedImages } from "@/lib/domain";
-import { vehicleThumbUrl } from "@/lib/vehicle-image-url";
 
 function useSwipe(onSwipe: (direction: -1 | 1) => void) {
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -63,7 +62,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       <button ref={openerRef} className="gallery-main" type="button" onClick={() => { if (!stageSwipe.consumeSwipe()) setFullscreen(true); }} aria-label={`Open full-screen photos of ${title}`}>
         <div className="gallery-track" style={{ transform: `translate3d(${current * -100}%, 0, 0)` }}>
           {usable.map((image, index) => <div className="gallery-slide" key={image.id} aria-hidden={index === current ? undefined : "true"}>
-            {index === current || index === previous ? <Image src={vehicleThumbUrl(image.url!, 800)} alt={index === current ? image.alt_text ?? title : ""} fill loading="eager" fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 960px) 100vw, 820px" unoptimized /> : null}
+            {index === current || index === previous ? <Image src={image.url!} alt={index === current ? image.alt_text ?? title : ""} fill loading="eager" fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 960px) 100vw, 820px" /> : null}
           </div>)}
         </div>
       </button>
@@ -76,7 +75,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
     </div>
     {count > 1 ? <div className="gallery-thumbs" ref={thumbsRef} role="group" aria-label="Choose a photo">
       {usable.map((image, index) => <button type="button" className={index === active ? "selected" : ""} key={image.id} onClick={() => { setPrevious(active); setActive(index); }} aria-label={`Show photo ${index + 1} of ${count}`} aria-current={index === active ? "true" : undefined}>
-        <Image src={vehicleThumbUrl(image.url!, 160)} alt="" fill sizes="140px" unoptimized />
+        <Image src={image.url!} alt="" fill sizes="140px" />
       </button>)}
     </div> : null}
     {fullscreen ? <dialog ref={dialogRef} className="image-lightbox" aria-label={`${title} photos`} onClose={() => { setFullscreen(false); openerRef.current?.focus(); }}>
@@ -84,7 +83,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       <div className="lightbox-image" {...viewerSwipe.handlers}>
         <div className="gallery-track" style={{ transform: `translate3d(${current * -100}%, 0, 0)` }}>
           {usable.map((image, index) => <div className="gallery-slide" key={image.id} aria-hidden={index === current ? undefined : "true"}>
-            {index === current || index === previous ? <Image src={vehicleThumbUrl(image.url!, 800)} alt={index === current ? image.alt_text ?? title : ""} fill sizes="100vw" unoptimized /> : null}
+            {index === current || index === previous ? <Image src={image.url!} alt={index === current ? image.alt_text ?? title : ""} fill sizes="100vw" /> : null}
           </div>)}
         </div>
       </div>

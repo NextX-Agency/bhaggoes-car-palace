@@ -17,6 +17,8 @@ describe("imageLoader", () => {
   it("selects a prebuilt Cloudflare copy without a Vercel or Supabase request", () => {
     const full = "https://media.bhaggoescarpalace.com/vehicles/a/b.webp/1600.webp";
     expect(imageLoader({ src: full, width: 750 })).toBe("https://media.bhaggoescarpalace.com/vehicles/a/b.webp/800.webp");
+    expect(imageLoader({ src: full, width: 384 })).toBe("https://media.bhaggoescarpalace.com/vehicles/a/b.webp/400.webp");
+    expect(imageLoader({ src: full, width: 1920 })).toBe(full);
     expect(vehicleThumbUrl(full, 160)).toBe("https://media.bhaggoescarpalace.com/vehicles/a/b.webp/160.webp");
   });
 });
