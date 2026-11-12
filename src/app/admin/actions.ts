@@ -481,7 +481,7 @@ export async function saveContentPageAction(_previous: ActionState, form: FormDa
 
 // Photos uploaded before the browser-side shrinking (or from a browser that could not shrink them) are often
 // 2–5 MB. These are re-encoded once to match the browser upload cap.
-const LARGE_PHOTO_BYTES = 600 * 1024;
+const LARGE_PHOTO_BYTES = 900 * 1024;
 const OPTIMIZE_BATCH = 4; // small enough to finish well within a serverless time limit
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
@@ -572,7 +572,7 @@ export async function optimizePhotosAction(ids: string[]): Promise<{ optimized: 
         if (downloadError || !original) throw new Error("download");
         const source = Buffer.from(await original.arrayBuffer());
         let smaller: Buffer | null = null;
-        for (const [edge, quality] of [[1600, 84], [1600, 74], [1280, 78], [1024, 68]]) {
+        for (const [edge, quality] of [[2048, 90], [2048, 82], [1800, 84], [1600, 80], [1280, 74]]) {
           const candidate = await sharp(source, { failOn: "none" }).rotate()
             .resize({ width: edge, height: edge, fit: "inside", withoutEnlargement: true }).webp({ quality }).toBuffer();
           if (candidate.length <= LARGE_PHOTO_BYTES) { smaller = candidate; break; }

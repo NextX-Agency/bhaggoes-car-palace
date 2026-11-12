@@ -32,7 +32,7 @@ export async function buildStaticImageVariants() {
       await mkdir(path.dirname(out), { recursive: true });
       const temporary = `${out}.${process.pid}.${randomUUID()}.tmp`;
       const image = sharp(file).resize({ width, withoutEnlargement: true });
-      await (/\.webp$/i.test(file) ? image.webp({ quality: 70, effort: 5 }) : image.jpeg({ quality: 75, mozjpeg: true })).toFile(temporary);
+      await (/\.webp$/i.test(file) ? image.webp({ quality: 85, effort: 5 }) : image.jpeg({ quality: 85, mozjpeg: true })).toFile(temporary);
       // Never ship a "smaller" copy that is bigger than the original.
       if ((await stat(temporary)).size > original.size) await copyFile(file, temporary);
       await rename(temporary, out);

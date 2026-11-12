@@ -1,8 +1,8 @@
 // Browser-side preparation of vehicle photos before upload: HEIC/HEIF (the iPad and iPhone camera format) is converted where the browser can decode it, and large photos are resized.
-export const maxPhotoBytes = 600 * 1024;
+export const maxPhotoBytes = 900 * 1024;
 // Originals may be larger than the storage limit because they are shrunk before upload; anything beyond this is not worth decoding.
 export const maxSourcePhotoBytes = 40 * 1024 * 1024;
-const MAX_EDGE = 1600;
+const MAX_EDGE = 2048;
 type PhotoOptions = { maxBytes?: number; maxEdge?: number };
 export const photoAccept = "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif";
 
@@ -53,7 +53,7 @@ export async function preparePhoto(file: File, { maxBytes = maxPhotoBytes, maxEd
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("canvas");
-    for (const [edge, quality] of [[maxEdge, 0.84], [maxEdge, 0.74], [Math.min(maxEdge, 1280), 0.78], [Math.min(maxEdge, 1024), 0.68]]) {
+    for (const [edge, quality] of [[maxEdge, 0.9], [maxEdge, 0.82], [Math.min(maxEdge, 1800), 0.84], [Math.min(maxEdge, 1600), 0.8], [Math.min(maxEdge, 1280), 0.74]]) {
       const scale = Math.min(1, edge / Math.max(decoded.width, decoded.height));
       canvas.width = Math.max(1, Math.round(decoded.width * scale));
       canvas.height = Math.max(1, Math.round(decoded.height * scale));
