@@ -10,7 +10,7 @@ import "./admin.css";
 
 // Public pages are static/ISR: data comes from tagged caches that admin saves expire (see lib/data.ts).
 // This is the upper bound for any page that is not invalidated sooner.
-export const revalidate = 300;
+export const revalidate = 86400;
 
 const display = Archivo({ subsets: ["latin"], variable: "--font-display", display: "swap", axes: ["wdth"] });
 const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });

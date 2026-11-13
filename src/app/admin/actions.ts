@@ -44,6 +44,14 @@ function expirePublicCache(...tags: ("settings" | "vehicles" | "faqs" | "pages")
   for (const tag of tags) updateTag(tag);
 }
 
+function refreshVehiclePages(...slugs: string[]) {
+  expirePublicCache("vehicles");
+  revalidatePath("/");
+  revalidatePath("/cars");
+  revalidatePath("/sitemap.xml");
+  for (const slug of new Set(slugs)) revalidatePath(`/cars/${slug}`);
+}
+
 // The photo editor writes images straight to Supabase from the browser, so it calls this once its changes are done.
 export async function refreshPublicInventoryAction(vehicleId?: string): Promise<ActionState & { remaining?: number }> {
   try {
@@ -72,7 +80,14 @@ export async function refreshPublicInventoryAction(vehicleId?: string): Promise<
         }
       }
     }
-    expirePublicCache("vehicles"); return { ok: true, remaining };
+    if (vehicleId) {
+      const { data: vehicle, error } = await supabase.from("vehicles").select("slug").eq("id", vehicleId).maybeSingle();
+      if (error) throw error;
+      refreshVehiclePages(...(vehicle ? [vehicle.slug] : []));
+    } else {
+      refreshVehiclePages();
+    }
+    return { ok: true, remaining };
   }
   catch (error) { return { error: error instanceof Error ? error.message : "De website kon niet worden bijgewerkt." }; }
 }
@@ -197,7 +212,7 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
       await supabase.from("vehicles").update({ title: photoOnlyTitle(result.data.stock_number as string) }).eq("id", result.data.id);
     }
     const savedWithError = (error: string) => {
-      expirePublicCache("vehicles"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+      refreshVehiclePages(result.data.slug); revalidatePath("/admin"); revalidatePath("/admin/inventory");
       return { id: result.data.id, slug: result.data.slug, error };
     };
     const { error: privateError } = await supabase.from("vehicle_private").upsert({ vehicle_id: result.data.id, vin: nullable(value.vin), admin_notes: nullable(value.admin_notes) }, { onConflict: "vehicle_id" });
@@ -214,7 +229,7 @@ export async function saveVehicleAction(_previous: ActionState & { id?: string; 
       const { error: removeFeaturesError } = await supabase.from("vehicle_features").delete().eq("vehicle_id", result.data.id);
       if (removeFeaturesError) return savedWithError("De auto is opgeslagen, maar de kenmerken niet.");
     }
-    expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath(`/cars/${result.data.slug}`); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    refreshVehiclePages(result.data.slug); revalidatePath("/admin"); revalidatePath("/admin/inventory");
     return { ok: true, id: result.data.id, slug: result.data.slug };
   } catch (error) { return { error: error instanceof Error ? error.message : "De auto kon niet worden opgeslagen." }; }
 }
@@ -226,14 +241,14 @@ export async function deleteVehicleAction(form: FormData): Promise<ActionState &
     const supabase = await verifyAdmin();
     const { data: images, error: imageReadError } = await supabase.from("vehicle_images").select("storage_path").eq("vehicle_id", id);
     if (imageReadError) return { error: "De foto’s van de auto konden niet worden gecontroleerd. Er is niets verwijderd." };
-    const { error: deleteError } = await supabase.from("vehicles").delete().eq("id", id).select("id").single();
-    if (deleteError) return { error: "De auto kon niet worden verwijderd." };
+    const { data: deleted, error: deleteError } = await supabase.from("vehicles").delete().eq("id", id).select("slug").single();
+    if (deleteError || !deleted) return { error: "De auto kon niet worden verwijderd." };
     let warning: string | undefined;
     if (images.length) {
       const { error: storageError } = await supabase.storage.from("vehicle-images").remove(images.map((image) => image.storage_path).filter((path) => !path.startsWith("/images/")));
       if (storageError) warning = "De auto is verwijderd, maar de opgeslagen fotobestanden konden niet worden verwijderd. Controleer Supabase Storage om de resterende bestanden op te ruimen.";
     }
-    expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+    refreshVehiclePages(deleted.slug); revalidatePath("/admin/inventory");
     return warning ? { ok: true, warning } : { ok: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "De auto kon niet worden verwijderd." };
@@ -292,9 +307,10 @@ export async function updateVehicleAction(form: FormData) {
   const supabase = await verifyAdmin();
   // An archived car stays hidden: publishing is only allowed for cars that are not archived.
   const query = supabase.from("vehicles").update(payload).eq("id", id);
-  const { error } = await (payload.published === true && archived !== "false" ? query.is("archived_at", null) : query);
+  const { data, error } = await (payload.published === true && archived !== "false" ? query.is("archived_at", null) : query).select("slug");
   if (error) throw new Error("De wijziging van de auto kon niet worden opgeslagen.");
-  expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin/inventory");
+  if (data?.length) refreshVehiclePages(data[0].slug);
+  revalidatePath("/admin/inventory");
 }
 
 export async function bulkUpdateVehiclesAction(_previous: ActionState, form: FormData): Promise<ActionState> {
@@ -317,9 +333,10 @@ export async function bulkUpdateVehiclesAction(_previous: ActionState, form: For
     const supabase = await verifyAdmin();
     // Archived cars are never published or featured by a bulk action; restore them first.
     const query = supabase.from("vehicles").update(payload).in("id", idsResult.data);
-    const { error } = await (operation === "publish" || operation === "feature" ? query.is("archived_at", null) : query);
+    const { data, error } = await (operation === "publish" || operation === "feature" ? query.is("archived_at", null) : query).select("slug");
     if (error) return { error: "De geselecteerde auto’s konden niet worden bijgewerkt." };
-    expirePublicCache("vehicles"); revalidatePath("/"); revalidatePath("/cars"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    if (data?.length) refreshVehiclePages(...data.map((vehicle) => vehicle.slug));
+    revalidatePath("/admin"); revalidatePath("/admin/inventory");
     return { ok: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "De geselecteerde auto’s konden niet worden bijgewerkt." };
@@ -421,9 +438,9 @@ export async function updateVehiclePriceAction(_previous: ActionState, form: For
   if (!parsed.success) return { error: "Vul een geldige prijs in, of laat het veld leeg voor ‘op aanvraag’." };
   try {
     const supabase = await verifyAdmin();
-    const { error } = await supabase.from("vehicles").update(parsed.data).eq("id", id);
-    if (error) return { error: "De prijs kon niet worden opgeslagen." };
-    expirePublicCache("vehicles"); revalidatePath("/admin"); revalidatePath("/admin/inventory");
+    const { data, error } = await supabase.from("vehicles").update(parsed.data).eq("id", id).select("slug").single();
+    if (error || !data) return { error: "De prijs kon niet worden opgeslagen." };
+    refreshVehiclePages(data.slug); revalidatePath("/admin"); revalidatePath("/admin/inventory");
     return { ok: true };
   } catch (error) { return { error: error instanceof Error ? error.message : "De prijs kon niet worden opgeslagen." }; }
 }

@@ -28,7 +28,7 @@ async function clientOrNull() {
 // the revalidate windows below are only a safety net for changes made outside the admin (SQL, dashboard).
 // Loaders throw on database errors so a failed refresh keeps the last good page instead of caching an empty one.
 export const CACHE_TAGS = { settings: "settings", vehicles: "vehicles", faqs: "faqs", pages: "pages" } as const;
-const REVALIDATE_SECONDS = 300;
+const REVALIDATE_SECONDS = 86400;
 
 function publicClient() {
   const client = createPublicClient();
@@ -236,7 +236,7 @@ const loadPublishedPage = unstable_cache(async (slug: string) => {
   const { data, error } = await publicClient().from("content_pages").select("*").eq("slug", slug).eq("published", true).maybeSingle();
   if (error) throw new Error("Unable to load page");
   return data;
-}, ["content-page"], { tags: [CACHE_TAGS.pages], revalidate: 3600 });
+}, ["content-page"], { tags: [CACHE_TAGS.pages], revalidate: REVALIDATE_SECONDS });
 
 export const getPublishedPage = cache(async (slug: string) => hasSupabaseEnv() ? loadPublishedPage(slug) : null);
 
@@ -245,7 +245,7 @@ const loadFaqs = unstable_cache(async () => {
     .eq("published", true).order("sort_order", { ascending: true });
   if (error || !data) throw new Error("Unable to load FAQs");
   return data;
-}, ["faq-items"], { tags: [CACHE_TAGS.faqs], revalidate: 3600 });
+}, ["faq-items"], { tags: [CACHE_TAGS.faqs], revalidate: REVALIDATE_SECONDS });
 
 export async function getFaqs() {
   return hasSupabaseEnv() ? loadFaqs() : [];
