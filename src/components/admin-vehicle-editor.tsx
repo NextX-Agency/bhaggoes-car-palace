@@ -239,7 +239,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
     }
     if (image.url?.startsWith("blob:")) { URL.revokeObjectURL(image.url); previewUrls.current.delete(image.url); }
     setPhotos(remaining.map((item, index) => ({ ...item, sort_order: index, is_cover: index === 0 })));
-    void refreshPublicInventoryAction();
+    void refreshPublicInventoryAction(savedId);
   });
   const reorderPhoto = (from: number, to: number) => photoTask(async () => {
     // `from` comes from drag data, so anything that is not a photo position (for example dragged text) is ignored.
@@ -248,7 +248,7 @@ export function AdminVehicleEditor({ vehicle, templates = [], notice }: { vehicl
     const client = createClient(); const { error } = await client.rpc("reorder_vehicle_images", { p_vehicle_id: savedId, p_image_ids: next.map((image) => image.id) });
     if (error) { notify("De volgorde van de foto’s kon niet worden opgeslagen.", true); return; }
     setPhotos(next.map((item, position) => ({ ...item, sort_order: position, is_cover: position === 0 })));
-    void refreshPublicInventoryAction();
+    void refreshPublicInventoryAction(savedId);
   });
   const movePhoto = (index: number, direction: -1 | 1) => reorderPhoto(index, index + direction);
   const deleteVehicle = () => {

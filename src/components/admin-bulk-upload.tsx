@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Check, CircleAlert, ClipboardPaste, ImagePlus, LoaderCircle, Merge, Plus, Trash2, X } from "lucide-react";
-import { refreshPublicInventoryAction, saveVehicleAction, updateVehicleAction } from "@/app/admin/actions";
+import { saveVehicleAction, updateVehicleAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { parseListingText } from "@/lib/listing-import";
 import { isSupportedPhoto, photoAccept } from "@/lib/photo-optimize";
@@ -160,7 +160,6 @@ export function AdminBulkUpload({ defaultCurrency }: { defaultCurrency: string }
         }
       };
       await Promise.all(Array.from({ length: CAR_CONCURRENCY }, worker));
-      if (saved) void refreshPublicInventoryAction();
       setNotice(failed ? { text: `${carCount(saved)} opgeslagen, ${failed} met een probleem. Bekijk de rode kaarten en probeer het opnieuw.`, error: true } : { text: `${carCount(saved)} opgeslagen${publish ? " en online gezet" : " als concept"}.` });
       router.refresh();
     } catch { setNotice({ text: "Opslaan is onderbroken. Je kaarten staan nog hier; probeer opnieuw.", error: true }); }

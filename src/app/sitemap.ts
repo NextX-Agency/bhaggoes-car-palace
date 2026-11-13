@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 import { getPublicVehicleSitemapEntries, getSettings, getVehicleFilterOptions } from "@/lib/data";
 import { absoluteUrl } from "@/lib/site-url";
 
-// Built from tagged caches, so it is static and refreshes when an admin saves (or at most every 5 minutes).
-export const revalidate = 300;
+// Admin saves refresh the sitemap; the daily timer covers changes made outside the admin.
+export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [vehicles, settings, options] = await Promise.all([getPublicVehicleSitemapEntries(), getSettings(), getVehicleFilterOptions()]);
